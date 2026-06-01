@@ -26,12 +26,12 @@ export const SPRITE_TILES: Record<SpriteKey, number> = {
   rat:          52,
   zombie:       54,
 
-  // NPC (row 1~2)
-  npc_guard:    12,
-  npc_merchant: 13,
-  npc_innkeeper:14,
-  npc_wizard:   15,
-  npc_thief:    16,
+  // NPC
+  npc_guard:    86,   // 대장장이 이고르
+  npc_merchant: 99,   // 상인 베라
+  npc_innkeeper:100,  // 여관주인 메그
+  npc_wizard:   111,  // 마법사 엘릭
+  npc_thief:    88,   // 도둑 섀도우
 
   // 아이템 (row 6~7)
   chest:        72,
