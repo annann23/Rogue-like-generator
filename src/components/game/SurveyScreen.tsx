@@ -10,6 +10,26 @@ import { PixelPanel, PixelButton, PixelInput, TypewriterText } from './UIFrame';
 
 type Phase = 'greeting' | 'loading' | 'answering' | 'final-words' | 'interpreting' | 'error';
 
+const LOADING_LINES = [
+  '음...',
+  '이 영혼에게 맞는 질문이 뭐가 있더라.',
+  '오래된 기억을 좀 뒤지는 중이야.',
+  '아직 생각 중이야. 기다려.',
+  '...질문지를 꺼내는 중이야.',
+  '금방 됐어. 기다려.',
+];
+
+const INTERPRETING_LINES = [
+  '흠...',
+  '이 대답은... 흥미롭군.',
+  '거짓말인지 진심인지 따져보는 중이야.',
+  '영혼의 무게를 측정 중이야.',
+  '판결을 내리는 중이야. 기다려.',
+  '이게 맞는 저주인지... 생각 중.',
+  '내 기분에 따라 결과가 달라지기도 해.',
+  '거의 다 됐어.',
+];
+
 // 총 플레이 횟수에 따른 던전의 신 인삿말
 function getGreeting(totalRuns: number): { title: string; message: string } {
   if (totalRuns === 0) {
@@ -221,13 +241,25 @@ export default function SurveyScreen() {
   // ── 로딩 ──
   if (phase === 'loading') {
     return (
-      <div className="flex items-center justify-center w-full h-full dungeon-bg">
-        <PixelPanel variant="dark" className="p-8 text-center">
-          <p className="font-pixel text-sm mb-6" style={{ color: '#f0c040' }}>
-            ⚡ 던전의 신이 질문을 준비한다 ⚡
-          </p>
-          <LoadingDots />
-        </PixelPanel>
+      <div className="flex items-center justify-center w-full h-full dungeon-bg p-4">
+        <div className="w-full max-w-lg">
+          <PixelPanel variant="brown" className="p-6 flex flex-col gap-5">
+            <p className="font-pixel text-center" style={{ fontSize: '16px', color: '#f0c040', textShadow: '2px 2px 0 #7a3c00' }}>
+              {greeting.title}
+            </p>
+            <div
+              className="p-4"
+              style={{
+                background: '#120a1e',
+                border: '2px solid #6b4fa040',
+                borderLeft: '4px solid #f0c040',
+                minHeight: '72px',
+              }}
+            >
+              <GodMonologue lines={LOADING_LINES} />
+            </div>
+          </PixelPanel>
+        </div>
       </div>
     );
   }
@@ -235,16 +267,25 @@ export default function SurveyScreen() {
   // ── 해석 중 ──
   if (phase === 'interpreting') {
     return (
-      <div className="flex items-center justify-center w-full h-full dungeon-bg">
-        <PixelPanel variant="brown" className="p-8 text-center">
-          <p className="font-pixel text-sm mb-6" style={{ color: '#f0c040' }}>
-            💀 던전의 신이 판결을 내린다 💀
-          </p>
-          <LoadingDots color="#c8874a" />
-          <p className="font-pixel mt-4" style={{ fontSize: '12px', color: '#9878c0' }}>
-            {questions.length}개의 답변을 분석하는 중...
-          </p>
-        </PixelPanel>
+      <div className="flex items-center justify-center w-full h-full dungeon-bg p-4">
+        <div className="w-full max-w-lg">
+          <PixelPanel variant="brown" className="p-6 flex flex-col gap-5">
+            <p className="font-pixel text-center" style={{ fontSize: '16px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}>
+              💀 판결을 내리는 중... 💀
+            </p>
+            <div
+              className="p-4"
+              style={{
+                background: '#120a1e',
+                border: '2px solid #6b4fa040',
+                borderLeft: '4px solid #e04040',
+                minHeight: '72px',
+              }}
+            >
+              <GodMonologue lines={INTERPRETING_LINES} />
+            </div>
+          </PixelPanel>
+        </div>
       </div>
     );
   }
@@ -426,20 +467,16 @@ export default function SurveyScreen() {
   );
 }
 
-function LoadingDots({ color = '#f0c040' }: { color?: string }) {
+function GodMonologue({ lines }: { lines: string[] }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIdx((i) => (i + 1) % lines.length), 2400);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
-    <div className="flex items-center justify-center gap-2">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          style={{
-            width: '8px',
-            height: '8px',
-            background: color,
-            animation: `blink 1.2s step-end ${i * 0.4}s infinite`,
-          }}
-        />
-      ))}
-    </div>
+    <p className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8', lineHeight: 2.2 }}>
+      {lines[idx]}
+    </p>
   );
 }

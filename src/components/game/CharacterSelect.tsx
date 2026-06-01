@@ -165,8 +165,8 @@ export default function CharacterSelect() {
   };
 
   return (
-    <div className="flex items-center justify-center w-full h-full dungeon-bg p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl flex flex-col gap-6 py-4">
+    <div className="w-full h-full dungeon-bg p-4 overflow-y-auto">
+      <div className="w-full max-w-2xl flex flex-col gap-6 py-4 mx-auto">
 
         {/* 헤더 */}
         <div className="text-center space-y-2">

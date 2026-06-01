@@ -108,6 +108,63 @@ function LoadingDots() {
   );
 }
 
+// ─── GodOverlay ───────────────────────────────
+const RESOLVING_LINES = [
+  '운명을 결정하는 중이야...',
+  '이 선택의 결과가... 보인다.',
+  '잠깐, 계산 중이야.',
+  '흠. 예상보다 복잡하군.',
+  '곧 알게 될 거야.',
+];
+const ROOM_LOADING_LINES = [
+  '다음 방을 준비하는 중이야.',
+  '던전이 형태를 갖추는 중이야.',
+  '좀만 기다려.',
+  '...거의 다 됐어.',
+];
+
+function GodOverlay({ lines }: { lines: string[] }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIdx((i) => (i + 1) % lines.length), 2200);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 50,
+        background: 'rgba(10, 6, 18, 0.72)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          background: '#1a0f2e',
+          border: '3px solid #4a2d7a',
+          boxShadow: '0 0 30px rgba(74, 45, 122, 0.4)',
+          padding: '28px 36px',
+          maxWidth: '320px',
+          width: '90%',
+          textAlign: 'center',
+        }}
+      >
+        <p className="font-pixel" style={{ fontSize: '11px', color: '#f0c040', marginBottom: '14px', letterSpacing: '1px' }}>
+          ⚡ 던전의 신 ⚡
+        </p>
+        <p className="font-pixel" style={{ fontSize: '11px', color: '#e8d8b8', lineHeight: 2.2 }}>
+          {lines[idx]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
   const {
@@ -546,7 +603,9 @@ export default function GameScreen() {
   const currentDepth = currentDepthRef.current;
 
   return (
-    <div className="flex flex-col w-full h-full min-h-screen" style={{ background: '#0a0612', position: 'relative' }}>
+    <div className="flex flex-col w-full" style={{ background: '#0a0612', position: 'relative', height: '100dvh' }}>
+      {phase === 'resolving' && <GodOverlay lines={RESOLVING_LINES} />}
+      {phase === 'loading' && <GodOverlay lines={ROOM_LOADING_LINES} />}
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
 
       {/* HUD */}
@@ -821,17 +880,6 @@ export default function GameScreen() {
           </PixelPanel>
         )}
 
-        {/* 로딩 */}
-        {phase === 'loading' && (
-          <PixelPanel variant="dark" className="p-5">
-            <div className="flex items-center gap-3">
-              <p className="font-pixel" style={{ fontSize: '14px', color: '#9878c0' }}>
-                던전이 준비된다
-              </p>
-              <LoadingDots />
-            </div>
-          </PixelPanel>
-        )}
 
         {/* 오류 */}
         {phase === 'error' && (
@@ -908,14 +956,6 @@ export default function GameScreen() {
               })}
             </div>
 
-            {phase === 'resolving' && (
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <p className="font-pixel" style={{ fontSize: '13px', color: '#9878c0' }}>
-                  결과 처리 중
-                </p>
-                <LoadingDots />
-              </div>
-            )}
           </>
         )}
 

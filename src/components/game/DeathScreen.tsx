@@ -17,18 +17,15 @@ export default function DeathScreen() {
 
   return (
     <div
-      className="flex flex-col items-center justify-start w-full min-h-screen overflow-y-auto"
-      style={{
-        position: 'relative',
-        background: isClear ? '#0a0e08' : '#0a0608',
-      }}
+      className="flex flex-col items-center justify-start w-full h-full overflow-y-auto"
+      style={{ background: isClear ? '#0a0e08' : '#0a0608', position: 'relative' }}
     >
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={isClear ? 0.12 : 0.18} />
 
-      {/* 분위기 오버레이 */}
+      {/* 분위기 오버레이 — position:absolute로 스크롤 방해 없음 */}
       <div
         style={{
-          position: 'fixed',
+          position: 'absolute',
           inset: 0,
           background: isClear
             ? 'radial-gradient(ellipse at 50% 30%, rgba(80,60,0,0.18) 0%, transparent 70%)'
@@ -87,11 +84,13 @@ export default function DeathScreen() {
           <div className="space-y-2">
             <Row label="클래스" value={run.characterClass ?? '-'} />
             <Row label="도달 층수" value={`${run.depth} / 10층`} />
-            <Row
-              label="남은 HP"
-              value={`${Math.max(0, run.hp)} / ${run.maxHp}`}
-              valueColor={isClear ? '#40c060' : '#e04040'}
-            />
+            {isClear && (
+              <Row
+                label="남은 HP"
+                value={`${Math.max(0, run.hp)} / ${run.maxHp}`}
+                valueColor="#40c060"
+              />
+            )}
           </div>
         </PixelPanel>
 
