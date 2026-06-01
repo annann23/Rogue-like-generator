@@ -35,6 +35,7 @@ interface CombatRoomProps {
   onDefeat: (deathCause: string) => void;
   onFled: () => void;
   onNegotiated: () => void;
+  onHpChange: (delta: number) => void;
   fleeGuaranteed?: boolean;
   onConsumeFleeEffect?: () => void;
   onEnemyInitialized?: (tier: EnemyTier) => void;
@@ -90,6 +91,7 @@ export default function CombatRoom({
   onDefeat,
   onFled,
   onNegotiated,
+  onHpChange,
   fleeGuaranteed = false,
   onConsumeFleeEffect,
   onEnemyInitialized,
@@ -359,6 +361,11 @@ export default function CombatRoom({
         currentTurn: nextTurn,
         turnHistory: [...prev.turnHistory, turnRecord],
       }));
+
+      // 플레이어 HP 변화를 전역 상태에 즉시 반영
+      if (res.hpChange !== 0) {
+        onHpChange(res.hpChange);
+      }
 
       // ─── 결과 판정 ─────────────────────────────
       // 협상 성공

@@ -661,6 +661,7 @@ export default function GameScreen() {
               setResult({ result: '', hpChange: goldReward, goldChange: goldReward, skillChange: null, newRelic: relic, isDead: false, deathCause: null });
               setPhase('result');
             }}
+            onHpChange={(delta) => applyHpChange(delta)}
             onDefeat={(cause) => {
               killPlayer(cause);
               setPendingDeathCause(cause);
