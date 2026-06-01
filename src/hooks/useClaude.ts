@@ -556,9 +556,31 @@ export async function generateNPCDialogue(params: {
 - 성향 보정값(${alignmentBonus >= 0 ? '+' : ''}${alignmentBonus})을 위 범위에 추가 적용.`
     : '';
 
-  const hintSection = (meetCount === 0 || meetCount === 1) && !giftOffered
-    ? `첫 만남이므로 대사 마지막에 자신이 좋아하는 것에 대한 힌트를 자연스럽게 한 줄 흘릴 것 (태그명 직접 언급 금지).`
-    : '';
+  // 친밀도 단계별 태도 + 힌트/개인사 공개 규칙
+  const familiarityStage = familiarity < 30
+    ? `[친밀도 낮음: ${familiarity}/100]
+- 태도: 무뚝뚝하거나 형식적으로 친절한 척하되 속내는 드러내지 않음. 경계심을 유지할 것.
+- 자신의 취향/과거/개인 이야기는 절대 꺼내지 말 것.
+- 선물 힌트도 주지 말 것. 선물을 받아도 무덤덤하게 받을 것.`
+    : familiarity < 50
+    ? `[친밀도 중간: ${familiarity}/100]
+- 태도: 조금씩 경계가 풀리기 시작. 가끔 진심이 살짝 비침.
+- 자신이 좋아하는 것에 대한 힌트를 대사 속에 아주 자연스럽게 한 줄 흘려도 됨 (태그명 직접 언급 금지).
+- 개인 이야기는 아직 꺼내지 않음.`
+    : familiarity < 70
+    ? `[친밀도 높음: ${familiarity}/100]
+- 태도: 어느 정도 신뢰가 생겼음. 솔직한 면모가 드러남.
+- 좋아하는 것에 대한 힌트를 자연스럽게 줄 것.
+- 자신의 과거나 사연 중 가벼운 것을 슬쩍 언급해도 됨. (예: 과거 직업, 옛 기억 한 조각)`
+    : familiarity < 90
+    ? `[친밀도 매우 높음: ${familiarity}/100]
+- 태도: 진정한 우호 관계. 솔직하고 따뜻함.
+- 좋아하는 것에 대해 적극적으로 이야기할 수 있음.
+- 자신의 더 깊은 사연이나 비밀스러운 과거를 털어놓을 것. (예: 왜 던전에 있는지, 숨긴 상처)`
+    : `[친밀도 최대: ${familiarity}/100]
+- 태도: 완전한 신뢰. 가장 친한 존재.
+- 자신의 가장 깊은 비밀, 진짜 정체, 숨겨온 소망을 털어놓을 것.
+- 선물에 대해 진심으로 반응하고 자신의 취향을 솔직히 밝혀도 됨.`;
 
   const text = await claudeFetch(
     [
@@ -573,9 +595,10 @@ export async function generateNPCDialogue(params: {
 플레이어 발언: ${playerInput}
 플레이어 성향: ${personaAlignment ?? 'neutral'}
 
+${familiarityStage}
+
 ${giftSection}
 ${hostileHint}
-${hintSection}
 
 친밀도별 응답 길이 준수 (0~19: 1~2문장, 20~39: 2~3문장, 40~59: 3~4문장, 60~79: 4~5문장, 80~: 제한없음).
 meetCount > 1이면 이전 만남 자연스럽게 언급.
