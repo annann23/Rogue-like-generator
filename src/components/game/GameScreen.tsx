@@ -4,9 +4,11 @@ import { useGameState, type RoomType } from '@/hooks/useGameState';
 import { generateRoom, generateRoomResult, type RoomResponse, type RoomChoice, type RoomResultResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
+import NPCRoom from './NPCRoom';
+import { NPC_TEMPLATES, type NPCTemplate } from '@/constants/npcs';
 
 // ─── Types ────────────────────────────────────
-type GamePhase = 'loading' | 'choosing' | 'resolving' | 'result' | 'error';
+type GamePhase = 'loading' | 'npc' | 'choosing' | 'resolving' | 'result' | 'error';
 
 const ROOM_LABELS: Record<string, string> = {
   combat: '⚔️ 전투',
@@ -73,7 +75,7 @@ function LoadingDots() {
 
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
-  const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, incrementSkillUse } =
+  const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, incrementSkillUse, npcRelations, updateNPCRelation } =
     useGameState(
       useShallow((s) => ({
         run: s.run,
@@ -85,6 +87,8 @@ export default function GameScreen() {
         addRelic: s.addRelic,
         killPlayer: s.killPlayer,
         incrementSkillUse: s.incrementSkillUse,
+        npcRelations: s.npcRelations,
+        updateNPCRelation: s.updateNPCRelation,
       }))
     );
 
@@ -96,6 +100,7 @@ export default function GameScreen() {
   // nextDepth를 ref로 관리 (setDepth 호출 전 run.depth는 업데이트 안 됨)
   const nextDepthRef = useRef<number>(run.depth + 1);
   const pickedRoomTypeRef = useRef<RoomType>(pickRoomType(run.depth + 1));
+  const selectedNpcRef = useRef<NPCTemplate | null>(null);
 
   // 마운트 시 방 생성
   useEffect(() => {
@@ -112,6 +117,14 @@ export default function GameScreen() {
     setRoom(null);
     setResult(null);
     setErrorMsg('');
+
+    if (roomType === 'npc') {
+      // seed + depth 조합으로 고정된 NPC 선택
+      const npcIdx = (parseInt(run.randomSeed, 36) + depth) % NPC_TEMPLATES.length;
+      selectedNpcRef.current = NPC_TEMPLATES[npcIdx];
+      setPhase('npc');
+      return;
+    }
 
     try {
       const surveyEffects =
@@ -197,6 +210,18 @@ export default function GameScreen() {
     }
   }
 
+  function handleNPCDone(familiarityDelta: number) {
+    const npc = selectedNpcRef.current;
+    if (npc) {
+      const rel = npcRelations[npc.id] ?? { familiarity: 0, meetCount: 0 };
+      const newFamiliarity = Math.max(0, Math.min(100, rel.familiarity + familiarityDelta));
+      updateNPCRelation(npc.id, newFamiliarity, rel.meetCount + 1);
+    }
+    // result 없이 바로 next-room 버튼 표시
+    setResult({ result: '', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+    setPhase('result');
+  }
+
   function handleNextRoom() {
     const depth = nextDepthRef.current;
 
@@ -263,6 +288,15 @@ export default function GameScreen() {
             {currentDepth} / 10 층
           </span>
         </div>
+
+        {/* NPC 방 페이즈 */}
+        {phase === 'npc' && selectedNpcRef.current && (
+          <NPCRoom
+            npc={selectedNpcRef.current}
+            relation={npcRelations[selectedNpcRef.current.id] ?? { familiarity: 0, meetCount: 0 }}
+            onDone={handleNPCDone}
+          />
+        )}
 
         {/* 방 설명 패널 */}
         {phase === 'loading' && (
@@ -334,42 +368,46 @@ export default function GameScreen() {
         {/* 결과 (result 페이즈) */}
         {phase === 'result' && result && (
           <>
-            <PixelDivider label="결과" />
-            <PixelPanel variant="brown" className="p-5">
-              <TypewriterText text={result.result} speed={20} />
+            {result.result !== '' && (
+              <>
+                <PixelDivider label="결과" />
+                <PixelPanel variant="brown" className="p-5">
+                  <TypewriterText text={result.result} speed={20} />
 
-              {/* 스탯 변화 배지 */}
-              <div className="mt-4 flex flex-wrap">
-                {result.hpChange !== 0 && (
-                  <StatChangeBadge label="HP" value={result.hpChange} />
-                )}
-                {result.goldChange !== 0 && (
-                  <StatChangeBadge label="골드" value={result.goldChange} />
-                )}
-                {result.skillChange && (
-                  <StatChangeBadge
-                    label={SKILLS.find((s) => s.id === result.skillChange?.type)?.name ?? result.skillChange.type}
-                    value={result.skillChange.amount}
-                    positive
-                  />
-                )}
-                {result.newRelic && (
-                  <span
-                    className="font-pixel inline-block px-2 py-1"
-                    style={{
-                      fontSize: '12px',
-                      color: '#f0c040',
-                      background: '#1a1000',
-                      border: '2px solid #f0c040',
-                      marginRight: '6px',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    🗿 {result.newRelic.name} 획득!
-                  </span>
-                )}
-              </div>
-            </PixelPanel>
+                  {/* 스탯 변화 배지 */}
+                  <div className="mt-4 flex flex-wrap">
+                    {result.hpChange !== 0 && (
+                      <StatChangeBadge label="HP" value={result.hpChange} />
+                    )}
+                    {result.goldChange !== 0 && (
+                      <StatChangeBadge label="골드" value={result.goldChange} />
+                    )}
+                    {result.skillChange && (
+                      <StatChangeBadge
+                        label={SKILLS.find((s) => s.id === result.skillChange?.type)?.name ?? result.skillChange.type}
+                        value={result.skillChange.amount}
+                        positive
+                      />
+                    )}
+                    {result.newRelic && (
+                      <span
+                        className="font-pixel inline-block px-2 py-1"
+                        style={{
+                          fontSize: '12px',
+                          color: '#f0c040',
+                          background: '#1a1000',
+                          border: '2px solid #f0c040',
+                          marginRight: '6px',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        🗿 {result.newRelic.name} 획득!
+                      </span>
+                    )}
+                  </div>
+                </PixelPanel>
+              </>
+            )}
 
             <div className="flex justify-end mt-2">
               <PixelButton variant="secondary" size="lg" onClick={handleNextRoom}>
