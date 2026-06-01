@@ -93,32 +93,31 @@ export default function StatReveal() {
   const { run, setScreen } = useGameState();
   const results = run.surveyResults;
 
-  const [revealedCount, setRevealedCount] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
 
   useEffect(() => {
-    if (results.length === 0) { setScreen('character-select'); return; }
-    setRevealedCount(1);
+    if (results.length === 0) { setScreen('character-select'); }
   }, []);
 
-  const allRevealed = revealedCount >= results.length;
+  if (results.length === 0) return null;
+
+  const isLastCard = currentIdx >= results.length - 1;
 
   const handleNext = () => {
-    if (!allRevealed) {
-      setRevealedCount(c => c + 1);
+    if (!isLastCard) {
+      setCurrentIdx(c => c + 1);
+      setAnimKey(k => k + 1);
     } else {
       setShowSummary(true);
       setTimeout(() => setCanProceed(true), 600);
     }
   };
 
-  if (results.length === 0) return null;
-
   const totalChanges = calcTotalChanges(results);
   const changedStats = Object.entries(totalChanges).filter(([, v]) => v !== 0);
-  const isLastCard = allRevealed && !showSummary;
-
 
   return (
     <div className="flex items-center justify-center w-full h-full dungeon-bg p-4 overflow-y-auto">
@@ -128,29 +127,26 @@ export default function StatReveal() {
           <p className="font-pixel" style={{ fontSize: '16px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}>
             💀 던전의 신이 판결한다 💀
           </p>
-          <p className="font-pixel mt-2" style={{ fontSize: '12px', color: '#6b4fa0' }}>
-            {revealedCount} / {results.length} 판결
-          </p>
+          {!showSummary && (
+            <p className="font-pixel mt-2" style={{ fontSize: '12px', color: '#6b4fa0' }}>
+              {currentIdx + 1} / {results.length} 판결
+            </p>
+          )}
         </div>
 
-        {/* 공개된 카드들 */}
-        <div className="flex flex-col gap-4">
-          {results.slice(0, revealedCount).map((result, i) => (
-            <div
-              key={i}
-              style={{ animation: i === revealedCount - 1 ? 'slideIn 0.35s ease' : 'none' }}
-            >
-              <ResultCard result={result} index={i} />
-            </div>
-          ))}
-        </div>
+        {/* 현재 카드 (단일 페이지) */}
+        {!showSummary && (
+          <div key={animKey} style={{ animation: 'pageIn 0.3s ease' }}>
+            <ResultCard result={results[currentIdx]} index={currentIdx} />
+          </div>
+        )}
 
-        {/* ── 다음 버튼 (눈에 띄게) ── */}
+        {/* 다음 버튼 */}
         {!showSummary && (
           <div className="flex justify-center mt-2">
             <button
               onClick={handleNext}
-              className="font-pixel relative"
+              className="font-pixel"
               style={{
                 fontFamily: "'Press Start 2P', monospace",
                 fontSize: '15px',
@@ -174,14 +170,14 @@ export default function StatReveal() {
                 (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 0 #1a0a04, 0 0 20px #f0c04060';
               }}
             >
-              {isLastCard ? '⚖️ 최종 판결을 듣는다' : `▶ 다음 판결 (${revealedCount}/${results.length})`}
+              {isLastCard ? '⚖️ 최종 판결을 듣는다' : `▶ 다음 판결 →`}
             </button>
           </div>
         )}
 
         {/* 최종 요약 */}
         {showSummary && (
-          <div style={{ opacity: 1, transition: 'opacity 0.5s ease' }}>
+          <div style={{ animation: 'pageIn 0.4s ease' }}>
             <PixelDivider label="신의 최종 판결" className="my-3" />
 
             <PixelPanel variant="brown" className="p-5 my-3">
@@ -219,9 +215,9 @@ export default function StatReveal() {
       </div>
 
       <style>{`
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes pageIn {
+          from { opacity: 0; transform: translateX(30px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
         @keyframes pulse {
           0%, 100% { box-shadow: 0 6px 0 #1a0a04, 0 0 16px #f0c04050; }
