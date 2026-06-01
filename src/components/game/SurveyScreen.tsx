@@ -80,22 +80,14 @@ export default function SurveyScreen() {
 
   const greeting = getGreeting(meta.totalRuns);
 
-  // 인사말 확인 후 설문 로딩 시작
+  // 인사말 확인 후 질문 시작 (로컬 풀에서 즉시 선택, API 없음)
   const handleStartSurvey = () => {
-    setPhase('loading');
     setErrorPhase(null);
-    generateSurveyQuestions(meta.totalRuns)
-      .then((res) => {
-        setQuestions(res.questions);
-        setAnswers(new Array(res.questions.length).fill(''));
-        setPhase('answering');
-      })
-      .catch((e) => {
-        console.error(e);
-        setErrorMsg('던전의 신이 응답하지 않는다... (API 오류)');
-        setErrorPhase('loading');
-        setPhase('error');
-      });
+    generateSurveyQuestions(meta.totalRuns).then((r) => {
+      setQuestions(r.questions);
+      setAnswers(new Array(r.questions.length).fill(''));
+      setPhase('answering');
+    });
   };
 
   // 질문 바뀔 때 입력창 포커스
