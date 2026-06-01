@@ -56,6 +56,7 @@ export default function SurveyScreen() {
   const [seed] = useState(() => Math.random().toString(36).substring(2, 10));
   const inputRef = useRef<HTMLInputElement>(null);
   const submittingRef = useRef(false);
+  const isComposingRef = useRef(false);
 
   const greeting = getGreeting(meta.totalRuns);
 
@@ -139,6 +140,8 @@ export default function SurveyScreen() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // IME 조합 중(한국어 등) Enter는 조합 완료 신호이므로 제출하지 않음
+      if (e.nativeEvent.isComposing || isComposingRef.current) return;
       handleSubmitAnswer();
     }
   };
@@ -146,6 +149,7 @@ export default function SurveyScreen() {
   const handleFinalWordsKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (e.nativeEvent.isComposing || isComposingRef.current) return;
       handleSubmitFinalWords();
     }
   };
@@ -279,6 +283,8 @@ export default function SurveyScreen() {
                 value={finalWords}
                 onChange={(e) => setFinalWords(e.target.value)}
                 onKeyDown={handleFinalWordsKeyDown}
+                onCompositionStart={() => { isComposingRef.current = true; }}
+                onCompositionEnd={() => { requestAnimationFrame(() => { isComposingRef.current = false; }); }}
                 className="flex-1"
               />
               <PixelButton
@@ -390,6 +396,8 @@ export default function SurveyScreen() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
+                  onCompositionStart={() => { isComposingRef.current = true; }}
+                  onCompositionEnd={() => { requestAnimationFrame(() => { isComposingRef.current = false; }); }}
                   className="flex-1"
                 />
                 <PixelButton
