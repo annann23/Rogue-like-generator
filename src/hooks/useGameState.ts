@@ -70,7 +70,7 @@ export interface RunState {
 
 export interface MetaState {
   legacyPoints: number;
-  upgrades: string[];
+  upgrades: Record<string, number>;
   totalRuns: number;
   totalClears: number;
   bestDepth: number;
@@ -123,7 +123,7 @@ const DEFAULT_RUN: RunState = {
 
 const DEFAULT_META: MetaState = {
   legacyPoints: 0,
-  upgrades: [],
+  upgrades: {},
   totalRuns: 0,
   totalClears: 0,
   bestDepth: 0,
@@ -139,44 +139,61 @@ export const useGameState = create<GameStore>()(
 
       setScreen: (screen) => set({ screen }),
 
-      startNewRun: (classData, surveyResults, seed) => {
-        const statChanges = surveyResults.flatMap(r => r.statChanges);
-        let hpBonus = 0, atkBonus = 0, defBonus = 0, goldBonus = 0;
+      startNewRun: (classData, surveyResults, seed) =>
+        set((state) => {
+          const statChanges = surveyResults.flatMap(r => r.statChanges);
+          let hpBonus = 0, atkBonus = 0, defBonus = 0, goldBonus = 0;
 
-        for (const { stat, change } of statChanges) {
-          if (stat === 'hp') hpBonus += change;
-          if (stat === 'atk' || stat === 'attack') atkBonus += change;
-          if (stat === 'def' || stat === 'defense') defBonus += change;
-          if (stat === 'gold') goldBonus += change;
-        }
-
-        const maxHp = Math.max(10, classData.hp + hpBonus);
-        const skills = { ...classData.skills };
-
-        // 스킬 보너스 적용
-        for (const { stat, change } of statChanges) {
-          if (stat in skills) {
-            (skills as Record<string, number>)[stat] = Math.max(0, ((skills as Record<string, number>)[stat] || 0) + change);
+          for (const { stat, change } of statChanges) {
+            if (stat === 'hp') hpBonus += change;
+            if (stat === 'atk' || stat === 'attack') atkBonus += change;
+            if (stat === 'def' || stat === 'defense') defBonus += change;
+            if (stat === 'gold') goldBonus += change;
           }
-        }
 
-        set({
-          run: {
-            ...DEFAULT_RUN,
-            characterClass: classData.id,
-            hp: maxHp,
-            maxHp,
-            atk: Math.max(1, classData.atk + atkBonus),
-            def: Math.max(0, classData.def + defBonus),
-            gold: Math.max(0, classData.startGold + goldBonus),
-            mana: classData.mana ?? 0,
-            maxMana: classData.mana ?? 0,
-            skills,
-            surveyResults,
-            randomSeed: seed,
-          },
-        });
-      },
+          const maxHp = Math.max(10, classData.hp + hpBonus);
+          const skills = { ...classData.skills };
+
+          // 설문 스킬 보너스 적용
+          for (const { stat, change } of statChanges) {
+            if (stat in skills) {
+              (skills as Record<string, number>)[stat] = Math.max(0, ((skills as Record<string, number>)[stat] || 0) + change);
+            }
+          }
+
+          // 메타 업그레이드 보너스 적용
+          const u = state.meta.upgrades;
+          const finalMaxHp = Math.max(10, maxHp + (u['hp'] ?? 0) * 15);
+          const finalAtk = Math.max(1, classData.atk + atkBonus + (u['atk'] ?? 0) * 2);
+          const finalDef = Math.max(0, classData.def + defBonus + (u['def'] ?? 0) * 2);
+          const finalGold = Math.max(0, classData.startGold + goldBonus + (u['gold'] ?? 0) * 25);
+
+          // 스킬 메타 보너스
+          const metaSkills = { ...skills };
+          for (const skillId of ['intelligence', 'negotiation', 'stealth', 'strength', 'lockpick', 'arcane']) {
+            if (u[skillId]) {
+              (metaSkills as Record<string, number>)[skillId] =
+                Math.min(5, ((metaSkills as Record<string, number>)[skillId] ?? 0) + u[skillId]);
+            }
+          }
+
+          return {
+            run: {
+              ...DEFAULT_RUN,
+              characterClass: classData.id,
+              hp: finalMaxHp,
+              maxHp: finalMaxHp,
+              atk: finalAtk,
+              def: finalDef,
+              gold: finalGold,
+              mana: classData.mana ?? 0,
+              maxMana: classData.mana ?? 0,
+              skills: metaSkills,
+              surveyResults,
+              randomSeed: seed,
+            },
+          };
+        }),
 
       updateRun: (updates) =>
         set((state) => ({ run: { ...state.run, ...updates } })),
@@ -222,6 +239,7 @@ export const useGameState = create<GameStore>()(
             ...state.meta,
             totalRuns: state.meta.totalRuns + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
+            legacyPoints: state.meta.legacyPoints + state.run.depth * 2,
           },
         })),
 
@@ -232,6 +250,7 @@ export const useGameState = create<GameStore>()(
             totalRuns: state.meta.totalRuns + 1,
             totalClears: state.meta.totalClears + 1,
             bestDepth: 10,
+            legacyPoints: state.meta.legacyPoints + 30,
           },
         })),
 
@@ -253,7 +272,10 @@ export const useGameState = create<GameStore>()(
           meta: {
             ...state.meta,
             legacyPoints: state.meta.legacyPoints - cost,
-            upgrades: [...state.meta.upgrades, upgradeId],
+            upgrades: {
+              ...state.meta.upgrades,
+              [upgradeId]: (state.meta.upgrades[upgradeId] ?? 0) + 1,
+            },
           },
         })),
 
