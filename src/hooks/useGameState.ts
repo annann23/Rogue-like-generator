@@ -15,7 +15,7 @@ export type GameScreen =
   | 'clear'
   | 'meta';
 
-export type RoomType = 'combat' | 'event' | 'npc' | 'shop' | 'rest';
+export type RoomType = 'combat' | 'event' | 'npc' | 'shop' | 'rest' | 'ghost';
 
 export interface Skills {
   intelligence: number;

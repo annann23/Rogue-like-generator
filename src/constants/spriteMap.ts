@@ -9,7 +9,7 @@ export type SpriteKey =
   | 'chest' | 'key' | 'potion' | 'sword' | 'shield' | 'staff'
   | 'floor' | 'wall' | 'door' | 'stairs'
   | 'npc_merchant' | 'npc_wizard' | 'npc_guard' | 'npc_innkeeper' | 'npc_thief'
-  | 'coin' | 'skull' | 'heart' | 'star';
+  | 'coin' | 'skull' | 'heart' | 'star' | 'ghost';
 
 // tile 번호 → 파일명: tile_${String(n).padStart(4,'0')}.png
 export const SPRITE_TILES: Record<SpriteKey, number> = {
@@ -52,6 +52,7 @@ export const SPRITE_TILES: Record<SpriteKey, number> = {
   skull:        120,
   heart:        121,
   star:         122,
+  ghost:        55,
 };
 
 export function getTilePath(tileNum: number): string {
@@ -69,6 +70,7 @@ export const ROOM_TYPE_SPRITES: Record<string, SpriteKey> = {
   npc:    'npc_merchant',
   shop:   'potion',
   rest:   'stairs',
+  ghost:  'ghost',
 };
 
 // 클래스별 스프라이트

@@ -397,3 +397,90 @@ JSON으로만 응답:
 
   return parseJSON<NPCDialogueResponse>(text);
 }
+
+export interface GhostBattleReward {
+  name: string;
+  effect: string;
+  isPassive: boolean;
+}
+
+export interface GhostBattleResponse {
+  won: boolean;
+  narrative: string;
+  deathCause: string | null;
+  reward: GhostBattleReward | null;
+}
+
+export async function generateGhostBattle(params: {
+  characterClass: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  arcane: number;
+  ghostLastWords: string;
+}): Promise<GhostBattleResponse> {
+  const { characterClass, hp, maxHp, atk, arcane, ghostLastWords } = params;
+
+  // 마법감지 레벨에 따라 승률 가중치 (2→25%, 3→45%, 4→65%, 5→85%)
+  const winWeight = Math.min(85, 5 + arcane * 20);
+
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 던전 서사 판정자다.
+플레이어 정보: 직업=${characterClass}, HP=${hp}/${maxHp}, 공격력=${atk}, 마법감지=${arcane}/5
+유령의 마지막 말: "${ghostLastWords}"
+유령 전투력: 극강 (일반 몬스터의 10배)
+승리 확률: ${winWeight}% (마법감지 ${arcane}레벨 기준)
+
+유령과의 사투를 서사적으로 묘사하라. 한국어, 3~5문장.
+승리 시: 유령이 남긴 희귀한 무기 또는 패시브 스킬을 1개 드랍하라.
+패배 시: 끔찍한 사인을 명시하라.
+
+JSON으로만 응답:
+{
+  "won": true/false,
+  "narrative": "전투 서사 (3~5문장)",
+  "deathCause": null 또는 "사인 문장",
+  "reward": null 또는 {
+    "name": "아이템/스킬 이름",
+    "effect": "효과 설명 (짧게)",
+    "isPassive": true/false
+  }
+}`,
+      },
+    ],
+    512,
+  );
+
+  return parseJSON<GhostBattleResponse>(text);
+}
+
+export interface ModerationResult {
+  safe: boolean;
+  reason?: string;
+}
+
+export async function moderateLastWords(text: string): Promise<ModerationResult> {
+  const result = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `다음 텍스트가 게임 내 공개 메시지로 적합한지 판단하라.
+부적절한 내용: 욕설, 비속어, 혐오 표현, 성적으로 부적절한 내용, 특정인 비하.
+텍스트: "${text}"
+
+JSON으로만 응답:
+{"safe": true} 또는 {"safe": false, "reason": "부적절한 이유 한 문장"}`,
+      },
+    ],
+    64,
+  );
+
+  try {
+    return parseJSON<ModerationResult>(result);
+  } catch {
+    return { safe: true };
+  }
+}
