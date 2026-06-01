@@ -30,7 +30,11 @@ async function claudeFetch(
 
   const data = (await res.json()) as {
     content: { type: string; text: string }[];
+    stop_reason: string;
   };
+  if (data.stop_reason === 'max_tokens') {
+    throw new Error('API 응답이 잘렸습니다 (토큰 한도 초과). 재시도해주세요.');
+  }
   const block = data.content.find((b) => b.type === "text");
   return block?.text ?? "";
 }
@@ -42,11 +46,32 @@ function parseJSON<T>(raw: string): T {
     .replace(/^```\s*/i, "")
     .replace(/```\s*$/i, "")
     .trim();
-  // 잘린 JSON 조기 감지 (응답 토큰 초과 시)
-  if (!cleaned.endsWith('}') && !cleaned.endsWith(']')) {
-    throw new Error(`API 응답이 잘렸습니다 (응답 길이: ${cleaned.length}자). 재시도해주세요.`);
+
+  // 1차 시도: 그대로 파싱
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    // 2차 시도: JSON 문자열 내부의 literal 제어문자를 이스케이프 후 재파싱
+    // Claude가 JSON string 값 안에 raw 개행(\n)을 넣는 경우를 처리
+    const repaired = repairJSON(cleaned);
+    try {
+      return JSON.parse(repaired) as T;
+    } catch (e2) {
+      throw new Error(`JSON 파싱 실패: ${(e2 as Error).message} (응답 길이: ${cleaned.length}자)`);
+    }
   }
-  return JSON.parse(cleaned) as T;
+}
+
+// JSON 문자열 값 내부의 literal 제어문자를 이스케이프 시퀀스로 변환
+function repairJSON(s: string): string {
+  // 문자열 토큰 내부만 건드리고 구조적 공백은 유지
+  return s.replace(/"((?:[^"\\]|\\.)*)"/g, (_, inner: string) => {
+    const escaped = inner
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t');
+    return `"${escaped}"`;
+  });
 }
 
 // 모든 한국어 생성 프롬프트에 공통 삽입
@@ -315,7 +340,7 @@ JSON으로만 응답:
 }`,
       },
     ],
-    4096,
+    8192,
   );
 
   return parseJSON<SurveyInterpretResponse>(text);
