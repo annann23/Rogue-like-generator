@@ -13,6 +13,13 @@ import DungeonBackground from './DungeonBackground';
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'choosing' | 'resolving' | 'result' | 'error';
 
+interface PrefetchEntry {
+  roomType: RoomType;
+  // NPC 방은 null, 일반 방은 RoomResponse promise
+  promise: Promise<RoomResponse | null>;
+}
+
+// ─── Constants ────────────────────────────────
 const ROOM_LABELS: Record<string, string> = {
   combat: '⚔️ 전투',
   event: '❓ 이벤트',
@@ -24,7 +31,6 @@ const ROOM_LABELS: Record<string, string> = {
 const ROOM_TYPES: RoomType[] = ['combat', 'event', 'npc', 'shop', 'rest'];
 
 function pickRoomType(depth: number): RoomType {
-  // depth 1~3: combat 가중치 높게 (combat 3번, 나머지 1번씩)
   const pool: RoomType[] =
     depth <= 3
       ? ['combat', 'combat', 'combat', 'event', 'npc', 'shop', 'rest']
@@ -99,30 +105,73 @@ export default function GameScreen() {
   const [room, setRoom] = useState<RoomResponse | null>(null);
   const [result, setResult] = useState<RoomResultResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [currentRoomType, setCurrentRoomType] = useState<RoomType>('combat');
 
-  // nextDepth를 ref로 관리 (setDepth 호출 전 run.depth는 업데이트 안 됨)
-  const nextDepthRef = useRef<number>(run.depth + 1);
-  const pickedRoomTypeRef = useRef<RoomType>(pickRoomType(run.depth + 1));
+  // 현재 진행 중인 depth를 ref로 관리 (Zustand 업데이트 비동기라 별도 추적)
+  const currentDepthRef = useRef<number>(run.depth + 1);
   const selectedNpcRef = useRef<NPCTemplate | null>(null);
 
-  // 마운트 시 방 생성
-  useEffect(() => {
-    const nextDepth = nextDepthRef.current;
-    const pickedRoomType = pickedRoomTypeRef.current;
+  // depth → PrefetchEntry: 미리 생성해둔 방 프로미스 캐시
+  const prefetchCache = useRef<Map<number, PrefetchEntry>>(new Map());
 
-    setDepth(nextDepth);
-    setRoomType(pickedRoomType);
-    startRoom(nextDepth, pickedRoomType);
-  }, []); // eslint-disable-line
+  // ─── 프리페치 ────────────────────────────────
+  // 현재 run 스냅샷으로 방 1개를 백그라운드에서 생성 예약
+  function schedulePrefetch(depth: number) {
+    if (depth < 1 || depth > 10 || prefetchCache.current.has(depth)) return;
 
-  async function startRoom(depth: number, roomType: RoomType) {
+    const roomType = pickRoomType(depth);
+
+    if (roomType === 'npc') {
+      prefetchCache.current.set(depth, { roomType, promise: Promise.resolve(null) });
+      return;
+    }
+
+    const surveyEffects =
+      run.surveyResults.length > 0
+        ? run.surveyResults
+            .flatMap((r) => r.statChanges)
+            .map((s) => `${s.stat} ${s.change > 0 ? '+' : ''}${s.change}`)
+            .join(', ')
+        : '없음';
+
+    const promise = generateRoom({
+      characterClass: run.characterClass ?? 'warrior',
+      hp: run.hp,
+      maxHp: run.maxHp,
+      atk: run.atk,
+      def: run.def,
+      gold: run.gold,
+      skills: run.skills as unknown as Record<string, number>,
+      surveyEffects,
+      relics: run.relics.map((r) => r.name),
+      depth,
+      roomType,
+    });
+
+    prefetchCache.current.set(depth, { roomType, promise });
+  }
+
+  // ─── 방 시작 ──────────────────────────────────
+  // 캐시에서 꺼내거나, 없으면 즉시 생성
+  async function startRoom(depth: number) {
     setPhase('loading');
     setRoom(null);
     setResult(null);
     setErrorMsg('');
 
+    // 캐시에 없으면 지금 즉시 예약 (fallback)
+    if (!prefetchCache.current.has(depth)) {
+      schedulePrefetch(depth);
+    }
+
+    const entry = prefetchCache.current.get(depth)!;
+    const { roomType } = entry;
+
+    setCurrentRoomType(roomType);
+    setDepth(depth);
+    setRoomType(roomType);
+
     if (roomType === 'npc') {
-      // seed + depth 조합으로 고정된 NPC 선택
       const npcIdx = (parseInt(run.randomSeed, 36) + depth) % NPC_TEMPLATES.length;
       selectedNpcRef.current = NPC_TEMPLATES[npcIdx];
       setPhase('npc');
@@ -130,28 +179,8 @@ export default function GameScreen() {
     }
 
     try {
-      const surveyEffects =
-        run.surveyResults.length > 0
-          ? run.surveyResults
-              .flatMap((r) => r.statChanges)
-              .map((s) => `${s.stat} ${s.change > 0 ? '+' : ''}${s.change}`)
-              .join(', ')
-          : '없음';
-
-      const roomData = await generateRoom({
-        characterClass: run.characterClass ?? 'warrior',
-        hp: run.hp,
-        maxHp: run.maxHp,
-        atk: run.atk,
-        def: run.def,
-        gold: run.gold,
-        skills: run.skills as unknown as Record<string, number>,
-        surveyEffects,
-        relics: run.relics.map((r) => r.name),
-        depth,
-        roomType,
-      });
-
+      const roomData = await entry.promise;
+      if (!roomData) throw new Error('방 생성 실패');
       setRoom(roomData);
       setPhase('choosing');
     } catch (err) {
@@ -160,11 +189,20 @@ export default function GameScreen() {
     }
   }
 
+  // ─── 마운트 시 첫 3개 방 프리페치 ──────────────
+  useEffect(() => {
+    const d = currentDepthRef.current;
+    schedulePrefetch(d);
+    schedulePrefetch(d + 1);
+    schedulePrefetch(d + 2);
+    startRoom(d);
+  }, []); // eslint-disable-line
+
+  // ─── 선택지 클릭 ─────────────────────────────
   async function handleChoiceClick(choice: RoomChoice) {
     if (!room) return;
     setPhase('resolving');
 
-    // 스킬 요구사항 있으면 incrementSkillUse
     if (choice.requiredSkill) {
       incrementSkillUse(choice.requiredSkill.type as SkillType);
     }
@@ -180,7 +218,6 @@ export default function GameScreen() {
         skills: run.skills as unknown as Record<string, number>,
       });
 
-      // 결과 적용
       applyHpChange(res.hpChange);
       applyGoldChange(res.goldChange);
 
@@ -197,13 +234,17 @@ export default function GameScreen() {
         });
       }
 
-      // 사망 처리
       const willDie = res.isDead || run.hp + res.hpChange <= 0;
       if (willDie) {
         killPlayer(res.deathCause ?? '알 수 없는 이유');
         setScreen('death');
         return;
       }
+
+      // 결과 보여주는 동안 다음 방 2개 프리페치
+      const nextD = currentDepthRef.current + 1;
+      schedulePrefetch(nextD);
+      schedulePrefetch(nextD + 1);
 
       setResult(res);
       setPhase('result');
@@ -213,6 +254,7 @@ export default function GameScreen() {
     }
   }
 
+  // ─── NPC 대화 종료 ───────────────────────────
   function handleNPCDone(familiarityDelta: number) {
     const npc = selectedNpcRef.current;
     if (npc) {
@@ -220,29 +262,42 @@ export default function GameScreen() {
       const newFamiliarity = Math.max(0, Math.min(100, rel.familiarity + familiarityDelta));
       updateNPCRelation(npc.id, newFamiliarity, rel.meetCount + 1);
     }
-    // result 없이 바로 next-room 버튼 표시
+    // 다음 방 프리페치
+    const nextD = currentDepthRef.current + 1;
+    schedulePrefetch(nextD);
+    schedulePrefetch(nextD + 1);
+
     setResult({ result: '', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
     setPhase('result');
   }
 
+  // ─── 다음 방으로 ─────────────────────────────
   function handleNextRoom() {
-    const depth = nextDepthRef.current;
+    const current = currentDepthRef.current;
 
-    if (depth >= 10) {
+    if (current >= 10) {
       setScreen('clear');
       return;
     }
 
-    const nextDepth = depth + 1;
-    const nextRoomType = pickRoomType(nextDepth);
-    nextDepthRef.current = nextDepth;
-    pickedRoomTypeRef.current = nextRoomType;
+    const next = current + 1;
+    currentDepthRef.current = next;
 
-    setDepth(nextDepth);
-    setRoomType(nextRoomType);
-    startRoom(nextDepth, nextRoomType);
+    // 2~3개 앞 방 추가 프리페치
+    schedulePrefetch(next + 1);
+    schedulePrefetch(next + 2);
+
+    startRoom(next);
   }
 
+  // ─── 재시도 ──────────────────────────────────
+  function handleRetry() {
+    // 실패한 캐시 제거 후 재시도
+    prefetchCache.current.delete(currentDepthRef.current);
+    startRoom(currentDepthRef.current);
+  }
+
+  // ─── 선택지 잠금 ─────────────────────────────
   function isChoiceLocked(choice: RoomChoice): { locked: boolean; lockReason?: string } {
     if (choice.requiredSkill) {
       const { type, level } = choice.requiredSkill;
@@ -256,12 +311,12 @@ export default function GameScreen() {
     return { locked: false };
   }
 
-  const currentDepth = nextDepthRef.current;
-  const currentRoomType = pickedRoomTypeRef.current;
+  const currentDepth = currentDepthRef.current;
 
   return (
     <div className="flex flex-col w-full h-full min-h-screen" style={{ background: '#0a0612', position: 'relative' }}>
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
+
       {/* HUD */}
       <PixelHUD
         hp={run.hp}
@@ -276,6 +331,7 @@ export default function GameScreen() {
 
       {/* 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
+
         {/* 방 타입 배지 + 스프라이트 씬 + 층 표시 */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -321,7 +377,7 @@ export default function GameScreen() {
           />
         )}
 
-        {/* 방 설명 패널 */}
+        {/* 로딩 */}
         {phase === 'loading' && (
           <PixelPanel variant="dark" className="p-5">
             <div className="flex items-center gap-3">
@@ -333,28 +389,26 @@ export default function GameScreen() {
           </PixelPanel>
         )}
 
+        {/* 오류 */}
         {phase === 'error' && (
           <PixelPanel variant="dark" className="p-5">
             <p className="font-pixel mb-4" style={{ fontSize: '13px', color: '#e04040', lineHeight: 2 }}>
               오류: {errorMsg}
             </p>
-            <PixelButton
-              variant="danger"
-              size="sm"
-              onClick={() => startRoom(currentDepth, currentRoomType)}
-            >
+            <PixelButton variant="danger" size="sm" onClick={handleRetry}>
               재시도
             </PixelButton>
           </PixelPanel>
         )}
 
+        {/* 방 설명 */}
         {(phase === 'choosing' || phase === 'resolving' || phase === 'result') && room && (
           <PixelPanel variant="dark" className="p-5">
             <TypewriterText text={room.description} speed={25} />
           </PixelPanel>
         )}
 
-        {/* 선택지 (choosing / resolving 페이즈) */}
+        {/* 선택지 */}
         {(phase === 'choosing' || phase === 'resolving') && room && (
           <>
             <PixelDivider label="선택" />
@@ -388,7 +442,7 @@ export default function GameScreen() {
           </>
         )}
 
-        {/* 결과 (result 페이즈) */}
+        {/* 결과 */}
         {phase === 'result' && result && (
           <>
             {result.result !== '' && (
@@ -397,7 +451,6 @@ export default function GameScreen() {
                 <PixelPanel variant="brown" className="p-5">
                   <TypewriterText text={result.result} speed={20} />
 
-                  {/* 스탯 변화 배지 */}
                   <div className="mt-4 flex flex-wrap">
                     {result.hpChange !== 0 && (
                       <StatChangeBadge label="HP" value={result.hpChange} />
