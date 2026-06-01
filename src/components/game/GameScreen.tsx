@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameState, type RoomType } from '@/hooks/useGameState';
 import { generateRoom, generateRoomResult, type RoomResponse, type RoomChoice, type RoomResultResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, TypewriterText } from '@/components/game/UIFrame';
@@ -73,17 +74,19 @@ function LoadingDots() {
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
   const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, incrementSkillUse } =
-    useGameState((s) => ({
-      run: s.run,
-      setScreen: s.setScreen,
-      setDepth: s.setDepth,
-      setRoomType: s.setRoomType,
-      applyHpChange: s.applyHpChange,
-      applyGoldChange: s.applyGoldChange,
-      addRelic: s.addRelic,
-      killPlayer: s.killPlayer,
-      incrementSkillUse: s.incrementSkillUse,
-    }));
+    useGameState(
+      useShallow((s) => ({
+        run: s.run,
+        setScreen: s.setScreen,
+        setDepth: s.setDepth,
+        setRoomType: s.setRoomType,
+        applyHpChange: s.applyHpChange,
+        applyGoldChange: s.applyGoldChange,
+        addRelic: s.addRelic,
+        killPlayer: s.killPlayer,
+        incrementSkillUse: s.incrementSkillUse,
+      }))
+    );
 
   const [phase, setPhase] = useState<GamePhase>('loading');
   const [room, setRoom] = useState<RoomResponse | null>(null);
