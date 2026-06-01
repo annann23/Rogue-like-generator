@@ -438,6 +438,8 @@ export async function generateNPCDialogue(params: {
   conversationHistory: string;
   playerInput: string;
   personaAlignment?: string;
+  favoriteItemTag?: string;
+  giftOffered?: { name: string; tag: string };
 }): Promise<NPCDialogueResponse> {
   const {
     npcName,
@@ -448,9 +450,33 @@ export async function generateNPCDialogue(params: {
     conversationHistory,
     playerInput,
     personaAlignment,
+    favoriteItemTag,
+    giftOffered,
   } = params;
 
   const alignmentBonus = personaAlignment === 'benevolent' ? 3 : personaAlignment === 'malevolent' ? -3 : 0;
+
+  const giftSection = giftOffered
+    ? `플레이어가 선물을 건넸다: "${giftOffered.name}"
+선물 반응 규칙:
+- 이 NPC의 비밀 선호 아이템 태그: "${favoriteItemTag}"
+- 건넨 선물 태그: "${giftOffered.tag}"
+- 선물이 선호 태그와 일치하면: NPC가 매우 기뻐하며 familiarityChange +20~30. 대사에서 좋아하는 이유를 자연스럽게 드러낼 것.
+- 선물이 선호 태그와 불일치하면: NPC가 정중히 받되 미묘하게 더 좋아하는 걸 암시하는 대사를 남길 것. familiarityChange +3~8.
+- 어떤 경우도 선호 아이템 태그를 직접 말하지 말 것. 대화 속 힌트로만 암시할 것.`
+    : '';
+
+  const hostileHint = !giftOffered
+    ? `말투 분석 규칙 (플레이어 발언 기반):
+- 욕설/비하/위협/조롱 등 적대적 발언 → familiarityChange -10 ~ -25, NPC 기분 나빠짐
+- 무관심하거나 중립적인 발언 → familiarityChange -2 ~ +3
+- 칭찬/공감/호의적 발언 → familiarityChange +5 ~ +15
+- 성향 보정값(${alignmentBonus >= 0 ? '+' : ''}${alignmentBonus})을 위 범위에 추가 적용.`
+    : '';
+
+  const hintSection = (meetCount === 0 || meetCount === 1) && !giftOffered
+    ? `첫 만남이므로 대사 마지막에 자신이 좋아하는 것에 대한 힌트를 자연스럽게 한 줄 흘릴 것 (태그명 직접 언급 금지).`
+    : '';
 
   const text = await claudeFetch(
     [
@@ -458,18 +484,20 @@ export async function generateNPCDialogue(params: {
         role: "user",
         content: `당신은 NPC ${npcName}입니다.
 성격: ${personality}
-친밀도: ${familiarity}/100
+친밀도: ${familiarity}/100 (0=적대, 100=절친)
 만남 횟수: ${meetCount}회
 남은 대화: ${remainingTurns}회
 대화 기록: ${conversationHistory || "(첫 대화)"}
 플레이어 발언: ${playerInput}
 플레이어 성향: ${personaAlignment ?? 'neutral'}
-성향 반영: ${personaAlignment === 'benevolent' ? 'benevolent이므로 NPC가 처음부터 약간 호의적 (familiarityChange에 +3 보너스 포함)' : personaAlignment === 'malevolent' ? 'malevolent이므로 NPC가 경계심을 보임 (familiarityChange에 -3 페널티 포함)' : 'neutral이므로 성향에 따른 변화 없음'}
+
+${giftSection}
+${hostileHint}
+${hintSection}
 
 친밀도별 응답 길이 준수 (0~19: 1~2문장, 20~39: 2~3문장, 40~59: 3~4문장, 60~79: 4~5문장, 80~: 제한없음).
 meetCount > 1이면 이전 만남 자연스럽게 언급.
 모든 대사는 한국어.
-familiarityChange 계산 시 성향 보정값(${alignmentBonus >= 0 ? '+' : ''}${alignmentBonus})을 반영할 것.
 
 JSON으로만 응답:
 {

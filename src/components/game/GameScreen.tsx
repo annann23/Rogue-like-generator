@@ -582,6 +582,8 @@ export default function GameScreen() {
             key={`${selectedNpcRef.current.id}-${currentDepth}`}
             npc={selectedNpcRef.current}
             relation={npcRelations[selectedNpcRef.current.id] ?? { familiarity: 0, meetCount: 0 }}
+            gold={run.gold}
+            onGoldSpend={(amount) => applyGoldChange(-amount)}
             onDone={handleNPCDone}
             personaAlignment={run.persona?.alignment}
           />
