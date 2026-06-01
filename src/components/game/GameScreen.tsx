@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useGameState, type RoomType } from '@/hooks/useGameState';
+import { useGameState, type RoomType, type RunState, type MetaState } from '@/hooks/useGameState';
 import { generateRoom, generateRoomResult, generateGhostBattle, moderateLastWords, type RoomResponse, type RoomChoice, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, PixelInput, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
 import NPCRoom from './NPCRoom';
-import { NPC_TEMPLATES, type NPCTemplate } from '@/constants/npcs';
+import { NPC_TEMPLATES, type NPCTemplate, type NPCRelations } from '@/constants/npcs';
 import Sprite from './Sprite';
 import { ROOM_TYPE_SPRITES, CLASS_SPRITES } from '@/constants/spriteMap';
 import DungeonBackground from './DungeonBackground';
 import { fetchGhosts, saveGhost, type Ghost } from '@/hooks/useGhosts';
+import CombatRoom from './CombatRoom';
 
 // ─── Types ────────────────────────────────────
-type GamePhase = 'loading' | 'npc' | 'ghost' | 'choosing' | 'resolving' | 'result' | 'dying' | 'error';
+type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'exit' | 'choosing' | 'resolving' | 'result' | 'dying' | 'error';
 
 interface PrefetchEntry {
   roomType: RoomType;
@@ -29,6 +30,31 @@ const ROOM_LABELS: Record<string, string> = {
   rest: '🛌 휴식',
   ghost: '👻 유령 조우',
 };
+
+// ─── 탈출 조건 체크 ──────────────────────────
+function checkExitConditions(
+  run: RunState,
+  meta: MetaState,
+  npcRelations: NPCRelations,
+): { met: boolean; conditions: { label: string; done: boolean }[] } {
+  const upgradeCount = Object.keys(meta.upgrades).filter(
+    (k) => (meta.upgrades[k] ?? 0) >= 1,
+  ).length;
+  const maxNpcFamiliarity = Math.max(
+    0,
+    ...Object.values(npcRelations).map((r) => r.familiarity),
+  );
+
+  const conditions = [
+    { label: `🗺 고대 지도 조각 (${run.mapFragments}/3)`, done: run.mapFragments >= 3 },
+    { label: `⚔️ 엘리트/보스 처치`, done: run.eliteKills >= 1 },
+    { label: `👻 유령 전투 승리`, done: run.ghostBattleWins >= 1 },
+    { label: `🏛 유산 업그레이드 3종 이상 (${upgradeCount}/3)`, done: upgradeCount >= 3 },
+    { label: `💬 NPC 친밀도 60+ (${maxNpcFamiliarity}/60)`, done: maxNpcFamiliarity >= 60 },
+  ];
+
+  return { met: conditions.every((c) => c.done), conditions };
+}
 
 function pickRoomType(depth: number): RoomType {
   const pool: RoomType[] =
@@ -84,23 +110,43 @@ function LoadingDots() {
 
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
-  const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, clearRun, incrementSkillUse, npcRelations, updateNPCRelation } =
-    useGameState(
-      useShallow((s) => ({
-        run: s.run,
-        setScreen: s.setScreen,
-        setDepth: s.setDepth,
-        setRoomType: s.setRoomType,
-        applyHpChange: s.applyHpChange,
-        applyGoldChange: s.applyGoldChange,
-        addRelic: s.addRelic,
-        killPlayer: s.killPlayer,
-        clearRun: s.clearRun,
-        incrementSkillUse: s.incrementSkillUse,
-        npcRelations: s.npcRelations,
-        updateNPCRelation: s.updateNPCRelation,
-      }))
-    );
+  const {
+    run,
+    meta,
+    setScreen,
+    setDepth,
+    setRoomType,
+    applyHpChange,
+    applyGoldChange,
+    addRelic,
+    killPlayer,
+    clearRun,
+    incrementSkillUse,
+    npcRelations,
+    updateNPCRelation,
+    addMapFragment,
+    addEliteKill,
+    addGhostBattleWin,
+  } = useGameState(
+    useShallow((s) => ({
+      run: s.run,
+      meta: s.meta,
+      setScreen: s.setScreen,
+      setDepth: s.setDepth,
+      setRoomType: s.setRoomType,
+      applyHpChange: s.applyHpChange,
+      applyGoldChange: s.applyGoldChange,
+      addRelic: s.addRelic,
+      killPlayer: s.killPlayer,
+      clearRun: s.clearRun,
+      incrementSkillUse: s.incrementSkillUse,
+      npcRelations: s.npcRelations,
+      updateNPCRelation: s.updateNPCRelation,
+      addMapFragment: s.addMapFragment,
+      addEliteKill: s.addEliteKill,
+      addGhostBattleWin: s.addGhostBattleWin,
+    }))
+  );
 
   const [phase, setPhase] = useState<GamePhase>('loading');
   const [room, setRoom] = useState<RoomResponse | null>(null);
@@ -126,11 +172,11 @@ export default function GameScreen() {
   // ─── 프리페치 ────────────────────────────────
   // 현재 run 스냅샷으로 방 1개를 백그라운드에서 생성 예약
   function schedulePrefetch(depth: number) {
-    if (depth < 1 || depth > 10 || prefetchCache.current.has(depth)) return;
+    if (depth < 1 || prefetchCache.current.has(depth)) return;
 
     const roomType = pickRoomType(depth);
 
-    if (roomType === 'npc' || roomType === 'ghost') {
+    if (roomType === 'npc' || roomType === 'ghost' || roomType === 'combat') {
       prefetchCache.current.set(depth, { roomType, promise: Promise.resolve(null) });
       return;
     }
@@ -180,6 +226,16 @@ export default function GameScreen() {
     setDepth(depth);
     setRoomType(roomType);
 
+    // 탈출 조건 체크 및 exit 방 등장 여부
+    const exitConditions = checkExitConditions(run, meta, npcRelations);
+    const isExitAvailable = exitConditions.met;
+
+    // exit 방 등장 (depth >= 8, 조건 충족, 15% 확률)
+    if (isExitAvailable && depth >= 8 && Math.random() < 0.15) {
+      setPhase('exit');
+      return;
+    }
+
     if (roomType === 'npc') {
       const npcIdx = (parseInt(run.randomSeed, 36) + depth) % NPC_TEMPLATES.length;
       selectedNpcRef.current = NPC_TEMPLATES[npcIdx];
@@ -194,6 +250,11 @@ export default function GameScreen() {
       fetchGhosts(depth, 1).then((results) => {
         setGhostEncounter(results[0] ?? null);
       });
+      return;
+    }
+
+    if (roomType === 'combat') {
+      setPhase('combat');
       return;
     }
 
@@ -268,6 +329,11 @@ export default function GameScreen() {
         return;
       }
 
+      // 이벤트 방: 5% 확률로 지도 조각 드랍
+      if (currentRoomType === 'event' && Math.random() < 0.05) {
+        addMapFragment();
+      }
+
       // 결과 보여주는 동안 다음 방 2개 프리페치
       const nextD = currentDepthRef.current + 1;
       schedulePrefetch(nextD);
@@ -322,13 +388,16 @@ export default function GameScreen() {
         setPendingDeathCause(cause);
         setLastWords('');
         setPhase('dying');
-      } else if (res.reward) {
-        addRelic({
-          name: res.reward.name,
-          effect: res.reward.effect,
-          isCursed: false,
-          icon: res.reward.isPassive ? '✨' : '⚔️',
-        });
+      } else {
+        addGhostBattleWin();
+        if (res.reward) {
+          addRelic({
+            name: res.reward.name,
+            effect: res.reward.effect,
+            isCursed: false,
+            icon: res.reward.isPassive ? '✨' : '⚔️',
+          });
+        }
       }
     } catch {
       setGhostBattleResult({
@@ -354,13 +423,6 @@ export default function GameScreen() {
   // ─── 다음 방으로 ─────────────────────────────
   function handleNextRoom() {
     const current = currentDepthRef.current;
-
-    if (current >= 10) {
-      clearRun();
-      setScreen('clear');
-      return;
-    }
-
     const next = current + 1;
     currentDepthRef.current = next;
 
@@ -451,6 +513,27 @@ export default function GameScreen() {
         className="relative"
       />
 
+      {/* 탈출 조건 현황 바 (depth >= 5) */}
+      {currentDepth >= 5 && (
+        <div className="flex gap-2 flex-wrap px-4 pb-2" style={{ position: 'relative', zIndex: 1 }}>
+          {checkExitConditions(run, meta, npcRelations).conditions.map((c, i) => (
+            <span
+              key={i}
+              className="font-pixel"
+              style={{
+                fontSize: '9px',
+                color: c.done ? '#40c060' : '#4a3070',
+                background: '#0a0612',
+                border: `1px solid ${c.done ? '#206030' : '#2a1a4a'}`,
+                padding: '2px 6px',
+              }}
+            >
+              {c.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
 
@@ -486,7 +569,7 @@ export default function GameScreen() {
             )}
           </div>
           <span className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>
-            {currentDepth} / 10 층
+            {currentDepth} 층
           </span>
         </div>
 
@@ -498,6 +581,77 @@ export default function GameScreen() {
             relation={npcRelations[selectedNpcRef.current.id] ?? { familiarity: 0, meetCount: 0 }}
             onDone={handleNPCDone}
           />
+        )}
+
+        {/* 전투 방 */}
+        {phase === 'combat' && (
+          <CombatRoom
+            key={currentDepth}
+            depth={currentDepth}
+            characterClass={run.characterClass ?? 'warrior'}
+            hp={run.hp}
+            maxHp={run.maxHp}
+            atk={run.atk}
+            def={run.def}
+            gold={run.gold}
+            skills={run.skills as unknown as Record<string, number>}
+            relics={run.relics.map((r) => r.name)}
+            onVictory={(goldReward, relic, isEliteOrBoss) => {
+              applyGoldChange(goldReward);
+              if (relic) {
+                addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '⚔️' });
+              }
+              if (isEliteOrBoss) addEliteKill();
+              // 전투 승리 보상: 5% 확률로 지도 조각
+              if (Math.random() < 0.05) addMapFragment();
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '', hpChange: goldReward, goldChange: goldReward, skillChange: null, newRelic: relic, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+            onDefeat={(cause) => {
+              killPlayer(cause);
+              setPendingDeathCause(cause);
+              setLastWords('');
+              setPhase('dying');
+            }}
+            onFled={() => {
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '간신히 도망쳤다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+            onNegotiated={() => {
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '말로 위기를 넘겼다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+          />
+        )}
+
+        {/* 탈출 입구 */}
+        {phase === 'exit' && (
+          <PixelPanel variant="brown" className="p-5">
+            <p className="font-pixel text-center mb-4" style={{ fontSize: '16px', color: '#f0c040' }}>
+              🚪 탈출 입구 발견!
+            </p>
+            <p className="font-pixel text-center mb-4" style={{ fontSize: '12px', color: '#e8d8b8', lineHeight: 2 }}>
+              오랫동안 찾아 헤맸던 출구가 눈앞에 있다.
+            </p>
+            <PixelDivider />
+            <div className="flex gap-3 justify-center mt-4">
+              <PixelButton variant="secondary" size="sm" onClick={handleNextRoom}>
+                지나친다
+              </PixelButton>
+              <PixelButton variant="primary" size="lg" onClick={() => { clearRun(); setScreen('clear'); }}>
+                🚪 탈출한다
+              </PixelButton>
+            </div>
+          </PixelPanel>
         )}
 
         {/* 유령 조우 */}

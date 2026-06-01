@@ -66,6 +66,9 @@ export interface RunState {
   skillUseCounts: Record<SkillType, number>;
   isAlive: boolean;
   deathCause: string | null;
+  mapFragments: number;      // 고대 지도 조각 (0~3)
+  eliteKills: number;        // 엘리트/보스 처치 횟수
+  ghostBattleWins: number;   // 유령 전투 승리 횟수
 }
 
 export interface MetaState {
@@ -97,6 +100,9 @@ interface GameStore {
   addLegacyPoints: (points: number) => void;
   purchaseUpgrade: (upgradeId: string, cost: number) => void;
   resetRun: () => void;
+  addMapFragment: () => void;
+  addEliteKill: () => void;
+  addGhostBattleWin: () => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -119,6 +125,9 @@ const DEFAULT_RUN: RunState = {
   skillUseCounts: { intelligence: 0, negotiation: 0, lockpick: 0, stealth: 0, strength: 0, arcane: 0 },
   isAlive: true,
   deathCause: null,
+  mapFragments: 0,
+  eliteKills: 0,
+  ghostBattleWins: 0,
 };
 
 const DEFAULT_META: MetaState = {
@@ -249,8 +258,8 @@ export const useGameState = create<GameStore>()(
             ...state.meta,
             totalRuns: state.meta.totalRuns + 1,
             totalClears: state.meta.totalClears + 1,
-            bestDepth: 10,
-            legacyPoints: state.meta.legacyPoints + 30,
+            bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
+            legacyPoints: state.meta.legacyPoints + 50,
           },
         })),
 
@@ -280,6 +289,21 @@ export const useGameState = create<GameStore>()(
         })),
 
       resetRun: () => set({ run: DEFAULT_RUN }),
+
+      addMapFragment: () =>
+        set((state) => ({
+          run: { ...state.run, mapFragments: Math.min(3, state.run.mapFragments + 1) },
+        })),
+
+      addEliteKill: () =>
+        set((state) => ({
+          run: { ...state.run, eliteKills: state.run.eliteKills + 1 },
+        })),
+
+      addGhostBattleWin: () =>
+        set((state) => ({
+          run: { ...state.run, ghostBattleWins: state.run.ghostBattleWins + 1 },
+        })),
     }),
     {
       name: 'dungeon-rpg-state',
