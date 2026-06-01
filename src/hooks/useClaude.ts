@@ -80,10 +80,17 @@ export interface PersonaData {
   innateTraits: string[];
 }
 
+export interface LastWordEffect {
+  type: 'death_immune' | 'gold_bonus' | 'hp_restore' | 'flee_guaranteed' | 'skill_up' | 'none';
+  label: string;
+  description: string;
+}
+
 export interface SurveyInterpretResponse {
   results: SurveyResultItem[];
   finalSummary: string;
   persona: PersonaData;
+  lastWordEffect: LastWordEffect;
 }
 
 export interface RoomChoice {
@@ -148,14 +155,18 @@ export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse
 2. 숫자 답변 질문 3개 포함
 3. 주관식 텍스트 답변 질문 2개 포함
 4. 질문에서 결과를 유추할 수 없을 것
-5. 아래 주제는 자주 사용 금지 (너무 자주 나옴):
-   - 기상 시간 / 일어난 시간 / 몇 시에 일어났는지
-   - 오늘 몇 시간 잤는지 / 수면 시간
-6. 숫자 질문의 주제 예시 (매번 다르게): 신발 사이즈, 핸드폰 번호 끝자리,
-   가장 좋아하는 숫자, 오늘 걸음 수, 지갑 속 현금, 나이, 형제 수,
-   마지막으로 먹은 음식 칼로리, 지금 창문 밖 온도 등
+5. 아래 주제는 절대 금지 (개인정보 또는 너무 자주 나옴):
+   - 전화번호 / 핸드폰 번호 / 연락처
+   - 실명 / 주민번호 / 주소 / 계좌번호 / 비밀번호
+   - 타인의 이름 (친구, 가족, 지인 등)
+   - 기상 시간 / 수면 시간
+6. 숫자 질문의 주제 예시 (매번 다르게): 신발 사이즈,
+   가장 좋아하는 숫자, 오늘 걸음 수, 지갑 속 현금, 형제 수,
+   마지막으로 먹은 음식 칼로리, 지금 창문 밖 온도, 최근 읽은 책 페이지 수,
+   가장 최근에 산 물건 가격, 현재 배터리 잔량(%) 등
 7. 텍스트 질문의 주제 예시 (매번 다르게): 가장 싫어하는 색, 어릴 때 꿈,
-   마지막으로 거짓말한 내용, 가장 두려운 것, 지금 기분을 날씨로 표현 등
+   마지막으로 거짓말한 내용, 가장 두려운 것, 지금 기분을 날씨로 표현,
+   가장 오래된 기억, 버리지 못하는 물건, 죽기 전에 하고 싶은 일 등
 8. 말투: 신이 인간에게 묻는 고풍스럽고 위엄 있는 반말체로 작성할 것
    - "~인가?", "~하는가?", "~있는가?", "~되는가?", "~이더냐?" 같은 고전적 어미 사용
    - "~어?", "~야?", "~해?" 같은 현대 구어체 금지
@@ -187,10 +198,17 @@ export async function interpretSurveyAnswers(
 
   const finalWordsSection = finalWords
     ? `\n마지막으로 한 말: "${finalWords}"
-→ 이 말에 대한 반응은 오직 신의 현재 기분(기분 코드)에만 달려 있음
-→ 아첨이든 욕이든 기분이 좋으면 스탯을 올려줄 수도, 기분이 나쁘면 깎을 수도 있음
-→ finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게)`
-    : "";
+→ 이 말을 듣고 신이 다음 생에 특별한 효과를 부여한다.
+→ 효과는 신의 현재 기분(기분 코드)과 말의 내용/어조에 따라 결정됨.
+→ finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게).
+→ lastWordEffect를 아래 규칙으로 결정:
+   - 진심 어린 말, 용감한 말, 신을 경외하는 말 + 기분 좋은 날 → death_immune (즉사 1회 면제)
+   - 물질적 욕심을 드러내는 말, 상인 같은 말 → gold_bonus (+50 골드)
+   - 고통/상처를 드러내는 말, 애처로운 말 → hp_restore (HP 전체 회복 1회)
+   - 도망치고 싶다는 말, 겁쟁이 같은 말 → flee_guaranteed (전투 도망 1회 보장)
+   - 지식/능력을 뽐내는 말, 오만한 말 → skill_up (랜덤 스킬 +1)
+   - 기분 나쁜 날 or 의미 없는 말 or 욕설 → none (효과 없음)`
+    : `→ lastWordEffect는 { "type": "none", "label": "없음", "description": "신은 아무 말도 듣지 못했다" }로 설정.`;
 
   // seed로 이번 런의 신의 기분 패턴 결정 (프론트에서 확정해서 전달)
   const seedNum = parseInt(randomSeed, 36) || 0;
@@ -256,6 +274,11 @@ JSON으로만 응답:
     "alignment": "neutral",
     "birthNarrative": "탄생 선고 2~3문장",
     "innateTraits": ["특성1", "특성2"]
+  },
+  "lastWordEffect": {
+    "type": "death_immune",
+    "label": "죽음의 유예",
+    "description": "한 번의 치명타에서 1 HP로 살아남는다"
   }
 }`,
       },
