@@ -1,4 +1,4 @@
-import { type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes } from 'react';
+import { type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, forwardRef } from 'react';
 
 // ─────────────────────────────────────────────
 // PixelPanel  —  메인 패널 프레임
@@ -281,36 +281,41 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   className?: string;
 }
 
-export function PixelInput({ className = '', style, ...props }: InputProps) {
-  return (
-    <input
-      {...props}
-      className={`font-pixel w-full ${className}`}
-      style={{
-        fontFamily: "'Press Start 2P', monospace",
-        fontSize: '8px',
-        padding: '10px 12px',
-        background: '#120a1e',
-        color: '#e8d8b8',
-        border: '3px solid #4a2d7a',
-        borderTop: '3px solid #2a1050',
-        outline: 'none',
-        boxShadow: 'inset 0 2px 0 #00000060',
-        imageRendering: 'pixelated',
-        lineHeight: '1.6',
-        ...style,
-      }}
-      onFocus={(e) => {
-        e.currentTarget.style.borderColor = '#f0c040';
-        e.currentTarget.style.boxShadow = 'inset 0 2px 0 #00000060, 0 0 0 1px #f0c04040';
-      }}
-      onBlur={(e) => {
-        e.currentTarget.style.borderColor = '#4a2d7a';
-        e.currentTarget.style.boxShadow = 'inset 0 2px 0 #00000060';
-      }}
-    />
-  );
-}
+export const PixelInput = forwardRef<HTMLInputElement, InputProps>(
+  function PixelInput({ className = '', style, onFocus, onBlur, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        {...props}
+        className={`font-pixel w-full ${className}`}
+        style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: '8px',
+          padding: '10px 12px',
+          background: '#120a1e',
+          color: '#e8d8b8',
+          border: '3px solid #4a2d7a',
+          borderTop: '3px solid #2a1050',
+          outline: 'none',
+          boxShadow: 'inset 0 2px 0 #00000060',
+          imageRendering: 'pixelated',
+          lineHeight: '1.6',
+          ...style,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = '#f0c040';
+          e.currentTarget.style.boxShadow = 'inset 0 2px 0 #00000060, 0 0 0 1px #f0c04040';
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = '#4a2d7a';
+          e.currentTarget.style.boxShadow = 'inset 0 2px 0 #00000060';
+          onBlur?.(e);
+        }}
+      />
+    );
+  },
+);
 
 // ─────────────────────────────────────────────
 // PixelSlot  —  아이템 / 유물 슬롯
