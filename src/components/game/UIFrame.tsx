@@ -315,8 +315,8 @@ export function PixelHUD({ hp, maxHp, gold, atk, def, depth, mana, maxMana, skil
           </div>
         )}
         <span className="font-pixel" style={{ fontSize: '12px', color: '#f0c040' }}>💰 {gold}G</span>
-        <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>⚔️ {atk}</span>
-        <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>🛡️ {def}</span>
+        <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>⚔️ <span style={{ color: '#9878c0', fontSize: '10px' }}>ATK</span> {atk}</span>
+        <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>🛡️ <span style={{ color: '#9878c0', fontSize: '10px' }}>DEF</span> {def}</span>
         <span className="font-pixel ml-auto" style={{ fontSize: '12px', color: '#9878c0' }}>{depth}/10층</span>
       </div>
       <div className="flex items-center gap-4 flex-wrap">
@@ -324,11 +324,14 @@ export function PixelHUD({ hp, maxHp, gold, atk, def, depth, mana, maxMana, skil
           { key: 'intelligence', icon: '🧠' }, { key: 'negotiation', icon: '🗣️' },
           { key: 'lockpick', icon: '🔓' },     { key: 'stealth', icon: '👁️' },
           { key: 'strength', icon: '💪' },      { key: 'arcane', icon: '✨' },
-        ].map(({ key, icon }) => (
-          <span key={key} className="font-pixel" style={{ fontSize: '12px', color: (skills[key] ?? 0) > 0 ? '#e8d8b8' : '#4a3070' }}>
-            {icon} {skills[key] ?? 0}
-          </span>
-        ))}
+        ].map(({ key, icon }) => {
+          const lv = skills[key] ?? 0;
+          return (
+            <span key={key} className="font-pixel" style={{ fontSize: '11px', color: lv > 0 ? '#e8d8b8' : '#4a3070' }}>
+              {icon} <span style={{ fontSize: '9px', color: lv > 0 ? '#9878c0' : '#3a2060' }}>Lv.</span>{lv}<span style={{ fontSize: '9px', color: '#3a2060' }}>/5</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );
