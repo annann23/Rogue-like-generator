@@ -261,7 +261,7 @@ export function PixelDivider({ label, className = '' }: DividerProps) {
 // ─────────────────────────────────────────────
 interface DialogFrameProps {
   npcName: string;
-  npcIcon: string;
+  npcIcon: ReactNode;
   familiarity?: number;
   maxFamiliarity?: number;
   familiarityLabel?: string;

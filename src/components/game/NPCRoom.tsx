@@ -8,6 +8,8 @@ import {
   PixelDivider,
   TypewriterText,
 } from '@/components/game/UIFrame';
+import Sprite from './Sprite';
+import { NPC_SPRITES } from '@/constants/spriteMap';
 
 // ─── Types ────────────────────────────────────
 interface NPCRoomProps {
@@ -129,7 +131,11 @@ export default function NPCRoom({ npc, relation, onDone }: NPCRoomProps) {
   return (
     <PixelDialogFrame
       npcName={npc.name}
-      npcIcon={npc.icon}
+      npcIcon={
+        NPC_SPRITES[npc.id]
+          ? <Sprite spriteKey={NPC_SPRITES[npc.id]} scale={3} animation="idle" />
+          : npc.icon
+      }
       familiarity={displayFamiliarity}
       familiarityLabel={stage.label}
       className="w-full"

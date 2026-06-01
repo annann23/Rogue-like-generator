@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useGameState, type SurveyResult } from '@/hooks/useGameState';
 import { CHARACTER_CLASSES, type ClassStats } from '@/constants/classes';
 import { PixelButton, PixelDivider } from './UIFrame';
+import Sprite from './Sprite';
+import { CLASS_SPRITES } from '@/constants/spriteMap';
 
 const SKILL_LABELS: Record<string, string> = {
   intelligence: '🧠 지능',
@@ -93,7 +95,11 @@ function ClassCard({
       {/* 헤더 — 고정 높이로 카드 간 정렬 통일 */}
       <div style={{ minHeight: '90px' }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
-          <span style={{ fontSize: '32px', flexShrink: 0 }}>{cls.icon}</span>
+          <Sprite
+            spriteKey={CLASS_SPRITES[cls.id]}
+            scale={4}
+            animation={selected ? 'idle' : 'none'}
+          />
           <p className="font-pixel" style={{ fontSize: '16px', color: selected ? '#f0c040' : '#e8d8b8' }}>
             {cls.name}
           </p>

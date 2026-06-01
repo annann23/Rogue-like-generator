@@ -6,6 +6,8 @@ import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, Typ
 import { SKILLS, type SkillType } from '@/constants/skills';
 import NPCRoom from './NPCRoom';
 import { NPC_TEMPLATES, type NPCTemplate } from '@/constants/npcs';
+import Sprite from './Sprite';
+import { ROOM_TYPE_SPRITES, CLASS_SPRITES } from '@/constants/spriteMap';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'choosing' | 'resolving' | 'result' | 'error';
@@ -271,19 +273,37 @@ export default function GameScreen() {
 
       {/* 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
-        {/* 방 타입 배지 + 층 표시 */}
-        <div className="flex items-center justify-between">
-          <span
-            className="font-pixel px-3 py-1"
-            style={{
-              fontSize: '13px',
-              color: '#f0c040',
-              background: '#1a0f2e',
-              border: '2px solid #6b4fa0',
-            }}
-          >
-            {ROOM_LABELS[currentRoomType] ?? currentRoomType}
-          </span>
+        {/* 방 타입 배지 + 스프라이트 씬 + 층 표시 */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="font-pixel px-3 py-1"
+              style={{
+                fontSize: '13px',
+                color: '#f0c040',
+                background: '#1a0f2e',
+                border: '2px solid #6b4fa0',
+              }}
+            >
+              {ROOM_LABELS[currentRoomType] ?? currentRoomType}
+            </span>
+          </div>
+          {/* 플레이어 vs 방 스프라이트 */}
+          <div className="flex items-center gap-4">
+            <Sprite
+              spriteKey={CLASS_SPRITES[run.characterClass ?? 'warrior']}
+              scale={3}
+              animation={phase === 'choosing' ? 'idle' : phase === 'resolving' ? 'combat' : 'none'}
+            />
+            {phase !== 'npc' && ROOM_TYPE_SPRITES[currentRoomType] && (
+              <Sprite
+                spriteKey={ROOM_TYPE_SPRITES[currentRoomType]}
+                scale={3}
+                animation={phase === 'choosing' ? 'float' : 'none'}
+                flip
+              />
+            )}
+          </div>
           <span className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>
             {currentDepth} / 10 층
           </span>
