@@ -96,8 +96,10 @@ interface GameStore {
   run: RunState;
   meta: MetaState;
   npcRelations: NPCRelations;
+  bgmTrack: string | null;
 
   setScreen: (screen: GameScreen) => void;
+  setBgmTrack: (track: string | null) => void;
   startNewRun: (classData: ClassStats, surveyResults: SurveyResult[], seed: string, persona: Persona | null, lastWordEffect: LastWordEffect | null) => void;
   updateRun: (updates: Partial<RunState>) => void;
   applyHpChange: (delta: number) => void;
@@ -160,8 +162,10 @@ export const useGameState = create<GameStore>()(
       run: DEFAULT_RUN,
       meta: DEFAULT_META,
       npcRelations: {},
+      bgmTrack: null,
 
       setScreen: (screen) => set({ screen }),
+      setBgmTrack: (track) => set({ bgmTrack: track }),
 
       startNewRun: (classData, surveyResults, seed, persona, lastWordEffect) =>
         set((state) => {

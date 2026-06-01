@@ -37,6 +37,7 @@ interface CombatRoomProps {
   onNegotiated: () => void;
   fleeGuaranteed?: boolean;
   onConsumeFleeEffect?: () => void;
+  onEnemyInitialized?: (tier: EnemyTier) => void;
 }
 
 // ─── 로딩 점 애니메이션 ────────────────────────
@@ -91,6 +92,7 @@ export default function CombatRoom({
   onNegotiated,
   fleeGuaranteed = false,
   onConsumeFleeEffect,
+  onEnemyInitialized,
 }: CombatRoomProps) {
   const [state, setState] = useState<CombatState>({
     enemy: null,
@@ -141,6 +143,7 @@ export default function CombatRoom({
         rewardGold: res.rewardGold,
       }));
 
+      onEnemyInitialized?.(res.enemy.tier);
       setCombatLog([{ turn: 0, text: res.openingNarrative }]);
     } catch (err) {
       setInitError(err instanceof Error ? err.message : '전투 초기화 실패');

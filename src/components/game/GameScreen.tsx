@@ -129,6 +129,7 @@ export default function GameScreen() {
     addGhostBattleWin,
     consumeLastWordEffect,
     updateRun,
+    setBgmTrack,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -149,6 +150,7 @@ export default function GameScreen() {
       addGhostBattleWin: s.addGhostBattleWin,
       consumeLastWordEffect: s.consumeLastWordEffect,
       updateRun: s.updateRun,
+      setBgmTrack: s.setBgmTrack,
     }))
   );
 
@@ -165,6 +167,21 @@ export default function GameScreen() {
   const [pendingDeathCause, setPendingDeathCause] = useState<string | null>(null);
   const [moderating, setModerating] = useState(false);
   const [moderationError, setModerationError] = useState<string | null>(null);
+
+  // ─── BGM 제어 ────────────────────────────────
+  useEffect(() => {
+    if (phase === 'npc' || currentRoomType === 'rest' || currentRoomType === 'shop') {
+      setBgmTrack('encounter-npc.mp3');
+    } else if (phase === 'combat') {
+      // 적 초기화 전까지는 dungeon-normal 유지, 초기화 후 onEnemyInitialized에서 교체
+      setBgmTrack('dungeon-normal.mp3');
+    } else if (phase === 'ghost') {
+      setBgmTrack('encounter-enemy.mp3');
+    } else {
+      setBgmTrack('dungeon-normal.mp3');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, currentRoomType]);
 
   // 현재 진행 중인 depth를 ref로 관리 (Zustand 업데이트 비동기라 별도 추적)
   const currentDepthRef = useRef<number>(run.depth + 1);
@@ -654,6 +671,10 @@ export default function GameScreen() {
             }}
             fleeGuaranteed={run.lastWordEffect?.type === 'flee_guaranteed'}
             onConsumeFleeEffect={consumeLastWordEffect}
+            onEnemyInitialized={(tier) => {
+              if (tier === 'boss') setBgmTrack('encounter-boss.mp3');
+              else setBgmTrack('encounter-enemy.mp3');
+            }}
             onFled={() => {
               const nextD = currentDepthRef.current + 1;
               schedulePrefetch(nextD);
