@@ -146,6 +146,7 @@ export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse
    마지막으로 먹은 음식 칼로리, 지금 창문 밖 온도 등
 7. 텍스트 질문의 주제 예시 (매번 다르게): 가장 싫어하는 색, 어릴 때 꿈,
    마지막으로 거짓말한 내용, 가장 두려운 것, 지금 기분을 날씨로 표현 등
+8. 말투: 반드시 반말로 작성할 것 (예: "~해?", "~야?", "~줘", "~봐" 등)
 
 JSON으로만 응답:
 {
