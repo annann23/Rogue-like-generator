@@ -1,17 +1,20 @@
-import { env } from '@/env';
+import { env } from "@/env";
 
-const MODEL = 'claude-sonnet-4-6';
-const API_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = "claude-sonnet-4-6";
+const API_URL = "https://api.anthropic.com/v1/messages";
 
 // ─── fetch 래퍼 ──────────────────────────────
-async function claudeFetch(messages: { role: string; content: string }[], maxTokens = 1024): Promise<string> {
+async function claudeFetch(
+  messages: { role: string; content: string }[],
+  maxTokens = 1024,
+): Promise<string> {
   const res = await fetch(API_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'x-api-key': env.VITE_ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'content-type': 'application/json',
+      "x-api-key": env.VITE_ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "content-type": "application/json",
     },
     body: JSON.stringify({
       model: MODEL,
@@ -25,17 +28,19 @@ async function claudeFetch(messages: { role: string; content: string }[], maxTok
     throw new Error(`Claude API 오류 (${res.status}): ${err}`);
   }
 
-  const data = await res.json() as { content: { type: string; text: string }[] };
-  const block = data.content.find((b) => b.type === 'text');
-  return block?.text ?? '';
+  const data = (await res.json()) as {
+    content: { type: string; text: string }[];
+  };
+  const block = data.content.find((b) => b.type === "text");
+  return block?.text ?? "";
 }
 
 // JSON 파싱 헬퍼 — 마크다운 코드 블록 제거 후 파싱
 function parseJSON<T>(raw: string): T {
   const cleaned = raw
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```\s*$/i, "")
     .trim();
   return JSON.parse(cleaned) as T;
 }
@@ -45,7 +50,7 @@ function parseJSON<T>(raw: string): T {
 export interface SurveyQuestion {
   id: number;
   text: string;
-  type: 'number' | 'text';
+  type: "number" | "text";
 }
 
 export interface SurveyQuestionsResponse {
@@ -63,7 +68,7 @@ export interface SurveyResultItem {
   interpretation: string;
   flavorText: string;
   statChanges: StatChange[];
-  curseOrBlessing: 'good' | 'bad' | 'mixed' | 'curse';
+  curseOrBlessing: "good" | "bad" | "mixed" | "curse";
 }
 
 export interface SurveyInterpretResponse {
@@ -109,7 +114,7 @@ export interface NPCDialogueResponse {
   familiarityChange: number;
   hint: string | null;
   specialOffer: { item: string; effect: string } | null;
-  mood: 'neutral' | 'friendly' | 'hostile';
+  mood: "neutral" | "friendly" | "hostile";
   npcSurveyQuestion: { question: string; hint: string } | null;
 }
 
@@ -118,10 +123,11 @@ export interface NPCDialogueResponse {
 export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse> {
   const questionSeed = Math.random().toString(36).substring(2, 10);
 
-  const text = await claudeFetch([
-    {
-      role: 'user',
-      content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
 유저가 시작 전 답해야 할 5가지 질문을 만드세요.
 
 오늘의 질문 변형 코드: ${questionSeed}
@@ -132,7 +138,7 @@ export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse
 2. 숫자 답변 질문 3개 포함
 3. 주관식 텍스트 답변 질문 2개 포함
 4. 질문에서 결과를 유추할 수 없을 것
-5. 아래 주제는 절대 사용 금지 (너무 자주 나옴):
+5. 아래 주제는 자주 사용 금지 (너무 자주 나옴):
    - 기상 시간 / 일어난 시간 / 몇 시에 일어났는지
    - 오늘 몇 시간 잤는지 / 수면 시간
 6. 숫자 질문의 주제 예시 (매번 다르게): 신발 사이즈, 핸드폰 번호 끝자리,
@@ -148,8 +154,10 @@ JSON으로만 응답:
     { "id": 2, "text": "질문", "type": "text" }
   ]
 }`,
-    },
-  ], 1024);
+      },
+    ],
+    1024,
+  );
 
   return parseJSON<SurveyQuestionsResponse>(text);
 }
@@ -161,29 +169,43 @@ export async function interpretSurveyAnswers(
 ): Promise<SurveyInterpretResponse> {
   const answersText = answers
     .map((a, i) => `${i + 1}. ${a.question} → "${a.answer}"`)
-    .join('\n');
+    .join("\n");
 
   const finalWordsSection = finalWords
     ? `\n마지막으로 한 말: "${finalWords}"
 → 이 말에 대한 반응은 오직 신의 현재 기분(기분 코드)에만 달려 있음
 → 아첨이든 욕이든 기분이 좋으면 스탯을 올려줄 수도, 기분이 나쁘면 깎을 수도 있음
 → finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게)`
-    : '';
+    : "";
 
-  const text = await claudeFetch([
-    {
-      role: 'user',
-      content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
+  // seed로 이번 런의 신의 기분 패턴 결정 (프론트에서 확정해서 전달)
+  const seedNum = parseInt(randomSeed, 36) || 0;
+  const moodPatterns = [
+    { label: '불쾌한 날',  good: 0, mixed: 2, bad: 3 },
+    { label: '심술궂은 날', good: 0, mixed: 3, bad: 2 },
+    { label: '심술궂은 날', good: 0, mixed: 3, bad: 2 },
+    { label: '변덕스러운 날', good: 1, mixed: 3, bad: 1 },
+    { label: '변덕스러운 날', good: 1, mixed: 3, bad: 1 },
+    { label: '변덕스러운 날', good: 1, mixed: 2, bad: 2 },
+    { label: '기분 좋은 날', good: 2, mixed: 2, bad: 1 },
+    { label: '기분 좋은 날', good: 2, mixed: 3, bad: 0 },
+  ];
+  const mood = moodPatterns[seedNum % moodPatterns.length];
+
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
 
 절대 규칙:
-1. 오늘의 신의 기분 코드: ${randomSeed} — 이 값을 해석 방향과 강도에 내부적으로 반영할 것
-   → 같은 답변도 기분 코드가 다르면 반드시 다른 결과가 나올 것
-   → 단, "seed", "시드", "기분 코드", "랜덤" 같은 단어는 절대 텍스트에 노출하지 말 것
-   → 신이 그냥 변덕스럽게 판결하는 것처럼 자연스럽게 표현할 것
-2. 5개 결과의 curseOrBlessing 분포를 아래 비율로 맞출 것:
-   - "bad" 또는 "curse": 2개 (40%)
-   - "mixed": 2~3개 (40~60%)
-   - "good": 1~2개 (20~40%)
+1. 오늘의 신의 기분: "${mood.label}" — 이 기분이 판결 전체의 분위기를 결정함
+   → 같은 답변도 기분이 다르면 반드시 다른 결과가 나올 것
+   → 단, 기분 이름을 텍스트에 직접 노출하지 말 것. 신이 자연스럽게 행동할 것
+2. 5개 결과의 curseOrBlessing을 아래 개수에 맞게 정확히 배분할 것:
+   - "good": 정확히 ${mood.good}개
+   - "mixed": 정확히 ${mood.mixed}개
+   - "bad" 또는 "curse" 합계: 정확히 ${mood.bad}개
 3. "mixed"는 반드시 플러스 statChange와 마이너스 statChange가 동시에 존재해야 함
    → 둘 다 마이너스거나 둘 다 플러스면 mixed가 아니라 bad/good으로 분류할 것
 4. 숫자: 숫자 자체 / 자릿수 / 홀짝 / 소수 여부 등 다양하게 해석
@@ -210,8 +232,10 @@ JSON으로만 응답:
   ],
   "finalSummary": "신의 최종 판결 한 줄 (한국어)"
 }`,
-    },
-  ], 2048);
+      },
+    ],
+    2048,
+  );
 
   return parseJSON<SurveyInterpretResponse>(text);
 }
@@ -229,19 +253,32 @@ export async function generateRoom(params: {
   depth: number;
   roomType: string;
 }): Promise<RoomResponse> {
-  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType } = params;
+  const {
+    characterClass,
+    hp,
+    maxHp,
+    atk,
+    def,
+    gold,
+    skills,
+    surveyEffects,
+    relics,
+    depth,
+    roomType,
+  } = params;
 
-  const text = await claudeFetch([
-    {
-      role: 'user',
-      content: `당신은 다크하고 유머러스한 던전 내레이터입니다.
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 다크하고 유머러스한 던전 내레이터입니다.
 
 플레이어:
 - 클래스: ${characterClass}
 - HP: ${hp}/${maxHp}, ATK: ${atk}, DEF: ${def}, 골드: ${gold}
 - 스킬: 지능 ${skills.intelligence ?? 0}, 협상력 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
 - 설문 효과: ${surveyEffects}
-- 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
+- 유물: ${relics.length > 0 ? relics.join(", ") : "없음"}
 - 현재 방: ${depth}/10
 - 방 타입: ${roomType}
 
@@ -257,8 +294,10 @@ JSON으로만 응답:
     { "text": "선택지 (한국어)", "icon": "🗡️", "classOnly": "rogue", "requiredSkill": null }
   ]
 }`,
-    },
-  ], 1024);
+      },
+    ],
+    1024,
+  );
 
   return parseJSON<RoomResponse>(text);
 }
@@ -274,10 +313,11 @@ export async function generateRoomResult(params: {
 }): Promise<RoomResultResponse> {
   const { choice, description, hp, maxHp, atk, gold, skills } = params;
 
-  const text = await claudeFetch([
-    {
-      role: 'user',
-      content: `선택: ${choice}
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `선택: ${choice}
 상황: ${description}
 스탯: HP=${hp}/${maxHp}, ATK=${atk}, 골드=${gold}
 스킬: 지능 ${skills.intelligence ?? 0}, 협상력 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
@@ -294,8 +334,10 @@ JSON으로만 응답:
   "isDead": false,
   "deathCause": null
 }`,
-    },
-  ], 512);
+      },
+    ],
+    512,
+  );
 
   return parseJSON<RoomResultResponse>(text);
 }
@@ -309,17 +351,26 @@ export async function generateNPCDialogue(params: {
   conversationHistory: string;
   playerInput: string;
 }): Promise<NPCDialogueResponse> {
-  const { npcName, personality, familiarity, meetCount, remainingTurns, conversationHistory, playerInput } = params;
+  const {
+    npcName,
+    personality,
+    familiarity,
+    meetCount,
+    remainingTurns,
+    conversationHistory,
+    playerInput,
+  } = params;
 
-  const text = await claudeFetch([
-    {
-      role: 'user',
-      content: `당신은 NPC ${npcName}입니다.
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 NPC ${npcName}입니다.
 성격: ${personality}
 친밀도: ${familiarity}/100
 만남 횟수: ${meetCount}회
 남은 대화: ${remainingTurns}회
-대화 기록: ${conversationHistory || '(첫 대화)'}
+대화 기록: ${conversationHistory || "(첫 대화)"}
 플레이어 발언: ${playerInput}
 
 친밀도별 응답 길이 준수 (0~19: 1~2문장, 20~39: 2~3문장, 40~59: 3~4문장, 60~79: 4~5문장, 80~: 제한없음).
@@ -335,8 +386,10 @@ JSON으로만 응답:
   "mood": "neutral",
   "npcSurveyQuestion": null
 }`,
-    },
-  ], 512);
+      },
+    ],
+    512,
+  );
 
   return parseJSON<NPCDialogueResponse>(text);
 }
