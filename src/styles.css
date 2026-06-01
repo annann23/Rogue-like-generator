@@ -66,6 +66,8 @@
   * {
     @apply border-border outline-ring/50;
     box-sizing: border-box;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   html, body, #root {
