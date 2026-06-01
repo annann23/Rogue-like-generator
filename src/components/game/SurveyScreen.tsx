@@ -127,11 +127,17 @@ export default function SurveyScreen() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmitAnswer();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmitAnswer();
+    }
   };
 
   const handleFinalWordsKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmitFinalWords();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmitFinalWords();
+    }
   };
 
   // ── 인삿말 ──

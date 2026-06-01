@@ -91,6 +91,7 @@ export function PixelButton({ variant = 'primary', size = 'md', children, locked
   return (
     <div className={`relative inline-block ${className}`}>
       <button
+        type="button"
         {...props}
         disabled={isDisabled}
         style={baseStyle}
