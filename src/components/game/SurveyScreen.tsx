@@ -50,16 +50,19 @@ export default function SurveyScreen() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [errorPhase, setErrorPhase] = useState<'loading' | 'interpreting' | null>(null);
   const [greetingTyped, setGreetingTyped] = useState(false);
   const [finalWords, setFinalWords] = useState('');
   const [seed] = useState(() => Math.random().toString(36).substring(2, 10));
   const inputRef = useRef<HTMLInputElement>(null);
+  const submittingRef = useRef(false);
 
   const greeting = getGreeting(meta.totalRuns);
 
   // 인사말 확인 후 설문 로딩 시작
   const handleStartSurvey = () => {
     setPhase('loading');
+    setErrorPhase(null);
     generateSurveyQuestions()
       .then((res) => {
         setQuestions(res.questions);
@@ -69,6 +72,7 @@ export default function SurveyScreen() {
       .catch((e) => {
         console.error(e);
         setErrorMsg('던전의 신이 응답하지 않는다... (API 오류)');
+        setErrorPhase('loading');
         setPhase('error');
       });
   };
@@ -82,10 +86,12 @@ export default function SurveyScreen() {
 
   const currentQ = questions[currentIdx];
 
-  const handleSubmitAnswer = async () => {
+  const handleSubmitAnswer = () => {
+    if (submittingRef.current) return;
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
+    submittingRef.current = true;
     const newAnswers = [...answers];
     newAnswers[currentIdx] = trimmed;
     setAnswers(newAnswers);
@@ -96,10 +102,13 @@ export default function SurveyScreen() {
     } else {
       setPhase('final-words');
     }
+
+    requestAnimationFrame(() => { submittingRef.current = false; });
   };
 
   const handleSubmitFinalWords = async () => {
     setPhase('interpreting');
+    setErrorPhase(null);
     try {
       const payload = questions.map((q, i) => ({
         question: q.text,
@@ -122,6 +131,7 @@ export default function SurveyScreen() {
     } catch (e) {
       console.error(e);
       setErrorMsg('던전의 신이 판결을 내리지 못했다... (API 오류)');
+      setErrorPhase('interpreting');
       setPhase('error');
     }
   };
@@ -301,12 +311,19 @@ export default function SurveyScreen() {
 
   // ── 오류 ──
   if (phase === 'error') {
+    const handleRetry = errorPhase === 'interpreting' ? handleSubmitFinalWords : handleStartSurvey;
+    const retryLabel = errorPhase === 'interpreting' ? '🔄 판결 재시도' : '🔄 다시 시도';
     return (
       <div className="flex items-center justify-center w-full h-full dungeon-bg">
         <PixelPanel variant="dark" className="p-8 text-center space-y-6">
           <p className="font-pixel text-sm" style={{ color: '#e04040' }}>⚠️ 오류 발생</p>
           <p className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>{errorMsg}</p>
-          <PixelButton variant="secondary" onClick={handleStartSurvey}>🔄 다시 시도</PixelButton>
+          {errorPhase === 'interpreting' && (
+            <p className="font-pixel" style={{ fontSize: '11px', color: '#6b4fa0' }}>
+              5개의 답변은 그대로 보존됩니다
+            </p>
+          )}
+          <PixelButton variant="secondary" onClick={handleRetry}>{retryLabel}</PixelButton>
           <PixelButton variant="ghost" onClick={() => setScreen('title')}>← 돌아가기</PixelButton>
         </PixelPanel>
       </div>
