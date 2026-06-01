@@ -232,9 +232,12 @@ export default function GameScreen() {
       const res = await generateRoomResult({
         choice: choice.text,
         description: room.description,
+        roomType: currentRoomType,
+        depth: currentDepthRef.current,
         hp: run.hp,
         maxHp: run.maxHp,
         atk: run.atk,
+        def: run.def,
         gold: run.gold,
         skills: run.skills as unknown as Record<string, number>,
       });

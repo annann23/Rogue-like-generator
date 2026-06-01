@@ -271,31 +271,50 @@ export async function generateRoom(params: {
     roomType,
   } = params;
 
+  const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
+  const tierDesc = {
+    early: '초반(1~3층): 비교적 안전. 적들이 약하고 보상이 풍부하다.',
+    mid:   '중반(4~6층): 위험이 커진다. 함정과 강적이 뒤섞인다.',
+    late:  '후반(7~10층): 매우 위험. 강적과 극한의 선택만 남아있다.',
+  }[tier];
+
+  const roomGuide: Record<string, string> = {
+    combat: `전투: 적을 묘사하고 싸울지 피할지 선택지 제시.`,
+    event:  `이벤트: 함정·기회·수수께끼 등 특이한 상황 묘사.`,
+    npc:    `NPC: 상인·광인·신비로운 존재를 등장시켜라.`,
+    shop:   `상점: 물건을 파는 상인. 선택지는 구매·협상·절도 등.`,
+    rest:   `휴식처: 안전한 공간. 선택지는 치료·명상·탐색 등.`,
+    ghost:  `유령 조우: 죽은 자의 잔상. 선택지는 대화·무시·제압 등.`,
+  };
+
   const text = await claudeFetch(
     [
       {
         role: "user",
-        content: `당신은 다크하고 유머러스한 던전 내레이터입니다.
+        content: `당신은 다크하고 유머러스한 던전 내레이터다.
 
 플레이어:
-- 클래스: ${characterClass}
-- HP: ${hp}/${maxHp}, ATK: ${atk}, DEF: ${def}, 골드: ${gold}
-- 스킬: 지능 ${skills.intelligence ?? 0}, 협상력 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+- 클래스: ${characterClass} | HP: ${hp}/${maxHp} | ATK: ${atk} | DEF: ${def} | 골드: ${gold}
+- 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
 - 설문 효과: ${surveyEffects}
-- 유물: ${relics.length > 0 ? relics.join(", ") : "없음"}
-- 현재 방: ${depth}/10
-- 방 타입: ${roomType}
+- 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
+- 현재 층: ${depth}/10 | 난이도: ${tierDesc}
+- 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
 
-선택지 3개 생성. 최소 1개는 스킬 요구, 1개는 클래스 전용.
-방 묘사는 한국어로 2~3문장.
+규칙:
+1. 방 묘사 2~3문장 (한국어).
+2. 선택지 정확히 3개.
+3. 최소 1개: requiredSkill 필요 (레벨은 초반 1~2, 중반 2~3, 후반 3~4).
+4. 최소 1개: classOnly 지정 (warrior/rogue/mage 중 상황에 맞는 것).
+5. 나머지 1개: 누구나 선택 가능, requiredSkill null, classOnly null.
 
 JSON으로만 응답:
 {
-  "description": "방 묘사 (한국어)",
+  "description": "방 묘사",
   "choices": [
-    { "text": "선택지 (한국어)", "icon": "이모지", "classOnly": null, "requiredSkill": null },
-    { "text": "선택지 (한국어)", "icon": "🧠", "classOnly": null, "requiredSkill": { "type": "intelligence", "level": 2 } },
-    { "text": "선택지 (한국어)", "icon": "🗡️", "classOnly": "rogue", "requiredSkill": null }
+    { "text": "선택지", "icon": "이모지", "classOnly": null, "requiredSkill": null },
+    { "text": "선택지", "icon": "🧠", "classOnly": null, "requiredSkill": { "type": "intelligence", "level": 2 } },
+    { "text": "선택지", "icon": "🗡️", "classOnly": "rogue", "requiredSkill": null }
   ]
 }`,
       },
@@ -309,13 +328,44 @@ JSON으로만 응답:
 export async function generateRoomResult(params: {
   choice: string;
   description: string;
+  roomType: string;
+  depth: number;
   hp: number;
   maxHp: number;
   atk: number;
+  def: number;
   gold: number;
   skills: Record<string, number>;
 }): Promise<RoomResultResponse> {
-  const { choice, description, hp, maxHp, atk, gold, skills } = params;
+  const { choice, description, roomType, depth, hp, maxHp, atk, def, gold, skills } = params;
+
+  const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
+
+  // 방 타입별 hpChange 가이드
+  const hpGuide: Record<string, Record<string, string>> = {
+    combat: {
+      early: `전투 피해: -(10~30). DEF ${def} 적용 후 최종 피해 = 원래피해 - ${Math.floor(def * 0.6)}. 사망 확률 5%.`,
+      mid:   `전투 피해: -(20~50). DEF ${def} 적용. 사망 확률 15% (HP ${hp}/${maxHp} 고려).`,
+      late:  `전투 피해: -(35~80). DEF ${def} 적용. 사망 확률 30% (HP ${hp}/${maxHp} 고려).`,
+    },
+    rest: {
+      early: 'HP 회복: +(20~45). 골드 변화 없음.',
+      mid:   'HP 회복: +(15~35). 골드 변화 없음.',
+      late:  'HP 회복: +(10~25). 골드 변화 없음.',
+    },
+    shop: {
+      early: '골드 소비: -(15~35). HP 변화 없음. 가끔 렐릭 획득 가능.',
+      mid:   '골드 소비: -(25~55). HP 변화 없음. 가끔 렐릭 획득 가능.',
+      late:  '골드 소비: -(40~80). HP 변화 없음. 가끔 렐릭 획득 가능.',
+    },
+    event: {
+      early: '이벤트: HP -(0~20) 또는 +(0~20), 골드 -(0~15) 또는 +(0~20). 다양한 결과.',
+      mid:   '이벤트: HP -(10~40) 또는 +(0~25), 골드 -(0~30) 또는 +(0~30). 리스크 있음.',
+      late:  '이벤트: HP -(20~60) 또는 +(0~20), 골드 -(0~50) 또는 +(0~50). 극단적 결과.',
+    },
+  };
+
+  const guide = hpGuide[roomType]?.[tier] ?? hpGuide['event'][tier];
 
   const text = await claudeFetch(
     [
@@ -323,17 +373,20 @@ export async function generateRoomResult(params: {
         role: "user",
         content: `선택: ${choice}
 상황: ${description}
-스탯: HP=${hp}/${maxHp}, ATK=${atk}, 골드=${gold}
-스킬: 지능 ${skills.intelligence ?? 0}, 협상력 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+스탯: HP=${hp}/${maxHp}, ATK=${atk}, DEF=${def}, 골드=${gold}
+스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+층: ${depth}/10 | 방타입: ${roomType}
 
-결과 묘사는 한국어 2문장. 스탯 변화는 현실적으로.
+피해/보상 기준 (반드시 준수): ${guide}
+결과 묘사는 한국어 2~3문장. skillChange는 해당 스킬이 사용된 경우에만.
+렐릭은 shop/event에서 드물게만 (20% 확률).
 
 JSON으로만 응답:
 {
-  "result": "결과 묘사 (한국어)",
-  "hpChange": -20,
-  "goldChange": 15,
-  "skillChange": { "type": "lockpick", "amount": 1 },
+  "result": "결과 묘사",
+  "hpChange": 0,
+  "goldChange": 0,
+  "skillChange": null,
   "newRelic": null,
   "isDead": false,
   "deathCause": null
