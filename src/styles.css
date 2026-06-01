@@ -1,9 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './styles/pixel.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-pixel: 'Press Start 2P', monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -26,58 +29,64 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* 던전 테마 색상 */
+  --color-dungeon-bg: #1a0f2e;
+  --color-dungeon-panel: #2d1b4e;
+  --color-dungeon-border: #6b4fa0;
+  --color-dungeon-gold: #f0c040;
+  --color-dungeon-red: #e04040;
+  --color-dungeon-green: #40c040;
+  --color-dungeon-text: #e8d8b8;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --radius: 0rem; /* 픽셀 스타일 - 둥근 모서리 없음 */
+  --background: #1a0f2e;
+  --foreground: #e8d8b8;
+  --card: #2d1b4e;
+  --card-foreground: #e8d8b8;
+  --popover: #2d1b4e;
+  --popover-foreground: #e8d8b8;
+  --primary: #f0c040;
+  --primary-foreground: #1a0f2e;
+  --secondary: #4a3070;
+  --secondary-foreground: #e8d8b8;
+  --muted: #3d2860;
+  --muted-foreground: #9878c0;
+  --accent: #6b4fa0;
+  --accent-foreground: #e8d8b8;
+  --destructive: #e04040;
+  --border: #6b4fa0;
+  --input: #3d2860;
+  --ring: #f0c040;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Press Start 2P', monospace;
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
+    background-color: #1a0f2e;
+    color: #e8d8b8;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
   }
 }

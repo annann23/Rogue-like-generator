@@ -1,0 +1,86 @@
+/* 픽셀 아트 렌더링 전역 설정 */
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Tiny Dungeon sprite (16x16 → 3x = 48px) */
+.sprite {
+  image-rendering: pixelated;
+  width: 16px;
+  height: 16px;
+  background-image: url('/sprites/dungeon/Tilemap/tilemap.png');
+  background-repeat: no-repeat;
+  transform: scale(3);
+  transform-origin: top left;
+}
+
+.sprite-container {
+  width: 48px;
+  height: 48px;
+  overflow: visible;
+  position: relative;
+}
+
+/* UI Pack 에셋 (2x 확대) */
+.ui-asset {
+  image-rendering: pixelated;
+  transform: scale(2);
+  transform-origin: top left;
+}
+
+/* 픽셀 폰트 */
+.font-pixel {
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* 타이핑 커서 애니메이션 */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+/* 픽셀 버튼 효과 */
+.pixel-btn {
+  image-rendering: pixelated;
+  cursor: pointer;
+  transition: transform 0.05s;
+}
+
+.pixel-btn:active {
+  transform: scale(0.95);
+}
+
+/* 잠긴 선택지 */
+.choice-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 던전 배경 패턴 */
+.dungeon-bg {
+  background-color: #1a0f2e;
+  background-image:
+    radial-gradient(ellipse at center, #2d1b4e 0%, #1a0f2e 70%);
+}
+
+/* 스캔라인 효과 (선택적 레트로 느낌) */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+}
