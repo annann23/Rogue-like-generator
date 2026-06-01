@@ -117,7 +117,7 @@ export function PixelButton({ variant = 'primary', size = 'md', children, locked
 interface BarProps {
   value: number;
   max: number;
-  variant?: 'hp' | 'mana' | 'familiarity' | 'gold' | 'xp';
+  variant?: 'hp' | 'mana' | 'familiarity' | 'gold' | 'xp' | 'rage';
   label?: string;
   showNumbers?: boolean;
   className?: string;
@@ -129,6 +129,7 @@ const BAR_COLORS = {
   familiarity: { fill: '#308050', bg: '#0e2818', border: '#205040', shine: '#50c080' },
   gold:        { fill: '#c0a020', bg: '#2a1e08', border: '#806810', shine: '#e0c040' },
   xp:          { fill: '#8030c0', bg: '#1e0830', border: '#502080', shine: '#a050e0' },
+  rage:        { fill: '#c06010', bg: '#2a1008', border: '#803010', shine: '#e08030' },
 };
 
 export function PixelBar({ value, max, variant = 'hp', label, showNumbers = true, className = '' }: BarProps) {
