@@ -349,42 +349,44 @@ interface ChoiceButtonProps {
 }
 
 export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false }: ChoiceButtonProps) {
-  const isClassLocked = classOnly !== null && classOnly !== undefined && classOnly !== playerClass;
-  if (isClassLocked) return null;
+  // 클래스 전용 조건: 숨기지 않고 잠금 표시
+  const isClassLocked = classOnly != null && classOnly !== playerClass;
+  const isLocked = locked || isClassLocked;
+  const reason = isClassLocked ? `${classOnly} 전용` : lockReason;
 
   return (
-    <div className="relative w-full group">
+    <div className="w-full">
       <button
-        onClick={!locked && !disabled ? onClick : undefined}
+        onClick={!isLocked && !disabled ? onClick : undefined}
         disabled={disabled}
         className="w-full text-left font-pixel"
         style={{
           fontFamily: "'Press Start 2P', monospace",
           fontSize: '14px',
           padding: '14px 18px',
-          background: locked ? '#1a0f2e' : '#2a1850',
-          color: locked ? '#4a3070' : '#e8d8b8',
-          border: `3px solid ${locked ? '#3a2060' : '#6b4fa0'}`,
-          borderTop: `3px solid ${locked ? '#3a2060' : '#8b6fc0'}`,
-          boxShadow: locked ? 'none' : '0 3px 0 #0a0420',
-          cursor: locked ? 'not-allowed' : 'pointer',
-          opacity: locked ? 0.5 : 1,
+          background: isLocked ? '#130e20' : '#2a1850',
+          color: isLocked ? '#3a2860' : '#e8d8b8',
+          border: `3px solid ${isLocked ? '#2a1850' : '#6b4fa0'}`,
+          borderTop: `3px solid ${isLocked ? '#2a1850' : '#8b6fc0'}`,
+          boxShadow: isLocked ? 'none' : '0 3px 0 #0a0420',
+          cursor: isLocked ? 'not-allowed' : 'pointer',
           imageRendering: 'pixelated',
           letterSpacing: '0.3px',
           lineHeight: '1.8',
           transition: 'background 0.05s',
         }}
-        onMouseEnter={e => { if (!locked) (e.currentTarget as HTMLButtonElement).style.background = '#3a2860'; }}
-        onMouseLeave={e => { if (!locked) (e.currentTarget as HTMLButtonElement).style.background = '#2a1850'; }}
-        onMouseDown={e => { if (!locked) { e.currentTarget.style.transform = 'translateY(2px)'; e.currentTarget.style.boxShadow = '0 1px 0 #0a0420'; } }}
-        onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = locked ? 'none' : '0 3px 0 #0a0420'; }}
+        onMouseEnter={e => { if (!isLocked) (e.currentTarget as HTMLButtonElement).style.background = '#3a2860'; }}
+        onMouseLeave={e => { if (!isLocked) (e.currentTarget as HTMLButtonElement).style.background = '#2a1850'; }}
+        onMouseDown={e => { if (!isLocked) { e.currentTarget.style.transform = 'translateY(2px)'; e.currentTarget.style.boxShadow = '0 1px 0 #0a0420'; } }}
+        onMouseUp={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = isLocked ? 'none' : '0 3px 0 #0a0420'; }}
       >
-        <span className="mr-2">{locked ? '🔒' : (icon ?? '▶')}</span>
+        <span className="mr-2">{isLocked ? '🔒' : (icon ?? '▶')}</span>
         {text}
       </button>
-      {locked && lockReason && (
-        <div className="absolute left-0 bottom-full mb-1 font-pixel whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-20" style={{ fontSize: '11px', color: '#f0c040', background: '#1a0f2e', border: '2px solid #6b4fa0', padding: '6px 10px' }}>
-          {lockReason}
+      {/* 잠금 이유 — 항상 표시 */}
+      {isLocked && reason && (
+        <div className="font-pixel mt-1 px-2 py-1" style={{ fontSize: '11px', color: '#f0c040', background: '#1a0f2e', border: '1px solid #3a2060' }}>
+          ⚠ {reason}
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameState, type RoomType } from '@/hooks/useGameState';
 import { generateRoom, generateRoomResult, type RoomResponse, type RoomChoice, type RoomResultResponse } from '@/hooks/useClaude';
-import { PixelHUD, PixelPanel, PixelButton, PixelDivider, TypewriterText } from '@/components/game/UIFrame';
+import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
 
 // ─── Types ────────────────────────────────────
@@ -216,16 +216,13 @@ export default function GameScreen() {
   }
 
   function isChoiceLocked(choice: RoomChoice): { locked: boolean; lockReason?: string } {
-    if (choice.classOnly !== null && choice.classOnly !== run.characterClass) {
-      return { locked: true, lockReason: '클래스 전용' };
-    }
     if (choice.requiredSkill) {
       const { type, level } = choice.requiredSkill;
       const skillValue = (run.skills as unknown as Record<string, number>)[type] ?? 0;
       if (skillValue < level) {
         const skillInfo = SKILLS.find((s) => s.id === type);
         const skillName = skillInfo?.name ?? type;
-        return { locked: true, lockReason: `${skillName} ${level} 필요` };
+        return { locked: true, lockReason: `${skillName} ${level} 레벨 필요 (현재 ${skillValue})` };
       }
     }
     return { locked: false };
@@ -308,20 +305,17 @@ export default function GameScreen() {
               {room.choices.map((choice, idx) => {
                 const { locked, lockReason } = isChoiceLocked(choice);
                 return (
-                  <PixelButton
+                  <PixelChoiceButton
                     key={idx}
-                    variant="primary"
-                    size="md"
-                    locked={locked}
+                    text={choice.text}
+                    icon={choice.icon}
+                    locked={locked || phase === 'resolving'}
                     lockReason={lockReason}
-                    disabled={phase === 'resolving'}
+                    classOnly={choice.classOnly}
+                    playerClass={run.characterClass ?? undefined}
                     onClick={() => handleChoiceClick(choice)}
-                    className="w-full text-left"
-                    style={{ width: '100%', textAlign: 'left' }}
-                  >
-                    <span className="mr-2">{choice.icon}</span>
-                    {choice.text}
-                  </PixelButton>
+                    disabled={phase === 'resolving'}
+                  />
                 );
               })}
             </div>
