@@ -145,10 +145,18 @@ JSON으로만 응답:
 export async function interpretSurveyAnswers(
   answers: { question: string; answer: string }[],
   randomSeed: string,
+  finalWords?: string,
 ): Promise<SurveyInterpretResponse> {
   const answersText = answers
     .map((a, i) => `${i + 1}. ${a.question} → "${a.answer}"`)
     .join('\n');
+
+  const finalWordsSection = finalWords
+    ? `\n마지막으로 한 말: "${finalWords}"
+→ 이 말에 대한 반응은 오직 신의 현재 기분(기분 코드)에만 달려 있음
+→ 아첨이든 욕이든 기분이 좋으면 스탯을 올려줄 수도, 기분이 나쁘면 깎을 수도 있음
+→ finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게)`
+    : '';
 
   const text = await claudeFetch([
     {
@@ -168,7 +176,7 @@ export async function interpretSurveyAnswers(
 7. stat 이름은 반드시 영어 소문자: hp, atk, def, gold, intelligence, negotiation, lockpick, stealth, strength, arcane 중 하나
 
 답변 목록:
-${answersText}
+${answersText}${finalWordsSection}
 
 JSON으로만 응답:
 {

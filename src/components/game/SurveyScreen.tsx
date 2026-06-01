@@ -8,7 +8,7 @@ import {
 } from '@/hooks/useClaude';
 import { PixelPanel, PixelButton, PixelInput, TypewriterText } from './UIFrame';
 
-type Phase = 'greeting' | 'loading' | 'answering' | 'interpreting' | 'error';
+type Phase = 'greeting' | 'loading' | 'answering' | 'final-words' | 'interpreting' | 'error';
 
 // 총 플레이 횟수에 따른 던전의 신 인삿말
 function getGreeting(totalRuns: number): { title: string; message: string } {
@@ -51,6 +51,7 @@ export default function SurveyScreen() {
   const [inputValue, setInputValue] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [greetingTyped, setGreetingTyped] = useState(false);
+  const [finalWords, setFinalWords] = useState('');
   const [seed] = useState(() => Math.random().toString(36).substring(2, 10));
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -74,7 +75,7 @@ export default function SurveyScreen() {
 
   // 질문 바뀔 때 입력창 포커스
   useEffect(() => {
-    if (phase === 'answering') {
+    if (phase === 'answering' || phase === 'final-words') {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [currentIdx, phase]);
@@ -93,34 +94,42 @@ export default function SurveyScreen() {
     if (currentIdx < questions.length - 1) {
       setCurrentIdx((i) => i + 1);
     } else {
-      setPhase('interpreting');
-      try {
-        const payload = questions.map((q, i) => ({
+      setPhase('final-words');
+    }
+  };
+
+  const handleSubmitFinalWords = async () => {
+    setPhase('interpreting');
+    try {
+      const payload = questions.map((q, i) => ({
+        question: q.text,
+        answer: answers[i],
+      }));
+      const res = await interpretSurveyAnswers(payload, seed, finalWords.trim() || undefined);
+      updateRun({
+        surveyResults: res.results as SurveyResultItem[],
+        surveyFinalSummary: res.finalSummary,
+        randomSeed: seed,
+        surveyAnswers: questions.map((q, i) => ({
+          questionId: q.id,
           question: q.text,
-          answer: newAnswers[i],
-        }));
-        const res = await interpretSurveyAnswers(payload, seed);
-        updateRun({
-          surveyResults: res.results as SurveyResultItem[],
-          surveyFinalSummary: res.finalSummary,
-          randomSeed: seed,
-          surveyAnswers: questions.map((q, i) => ({
-            questionId: q.id,
-            question: q.text,
-            answer: newAnswers[i],
-          })),
-        });
-        setScreen('stat-reveal');
-      } catch (e) {
-        console.error(e);
-        setErrorMsg('던전의 신이 판결을 내리지 못했다... (API 오류)');
-        setPhase('error');
-      }
+          answer: answers[i],
+        })),
+      });
+      setScreen('stat-reveal');
+    } catch (e) {
+      console.error(e);
+      setErrorMsg('던전의 신이 판결을 내리지 못했다... (API 오류)');
+      setPhase('error');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmitAnswer();
+  };
+
+  const handleFinalWordsKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSubmitFinalWords();
   };
 
   // ── 인삿말 ──
@@ -214,6 +223,70 @@ export default function SurveyScreen() {
             {questions.length}개의 답변을 분석하는 중...
           </p>
         </PixelPanel>
+      </div>
+    );
+  }
+
+  // ── 마지막 할 말 ──
+  if (phase === 'final-words') {
+    return (
+      <div className="flex items-center justify-center w-full h-full dungeon-bg p-4">
+        <div className="w-full max-w-lg flex flex-col gap-6">
+          <PixelPanel variant="brown" className="p-6 flex flex-col gap-5">
+            <p
+              className="font-pixel text-center"
+              style={{ fontSize: '16px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}
+            >
+              💀 마지막으로 할 말은? 💀
+            </p>
+
+            <div
+              className="p-4"
+              style={{
+                background: '#120a1e',
+                border: '2px solid #6b4fa040',
+                borderLeft: '4px solid #e04040',
+              }}
+            >
+              <TypewriterText
+                text={'5가지 판결이 끝났다.\n\n...마지막으로 하고 싶은 말이 있나?\n감언이설도 좋고, 욕도 좋다.\n다만 결과는... 내 기분 나름이다.'}
+                speed={25}
+              />
+            </div>
+
+            <div className="flex gap-3 items-stretch">
+              <PixelInput
+                ref={inputRef}
+                placeholder="신에게 무슨 말이든..."
+                value={finalWords}
+                onChange={(e) => setFinalWords(e.target.value)}
+                onKeyDown={handleFinalWordsKeyDown}
+                className="flex-1"
+              />
+              <PixelButton
+                variant="primary"
+                size="md"
+                onClick={handleSubmitFinalWords}
+              >
+                고한다 ✓
+              </PixelButton>
+            </div>
+
+            <div className="flex justify-center">
+              <PixelButton
+                variant="ghost"
+                size="sm"
+                onClick={handleSubmitFinalWords}
+              >
+                (아무 말도 하지 않는다)
+              </PixelButton>
+            </div>
+
+            <p className="font-pixel text-center" style={{ fontSize: '12px', color: '#4a3070' }}>
+              ⚠️ 신은 변덕스럽다. 아첨도 독이 될 수 있다.
+            </p>
+          </PixelPanel>
+        </div>
       </div>
     );
   }
