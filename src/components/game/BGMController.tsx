@@ -11,7 +11,7 @@ function resolveTrack(screen: string, bgmTrack: string | null): string | null {
     case 'meta':
       return 'intro.mp3';
     case 'death':
-      return 'gameover.mp3';
+      return 'game-over.mp3';
     case 'clear':
       return 'success.mp3';
     default:

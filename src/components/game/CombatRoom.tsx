@@ -78,14 +78,14 @@ function getTierLabel(tier: EnemyTier): string {
 // ─── Component ────────────────────────────────
 export default function CombatRoom({
   depth,
-  characterClass,
+  characterClass: _characterClass,
   hp,
   maxHp,
   atk,
   def,
   gold: _gold,
   skills,
-  relics,
+  relics: _relics,
   onVictory,
   onDefeat,
   onFled,

@@ -128,7 +128,6 @@ export default function GameScreen() {
     addEliteKill,
     addGhostBattleWin,
     consumeLastWordEffect,
-    updateRun,
     setBgmTrack,
   } = useGameState(
     useShallow((s) => ({
@@ -149,7 +148,6 @@ export default function GameScreen() {
       addEliteKill: s.addEliteKill,
       addGhostBattleWin: s.addGhostBattleWin,
       consumeLastWordEffect: s.consumeLastWordEffect,
-      updateRun: s.updateRun,
       setBgmTrack: s.setBgmTrack,
     }))
   );
