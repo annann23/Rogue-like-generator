@@ -132,7 +132,7 @@ export default function SurveyScreen() {
             {/* 타이틀 */}
             <p
               className="font-pixel text-center"
-              style={{ fontSize: '10px', color: '#f0c040', textShadow: '2px 2px 0 #7a3c00' }}
+              style={{ fontSize: '16px', color: '#f0c040', textShadow: '2px 2px 0 #7a3c00' }}
             >
               {greeting.title}
             </p>
@@ -176,7 +176,7 @@ export default function SurveyScreen() {
           {!greetingTyped && (
             <p
               className="font-pixel text-center cursor-pointer"
-              style={{ fontSize: '6px', color: '#4a3070' }}
+              style={{ fontSize: '12px', color: '#4a3070' }}
               onClick={() => setGreetingTyped(true)}
             >
               (클릭하면 넘어갑니다)
@@ -210,7 +210,7 @@ export default function SurveyScreen() {
             💀 던전의 신이 판결을 내린다 💀
           </p>
           <LoadingDots color="#c8874a" />
-          <p className="font-pixel mt-4" style={{ fontSize: '7px', color: '#9878c0' }}>
+          <p className="font-pixel mt-4" style={{ fontSize: '12px', color: '#9878c0' }}>
             {questions.length}개의 답변을 분석하는 중...
           </p>
         </PixelPanel>
@@ -224,7 +224,7 @@ export default function SurveyScreen() {
       <div className="flex items-center justify-center w-full h-full dungeon-bg">
         <PixelPanel variant="dark" className="p-8 text-center space-y-6">
           <p className="font-pixel text-sm" style={{ color: '#e04040' }}>⚠️ 오류 발생</p>
-          <p className="font-pixel" style={{ fontSize: '7px', color: '#9878c0' }}>{errorMsg}</p>
+          <p className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>{errorMsg}</p>
           <PixelButton variant="secondary" onClick={handleStartSurvey}>🔄 다시 시도</PixelButton>
           <PixelButton variant="ghost" onClick={() => setScreen('title')}>← 돌아가기</PixelButton>
         </PixelPanel>
@@ -257,7 +257,7 @@ export default function SurveyScreen() {
               }}
             />
           </div>
-          <p className="font-pixel text-center mt-1" style={{ fontSize: '7px', color: '#6b4fa0' }}>
+          <p className="font-pixel text-center mt-1" style={{ fontSize: '12px', color: '#6b4fa0' }}>
             {currentIdx + 1} / {questions.length}
           </p>
         </div>
@@ -268,9 +268,9 @@ export default function SurveyScreen() {
             <div className="space-y-1 pb-4" style={{ borderBottom: '2px solid #5a3a10' }}>
               {questions.slice(0, currentIdx).map((q, i) => (
                 <div key={q.id} className="flex gap-2 items-start">
-                  <span className="font-pixel shrink-0" style={{ fontSize: '6px', color: '#6b4fa0' }}>Q{i + 1}.</span>
-                  <span className="font-pixel flex-1" style={{ fontSize: '6px', color: '#4a3070' }}>{q.text}</span>
-                  <span className="font-pixel shrink-0 ml-2" style={{ fontSize: '6px', color: '#f0c040' }}>→ {answers[i]}</span>
+                  <span className="font-pixel shrink-0" style={{ fontSize: '11px', color: '#6b4fa0' }}>Q{i + 1}.</span>
+                  <span className="font-pixel flex-1" style={{ fontSize: '11px', color: '#4a3070' }}>{q.text}</span>
+                  <span className="font-pixel shrink-0 ml-2" style={{ fontSize: '11px', color: '#f0c040' }}>→ {answers[i]}</span>
                 </div>
               ))}
             </div>
@@ -303,7 +303,7 @@ export default function SurveyScreen() {
                   {currentIdx < questions.length - 1 ? '답하라 →' : '완료 ✓'}
                 </PixelButton>
               </div>
-              <p className="font-pixel" style={{ fontSize: '6px', color: '#4a3070' }}>
+              <p className="font-pixel" style={{ fontSize: '12px', color: '#4a3070' }}>
                 ⚠️ 신중하게 답하라. 결과는 예측할 수 없다.
               </p>
             </div>

@@ -43,13 +43,13 @@ export default function TitleScreen() {
                 >
                   던전 RPG
                 </h2>
-                <p className="font-pixel text-xs mt-3" style={{ color: '#9878c0', fontSize: '7px' }}>
+                <p className="font-pixel text-xs mt-3" style={{ color: '#9878c0', fontSize: '12px' }}>
                   ─ 던전의 신이 기다린다 ─
                 </p>
               </div>
 
               {meta.totalRuns > 0 && (
-                <div className="font-pixel space-y-1" style={{ fontSize: '7px', color: '#6b4fa0' }}>
+                <div className="font-pixel space-y-1" style={{ fontSize: '12px', color: '#6b4fa0' }}>
                   <p>총 {meta.totalRuns}회 도전 · 최대 {meta.bestDepth}층</p>
                   <p>유산 포인트: {meta.legacyPoints}pt</p>
                 </div>
@@ -125,7 +125,7 @@ export default function TitleScreen() {
 
       <p
         className="font-pixel text-center pb-4"
-        style={{ fontSize: '6px', color: '#3d2860' }}
+        style={{ fontSize: '11px', color: '#3d2860' }}
       >
         Claude API · Supabase · Kenney CC0 Assets
       </p>
