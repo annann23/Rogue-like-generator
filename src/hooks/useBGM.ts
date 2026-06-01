@@ -22,7 +22,8 @@ function fade(
  * locked : 브라우저 자동재생 잠금 — 첫 인터랙션 전까지 true
  * muted  : 사용자가 수동으로 음소거한 상태
  *
- * 실제 소리 출력 = !locked && !muted
+ * iOS 대응: Audio 요소를 user gesture 컨텍스트(unlock/toggleMute) 내에서 생성+play()
+ * → 페이지 로드 시 미리 생성한 Audio를 나중에 play()하면 iOS에서 차단됨
  */
 export function useBGM(track: string | null, baseVolume = 0.45) {
   const audioRef  = useRef<HTMLAudioElement | null>(null);
@@ -38,59 +39,68 @@ export function useBGM(track: string | null, baseVolume = 0.45) {
     if (fadeRef.current) { clearInterval(fadeRef.current); fadeRef.current = null; }
   };
 
-  // ── 새 오디오 시작 (항상 무음으로) ──────────
-  const launchAudio = useCallback((src: string) => {
-    const a = new Audio(`/bgm/${src}`);
-    a.loop   = true;
-    a.volume = 0;
-    a.muted  = true; // 자동재생 정책 통과
-    a.play().catch(() => {}); // Safari 등에서 실패해도 unlock()이 재시도
-    audioRef.current = a;
-  }, []);
-
-  // ── 트랙 전환 ────────────────────────────────
-  useEffect(() => {
-    if (track === trackRef.current) return;
-    trackRef.current = track;
+  // ── 오디오 시작 (crossfade) ──────────────────
+  // unlock() 또는 track 전환 시 호출. iOS에서는 unlock() 내부(gesture context)에서만 호출.
+  const startAudio = useCallback((src: string) => {
     stopFade();
-
     const old = audioRef.current;
-    const startNext = () => {
-      if (!track) { audioRef.current = null; return; }
-      launchAudio(track);
-      // 잠금 해제 상태면 바로 페이드인
-      if (!lockedRef.current && !mutedRef.current && audioRef.current) {
-        audioRef.current.muted = false;
-        fadeRef.current = fade(audioRef.current, baseVolume);
-      }
+
+    const doStart = () => {
+      const a = new Audio(`/bgm/${src}`);
+      a.loop   = true;
+      a.volume = 0;
+      audioRef.current = a;
+      a.play()
+        .then(() => { stopFade(); fadeRef.current = fade(a, baseVolume); })
+        .catch(() => {});
     };
 
     if (old && !old.paused) {
-      fadeRef.current = fade(old, 0, () => { old.pause(); old.src = ''; startNext(); });
+      fadeRef.current = fade(old, 0, () => { old.pause(); old.src = ''; doStart(); });
     } else {
       old?.pause();
-      startNext();
+      if (old) old.src = '';
+      doStart();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseVolume]);
+
+  // ── 트랙 전환 감지 ───────────────────────────
+  useEffect(() => {
+    if (track === trackRef.current) return;
+    trackRef.current = track;
+
+    if (lockedRef.current || mutedRef.current) {
+      // 아직 잠금 상태 → 현재 오디오만 정리. unlock() 시 trackRef 값으로 시작
+      stopFade();
+      audioRef.current?.pause();
+      audioRef.current = null;
+      return;
+    }
+
+    // 이미 unlock된 상태 → 트랙 전환 (unlock 이후 play()는 iOS도 허용)
+    if (track) {
+      startAudio(track);
+    } else {
+      stopFade();
+      audioRef.current?.pause();
+      audioRef.current = null;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track]);
 
   // ── 잠금 해제 (첫 인터랙션) ─────────────────
-  // - 멱등성 보장: 이미 해제된 상태면 아무것도 안 함
-  // - 뮤트 버튼 클릭 → 버블링으로 document click → 이 함수 → 안전하게 처리
+  // iOS 핵심: 이 함수는 반드시 user gesture 핸들러(click/touch) 내에서 동기적으로 호출돼야 함
   const unlock = useCallback(() => {
     if (!lockedRef.current) return;
     lockedRef.current = false;
     setLocked(false);
 
-    if (mutedRef.current) return; // 사용자가 수동 뮤트 상태면 소리 안 냄
+    if (mutedRef.current) return;
 
-    const a = audioRef.current;
-    if (!a) return;
-    if (a.paused) a.play().catch(() => {}); // Safari fallback
-    a.muted = false;
-    stopFade();
-    fadeRef.current = fade(a, baseVolume);
-  }, [baseVolume]);
+    const t = trackRef.current;
+    if (t) startAudio(t); // gesture context 내에서 Audio 생성 + play()
+  }, [startAudio]);
 
   // ── 사용자 뮤트 토글 ────────────────────────
   const toggleMute = useCallback(() => {
@@ -98,25 +108,26 @@ export function useBGM(track: string | null, baseVolume = 0.45) {
     mutedRef.current = newMuted;
     setMuted(newMuted);
 
-    if (lockedRef.current) return; // 잠긴 상태에서 토글은 상태만 변경
+    if (lockedRef.current) return;
 
-    const a = audioRef.current;
-    if (!a) return;
-    stopFade();
     if (newMuted) {
-      fadeRef.current = fade(a, 0, () => { a.muted = true; });
+      const a = audioRef.current;
+      if (!a) return;
+      stopFade();
+      fadeRef.current = fade(a, 0, () => { a.pause(); });
     } else {
-      a.muted = false;
-      fadeRef.current = fade(a, baseVolume);
+      // 음소거 해제 → gesture context에서 재시작 (모바일 호환)
+      const t = trackRef.current;
+      if (t) startAudio(t);
     }
-  }, [baseVolume]);
+  }, [startAudio]);
 
   // ── 전역 첫 인터랙션 감지 → 자동 unlock ────
   useEffect(() => {
     const handler = () => unlock();
     document.addEventListener('click',      handler, { once: true });
     document.addEventListener('keydown',    handler, { once: true });
-    document.addEventListener('touchstart', handler, { once: true });
+    document.addEventListener('touchstart', handler, { once: true, passive: true });
     return () => {
       document.removeEventListener('click',      handler);
       document.removeEventListener('keydown',    handler);
