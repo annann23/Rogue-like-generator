@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { initCombat, resolveCombatTurn } from '@/hooks/useClaude';
+import { localInitCombat, localResolveTurn } from '@/lib/combatEngine';
 import {
   PixelPanel,
   PixelButton,
@@ -120,22 +120,13 @@ export default function CombatRoom({
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    void initializeCombat();
+    initializeCombat();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function initializeCombat() {
+  function initializeCombat() {
     try {
-      const res = await initCombat({
-        depth,
-        characterClass,
-        hp,
-        maxHp,
-        atk,
-        def,
-        skills,
-        relics,
-      });
+      const res = localInitCombat(depth);
 
       setState((prev) => ({
         ...prev,
@@ -253,7 +244,7 @@ export default function CombatRoom({
   }, [state, skills]);
 
   // ─── handleAction ─────────────────────────────
-  async function handleAction(action: PlayerAction) {
+  function handleAction(action: PlayerAction) {
     if (!state.enemy || state.phase !== 'player_turn') return;
     if (action.disabled) return;
 
@@ -286,7 +277,7 @@ export default function CombatRoom({
     const isLastTurn = nextTurn >= state.maxTurns;
 
     try {
-      const res = await resolveCombatTurn({
+      const res = localResolveTurn({
         playerAction: action.type,
         enemy: {
           name: state.enemy.name,
@@ -692,7 +683,7 @@ export default function CombatRoom({
                   onClick={
                     action.disabled
                       ? undefined
-                      : () => void handleAction(action)
+                      : () => handleAction(action)
                   }
                   disabled={action.disabled}
                   className="w-full text-left font-pixel"
