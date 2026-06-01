@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { type NPCTemplate, getFamiliarityStage } from '@/constants/npcs';
+import { type NPCTemplate, type GiftItem, GIFT_ITEMS, getFamiliarityStage } from '@/constants/npcs';
 import { generateNPCDialogue } from '@/hooks/useClaude';
 import {
   PixelDialogFrame,
@@ -15,6 +15,8 @@ import { NPC_SPRITES } from '@/constants/spriteMap';
 interface NPCRoomProps {
   npc: NPCTemplate;
   relation: { familiarity: number; meetCount: number };
+  gold: number;
+  onGoldSpend: (amount: number) => void;
   onDone: (familiarityDelta: number) => void;
   personaAlignment?: string;
 }
@@ -22,32 +24,110 @@ interface NPCRoomProps {
 interface Message {
   role: 'npc' | 'player';
   text: string;
+  isGift?: boolean;
+}
+
+// meetCount 기반 대화 횟수 (1-2회: 1턴, 3-4회: 2턴, 5-6회: 3턴, 7+회: 4턴)
+function getMaxTurnsByMeetCount(meetCount: number): number {
+  if (meetCount >= 7) return 4;
+  if (meetCount >= 5) return 3;
+  if (meetCount >= 3) return 2;
+  return 1;
+}
+
+// ─── Gift Panel ────────────────────────────────
+function GiftPanel({
+  gold,
+  onSelect,
+  onClose,
+}: {
+  gold: number;
+  onSelect: (gift: GiftItem) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: '#0e0820',
+        border: '3px solid #f0c040',
+        padding: '12px',
+        marginTop: '4px',
+      }}
+    >
+      <div className="flex justify-between items-center mb-3">
+        <p className="font-pixel" style={{ fontSize: '11px', color: '#f0c040' }}>
+          🎁 선물 선택 (현재 골드: {gold}g)
+        </p>
+        <button
+          className="font-pixel"
+          style={{ fontSize: '10px', color: '#9878c0', cursor: 'pointer', background: 'none', border: 'none' }}
+          onClick={onClose}
+        >
+          ✕ 닫기
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {GIFT_ITEMS.map((gift) => {
+          const canAfford = gold >= gift.goldCost;
+          return (
+            <button
+              key={gift.id}
+              className="font-pixel"
+              disabled={!canAfford}
+              onClick={() => onSelect(gift)}
+              style={{
+                fontSize: '11px',
+                padding: '6px 10px',
+                background: canAfford ? '#1a0a04' : '#0a0a0a',
+                color: canAfford ? '#e8d8b8' : '#4a3050',
+                border: `2px solid ${canAfford ? '#7a5020' : '#2a1a2a'}`,
+                cursor: canAfford ? 'pointer' : 'not-allowed',
+              }}
+              onMouseEnter={e => {
+                if (canAfford) (e.currentTarget as HTMLElement).style.borderColor = '#f0c040';
+              }}
+              onMouseLeave={e => {
+                if (canAfford) (e.currentTarget as HTMLElement).style.borderColor = '#7a5020';
+              }}
+            >
+              {gift.emoji} {gift.name}
+              <span style={{ color: canAfford ? '#f0c040' : '#4a3050', marginLeft: '6px' }}>
+                -{gift.goldCost}g
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="font-pixel mt-2" style={{ fontSize: '10px', color: '#4a3070' }}>
+        ※ NPC마다 좋아하는 선물이 다릅니다. 대화 속 힌트를 주의 깊게 들으세요.
+      </p>
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────
-export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPCRoomProps) {
+export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, personaAlignment }: NPCRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [totalFamiliarityDelta, setTotalFamiliarityDelta] = useState(0);
   const [turnsUsed, setTurnsUsed] = useState(0);
+  const [showGiftPanel, setShowGiftPanel] = useState(false);
+  const [currentGold, setCurrentGold] = useState(gold);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
 
-  // 친밀도 단계 계산
   const currentFamiliarity = relation.familiarity + totalFamiliarityDelta;
   const stage = getFamiliarityStage(currentFamiliarity);
-  const maxTurns = stage.maxTurns === Infinity ? 10 : stage.maxTurns;
+  const maxTurns = getMaxTurnsByMeetCount(relation.meetCount);
   const remainingTurns = Math.max(0, maxTurns - turnsUsed);
 
-  // 스크롤 맨 아래로
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 마운트 시 첫 NPC 대사 (StrictMode 이중 실행 방지)
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
@@ -55,7 +135,7 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
       relation.meetCount > 0
         ? '*이전에 만난 적 있는 상대가 다시 나타났다*'
         : '*처음 만났다*';
-    void callNPC(playerInput, [], 0);
+    void callNPC(playerInput, [], 0, undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -63,12 +143,12 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
     playerInput: string,
     currentMessages: Message[],
     currentDelta: number,
+    giftOffered: { name: string; tag: string } | undefined,
   ) {
     setIsLoading(true);
 
     const currentFam = relation.familiarity + currentDelta;
-    const currentStage = getFamiliarityStage(currentFam);
-    const curMaxTurns = currentStage.maxTurns === Infinity ? 10 : currentStage.maxTurns;
+    const curMaxTurns = getMaxTurnsByMeetCount(relation.meetCount);
     const curRemaining = Math.max(0, curMaxTurns - turnsUsed);
 
     const conversationHistory = currentMessages
@@ -85,11 +165,12 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
         conversationHistory,
         playerInput,
         personaAlignment,
+        favoriteItemTag: npc.favoriteItemTag,
+        giftOffered,
       });
 
-      // familiarityChange 클램핑 (-100 ~ 100)
       const clampedChange = Math.max(-100, Math.min(100, response.familiarityChange));
-      const newDelta = currentDelta + clampedChange;
+      const newDelta = Math.max(-relation.familiarity, currentDelta + clampedChange);
 
       setTotalFamiliarityDelta(newDelta);
       setMessages((prev) => [
@@ -117,7 +198,32 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
     setInputText('');
     setTurnsUsed((prev) => prev + 1);
 
-    await callNPC(trimmed, newMessages, totalFamiliarityDelta);
+    await callNPC(trimmed, newMessages, totalFamiliarityDelta, undefined);
+  }
+
+  async function handleGiftSelect(gift: GiftItem) {
+    if (currentGold < gift.goldCost || isLoading) return;
+
+    const newGold = currentGold - gift.goldCost;
+    setCurrentGold(newGold);
+    onGoldSpend(gift.goldCost);
+    setShowGiftPanel(false);
+
+    const playerMessage: Message = {
+      role: 'player',
+      text: `🎁 ${gift.emoji} "${gift.name}"을(를) 건넸다`,
+      isGift: true,
+    };
+    const newMessages = [...messages, playerMessage];
+    setMessages(newMessages);
+    setTurnsUsed((prev) => prev + 1);
+
+    await callNPC(
+      `[플레이어가 선물을 건넸다]`,
+      newMessages,
+      totalFamiliarityDelta,
+      { name: gift.name, tag: gift.tag },
+    );
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -132,6 +238,7 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
   }
 
   const displayFamiliarity = Math.max(0, Math.min(100, currentFamiliarity));
+  const familiarityDiff = totalFamiliarityDelta;
 
   return (
     <PixelDialogFrame
@@ -161,6 +268,13 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
           </div>
         )}
 
+        {/* 호감도 변화 표시 */}
+        {familiarityDiff !== 0 && (
+          <div className="font-pixel text-right" style={{ fontSize: '11px', color: familiarityDiff > 0 ? '#40c040' : '#e04040' }}>
+            호감도 {familiarityDiff > 0 ? '+' : ''}{familiarityDiff}
+          </div>
+        )}
+
         {/* 대화 기록 */}
         <div
           className="flex flex-col gap-2"
@@ -174,14 +288,9 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
         >
           {messages.map((msg, idx) => {
             const isNpc = msg.role === 'npc';
-            // 마지막 NPC 메시지는 TypewriterText로 표시
             const isLastNpc =
               isNpc &&
-              idx ===
-                messages.reduce(
-                  (last, m, i) => (m.role === 'npc' ? i : last),
-                  -1,
-                );
+              idx === messages.reduce((last, m, i) => (m.role === 'npc' ? i : last), -1);
 
             return (
               <div
@@ -189,10 +298,11 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
                 className="font-pixel"
                 style={{
                   textAlign: isNpc ? 'left' : 'right',
-                  color: isNpc ? '#e8d8b8' : '#f0c040',
+                  color: msg.isGift ? '#f0c040' : isNpc ? '#e8d8b8' : '#c8a8e8',
                   fontSize: '13px',
                   lineHeight: '2',
                   padding: '4px 8px',
+                  fontStyle: msg.isGift ? 'italic' : 'normal',
                 }}
               >
                 {isLastNpc ? (
@@ -204,28 +314,36 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
             );
           })}
 
-          {/* 로딩 중 표시 */}
           {isLoading && (
             <div
               className="font-pixel"
               style={{ fontSize: '12px', color: '#9878c0', textAlign: 'left' }}
             >
-              신탁을 기다리는 중...
+              ...
             </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 입력창 + 전송 버튼 */}
-        {remainingTurns > 0 && (
+        {/* 선물 패널 */}
+        {showGiftPanel && remainingTurns > 0 && (
+          <GiftPanel
+            gold={currentGold}
+            onSelect={(gift) => void handleGiftSelect(gift)}
+            onClose={() => setShowGiftPanel(false)}
+          />
+        )}
+
+        {/* 입력창 + 버튼 영역 */}
+        {remainingTurns > 0 && !showGiftPanel && (
           <div className="flex gap-2 items-center">
             <PixelInput
               ref={inputRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isLoading ? '신탁을 기다리는 중...' : '말을 건네라...'}
+              placeholder={isLoading ? '...' : '말을 건네라...'}
               disabled={isLoading}
               style={{ fontSize: '13px' }}
             />
@@ -237,6 +355,14 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
             >
               전송
             </PixelButton>
+            <PixelButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowGiftPanel(true)}
+              disabled={isLoading}
+            >
+              🎁
+            </PixelButton>
           </div>
         )}
 
@@ -246,7 +372,7 @@ export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPC
           style={{ fontSize: '11px', color: '#9878c0', textAlign: 'right' }}
         >
           {remainingTurns > 0
-            ? `남은 대화: ${remainingTurns}회`
+            ? `남은 대화: ${remainingTurns}회 | 골드: ${currentGold}g`
             : '대화 횟수를 모두 사용했다'}
         </div>
 
