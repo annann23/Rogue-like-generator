@@ -71,9 +71,19 @@ export interface SurveyResultItem {
   curseOrBlessing: "good" | "bad" | "mixed" | "curse";
 }
 
+export interface PersonaData {
+  name: string;
+  pastLife: string;
+  personality: string;
+  alignment: 'benevolent' | 'neutral' | 'malevolent';
+  birthNarrative: string;
+  innateTraits: string[];
+}
+
 export interface SurveyInterpretResponse {
   results: SurveyResultItem[];
   finalSummary: string;
+  persona: PersonaData;
 }
 
 export interface RoomChoice {
@@ -127,7 +137,7 @@ export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse
     [
       {
         role: "user",
-        content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
+        content: `당신은 심술궂고 변덕스러운 던전의 신입니다. 지금 새로운 영혼의 다음 생을 결정하기 위해 심문하고 있습니다.
 유저가 시작 전 답해야 할 5가지 질문을 만드세요.
 
 오늘의 질문 변형 코드: ${questionSeed}
@@ -200,22 +210,28 @@ export async function interpretSurveyAnswers(
     [
       {
         role: "user",
-        content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
+        content: `당신은 심술궂고 변덕스러운 던전의 신입니다. 지금 한 영혼의 다음 생을 결정하는 심판을 내리고 있습니다.
 
 절대 규칙:
 1. 오늘의 신의 기분: "${mood.label}" — 이 기분이 판결 전체의 분위기를 결정함
-   → 같은 답변도 기분이 다르면 반드시 다른 결과가 나올 것
-   → 단, 기분 이름을 텍스트에 직접 노출하지 말 것. 신이 자연스럽게 행동할 것
-2. 5개 결과의 curseOrBlessing을 아래 개수에 맞게 정확히 배분할 것:
+2. 5개 결과의 curseOrBlessing을 아래 개수에 맞게 정확히 배분:
    - "good": 정확히 ${mood.good}개
    - "mixed": 정확히 ${mood.mixed}개
    - "bad" 또는 "curse" 합계: 정확히 ${mood.bad}개
-3. "mixed"는 반드시 플러스 statChange와 마이너스 statChange가 동시에 존재해야 함
-   → 둘 다 마이너스거나 둘 다 플러스면 mixed가 아니라 bad/good으로 분류할 것
-4. 숫자: 숫자 자체 / 자릿수 / 홀짝 / 소수 여부 등 다양하게 해석
-5. 텍스트: 연상 속성 / 온도 / 색 / 계절 / 감정 등으로 해석
-6. 해석 이유를 짧고 드라마틱하게 설명 (한국어)
-7. stat 이름은 반드시 영어 소문자: hp, atk, def, gold, intelligence, negotiation, lockpick, stealth, strength, arcane 중 하나
+3. "mixed"는 반드시 플러스와 마이너스 statChange가 동시에 존재해야 함
+4. 숫자: 자릿수/홀짝/소수 여부 등 다양하게 해석
+5. 텍스트: 연상 속성/온도/색/계절/감정으로 해석
+6. stat 이름은 영어 소문자: hp, atk, def, gold, intelligence, negotiation, lockpick, stealth, strength, arcane 중 하나
+7. 해석은 "이 영혼의 다음 생에 ~한 영향을 줄 것이다" 형식으로 환생 맥락으로 서술
+
+페르소나 생성 규칙:
+- good이 많을수록 benevolent, bad/curse가 많을수록 malevolent, 균형이면 neutral
+- name: 한국어 이름 또는 고유명사 스타일 (예: 이령, 박하, 서진, 흑요 등)
+- pastLife: 전생의 직업/역할 한 줄 (예: "전장을 누비던 기사", "시장의 사기꾼")
+- personality: 성격 2~3 단어 (예: "냉소적이고 계산적인", "순수하고 충동적인")
+- alignment: good 합계 기준
+- birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 2~3문장, 신이 선고하는 어조
+- innateTraits: 타고난 특성 2~3개 (예: "악몽에서 힘을 얻는다", "금속의 냄새를 맡을 수 있다")
 
 답변 목록:
 ${answersText}${finalWordsSection}
@@ -226,15 +242,21 @@ JSON으로만 응답:
     {
       "question": "질문",
       "answer": "답변",
-      "interpretation": "드라마틱한 해석 (한국어)",
+      "interpretation": "환생 맥락의 해석 (한국어)",
       "flavorText": "신의 독백 (한국어)",
-      "statChanges": [
-        { "stat": "hp", "change": -7 }
-      ],
+      "statChanges": [{ "stat": "hp", "change": -7 }],
       "curseOrBlessing": "mixed"
     }
   ],
-  "finalSummary": "신의 최종 판결 한 줄 (한국어)"
+  "finalSummary": "신의 최종 환생 선고문 (예: '이 영혼은 무거운 업보를 안고 태어날 것이다...')",
+  "persona": {
+    "name": "이름",
+    "pastLife": "전생 한 줄",
+    "personality": "성격 묘사",
+    "alignment": "neutral",
+    "birthNarrative": "탄생 선고 2~3문장",
+    "innateTraits": ["특성1", "특성2"]
+  }
 }`,
       },
     ],
@@ -256,6 +278,9 @@ export async function generateRoom(params: {
   relics: string[];
   depth: number;
   roomType: string;
+  personaName?: string;
+  personaPersonality?: string;
+  personaAlignment?: string;
 }): Promise<RoomResponse> {
   const {
     characterClass,
@@ -269,6 +294,9 @@ export async function generateRoom(params: {
     relics,
     depth,
     roomType,
+    personaName,
+    personaPersonality,
+    personaAlignment,
   } = params;
 
   const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
@@ -296,6 +324,7 @@ export async function generateRoom(params: {
 플레이어:
 - 클래스: ${characterClass} | HP: ${hp}/${maxHp} | ATK: ${atk} | DEF: ${def} | 골드: ${gold}
 - 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+- 이름: ${personaName ?? '알 수 없음'} | 성격: ${personaPersonality ?? '알 수 없음'} | 성향: ${personaAlignment ?? 'neutral'}
 - 설문 효과: ${surveyEffects}
 - 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
 - 현재 층: ${depth}/10 | 난이도: ${tierDesc}
@@ -307,6 +336,7 @@ export async function generateRoom(params: {
 3. 최소 1개: requiredSkill 필요 (레벨은 초반 1~2, 중반 2~3, 후반 3~4).
 4. 최소 1개: classOnly 지정 (warrior/rogue/mage 중 상황에 맞는 것).
 5. 나머지 1개: 누구나 선택 가능, requiredSkill null, classOnly null.
+6. 성향 반영: ${personaAlignment === 'malevolent' ? '어두운 선택지와 위험한 유혹 위주로' : personaAlignment === 'benevolent' ? '협력과 도움의 선택지 포함' : '균형 있게'} 구성할 것.
 
 JSON으로만 응답:
 {
@@ -407,6 +437,7 @@ export async function generateNPCDialogue(params: {
   remainingTurns: number;
   conversationHistory: string;
   playerInput: string;
+  personaAlignment?: string;
 }): Promise<NPCDialogueResponse> {
   const {
     npcName,
@@ -416,7 +447,10 @@ export async function generateNPCDialogue(params: {
     remainingTurns,
     conversationHistory,
     playerInput,
+    personaAlignment,
   } = params;
+
+  const alignmentBonus = personaAlignment === 'benevolent' ? 3 : personaAlignment === 'malevolent' ? -3 : 0;
 
   const text = await claudeFetch(
     [
@@ -429,10 +463,13 @@ export async function generateNPCDialogue(params: {
 남은 대화: ${remainingTurns}회
 대화 기록: ${conversationHistory || "(첫 대화)"}
 플레이어 발언: ${playerInput}
+플레이어 성향: ${personaAlignment ?? 'neutral'}
+성향 반영: ${personaAlignment === 'benevolent' ? 'benevolent이므로 NPC가 처음부터 약간 호의적 (familiarityChange에 +3 보너스 포함)' : personaAlignment === 'malevolent' ? 'malevolent이므로 NPC가 경계심을 보임 (familiarityChange에 -3 페널티 포함)' : 'neutral이므로 성향에 따른 변화 없음'}
 
 친밀도별 응답 길이 준수 (0~19: 1~2문장, 20~39: 2~3문장, 40~59: 3~4문장, 60~79: 4~5문장, 80~: 제한없음).
 meetCount > 1이면 이전 만남 자연스럽게 언급.
 모든 대사는 한국어.
+familiarityChange 계산 시 성향 보정값(${alignmentBonus >= 0 ? '+' : ''}${alignmentBonus})을 반영할 것.
 
 JSON으로만 응답:
 {

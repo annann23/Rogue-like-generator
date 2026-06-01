@@ -201,6 +201,9 @@ export default function GameScreen() {
       relics: run.relics.map((r) => r.name),
       depth,
       roomType,
+      personaName: run.persona?.name,
+      personaPersonality: run.persona?.personality,
+      personaAlignment: run.persona?.alignment,
     });
 
     prefetchCache.current.set(depth, { roomType, promise });
@@ -580,6 +583,7 @@ export default function GameScreen() {
             npc={selectedNpcRef.current}
             relation={npcRelations[selectedNpcRef.current.id] ?? { familiarity: 0, meetCount: 0 }}
             onDone={handleNPCDone}
+            personaAlignment={run.persona?.alignment}
           />
         )}
 

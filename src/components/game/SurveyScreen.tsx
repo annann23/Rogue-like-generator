@@ -109,6 +109,7 @@ export default function SurveyScreen() {
       updateRun({
         surveyResults: res.results as SurveyResultItem[],
         surveyFinalSummary: res.finalSummary,
+        persona: res.persona ?? null,
         randomSeed: seed,
         surveyAnswers: questions.map((q, i) => ({
           questionId: q.id,

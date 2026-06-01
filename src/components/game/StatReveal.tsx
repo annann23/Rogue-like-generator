@@ -78,6 +78,18 @@ function ResultCard({ result, index }: { result: SurveyResult; index: number }) 
   );
 }
 
+function alignmentColor(alignment: string): string {
+  if (alignment === 'benevolent') return '#40c0a0';
+  if (alignment === 'malevolent') return '#e04060';
+  return '#f0c040';
+}
+
+function alignmentLabel(alignment: string): string {
+  if (alignment === 'benevolent') return '✨ 자비로운 영혼';
+  if (alignment === 'malevolent') return '💀 어둠의 영혼';
+  return '⚖️ 중립의 영혼';
+}
+
 function calcTotalChanges(results: SurveyResult[]) {
   const totals: Record<string, number> = {};
   for (const r of results) {
@@ -96,6 +108,7 @@ export default function StatReveal() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [animKey, setAnimKey] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [showPersona, setShowPersona] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
 
   useEffect(() => {
@@ -112,7 +125,10 @@ export default function StatReveal() {
       setAnimKey(k => k + 1);
     } else {
       setShowSummary(true);
-      setTimeout(() => setCanProceed(true), 600);
+      setTimeout(() => {
+        setShowPersona(true);
+        setTimeout(() => setCanProceed(true), 1500);
+      }, 1000);
     }
   };
 
@@ -203,10 +219,85 @@ export default function StatReveal() {
               </PixelPanel>
             )}
 
+            {showPersona && run.persona && (
+              <div style={{ animation: 'pageIn 0.5s ease' }}>
+                <PixelDivider label="환생 선고" className="my-4" />
+
+                {/* 환생 이름 */}
+                <div className="text-center my-4">
+                  <p className="font-pixel" style={{ fontSize: '11px', color: '#6b4fa0', marginBottom: '8px', letterSpacing: '2px' }}>
+                    이 영혼은...
+                  </p>
+                  <p
+                    className="font-pixel"
+                    style={{
+                      fontSize: '24px',
+                      color: alignmentColor(run.persona.alignment),
+                      textShadow: `0 0 20px ${alignmentColor(run.persona.alignment)}80`,
+                      letterSpacing: '4px',
+                    }}
+                  >
+                    {run.persona.name}
+                  </p>
+                  <p className="font-pixel mt-2" style={{ fontSize: '11px', color: '#9878c0' }}>
+                    으로 환생할 것이다
+                  </p>
+                </div>
+
+                {/* 탄생 선언문 */}
+                <PixelPanel variant="brown" className="p-5 my-3">
+                  <TypewriterText text={run.persona.birthNarrative} speed={18} />
+                </PixelPanel>
+
+                {/* 전생 + 성격 + 성향 */}
+                <PixelPanel variant="dark" className="p-4 my-3">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0' }}>전생</span>
+                      <span className="font-pixel" style={{ fontSize: '11px', color: '#e8d8b8' }}>{run.persona.pastLife}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0' }}>성격</span>
+                      <span className="font-pixel" style={{ fontSize: '11px', color: '#e8d8b8' }}>{run.persona.personality}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0' }}>성향</span>
+                      <span
+                        className="font-pixel"
+                        style={{ fontSize: '11px', color: alignmentColor(run.persona.alignment) }}
+                      >
+                        {alignmentLabel(run.persona.alignment)}
+                      </span>
+                    </div>
+                  </div>
+                </PixelPanel>
+
+                {/* 타고난 특성 */}
+                {run.persona.innateTraits.length > 0 && (
+                  <div className="flex flex-wrap gap-2 my-3">
+                    {run.persona.innateTraits.map((trait, i) => (
+                      <span
+                        key={i}
+                        className="font-pixel px-3 py-1"
+                        style={{
+                          fontSize: '10px',
+                          color: '#c8a8e8',
+                          background: '#1a0f2e',
+                          border: '2px solid #4a2d7a',
+                        }}
+                      >
+                        ✦ {trait}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {canProceed && (
               <div className="flex justify-center mt-5">
                 <PixelButton variant="primary" size="lg" onClick={() => setScreen('character-select')}>
-                  ⚔️ 운명을 받아들인다
+                  {run.persona ? `⚔️ ${run.persona.name}(으)로 태어난다` : '⚔️ 운명을 받아들인다'}
                 </PixelButton>
               </div>
             )}

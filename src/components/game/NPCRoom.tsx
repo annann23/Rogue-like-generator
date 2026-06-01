@@ -16,6 +16,7 @@ interface NPCRoomProps {
   npc: NPCTemplate;
   relation: { familiarity: number; meetCount: number };
   onDone: (familiarityDelta: number) => void;
+  personaAlignment?: string;
 }
 
 interface Message {
@@ -24,7 +25,7 @@ interface Message {
 }
 
 // ─── Component ────────────────────────────────
-export default function NPCRoom({ npc, relation, onDone }: NPCRoomProps) {
+export default function NPCRoom({ npc, relation, onDone, personaAlignment }: NPCRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +84,7 @@ export default function NPCRoom({ npc, relation, onDone }: NPCRoomProps) {
         remainingTurns: curRemaining,
         conversationHistory,
         playerInput,
+        personaAlignment,
       });
 
       // familiarityChange 클램핑 (-100 ~ 100)

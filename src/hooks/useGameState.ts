@@ -5,6 +5,15 @@ import type { SkillType } from '@/constants/skills';
 import type { Relic } from '@/constants/relics';
 import type { NPCRelations } from '@/constants/npcs';
 
+export interface Persona {
+  name: string;
+  pastLife: string;
+  personality: string;
+  alignment: 'benevolent' | 'neutral' | 'malevolent';
+  birthNarrative: string;
+  innateTraits: string[];
+}
+
 export type GameScreen =
   | 'title'
   | 'survey'
@@ -69,6 +78,7 @@ export interface RunState {
   mapFragments: number;      // 고대 지도 조각 (0~3)
   eliteKills: number;        // 엘리트/보스 처치 횟수
   ghostBattleWins: number;   // 유령 전투 승리 횟수
+  persona: Persona | null;
 }
 
 export interface MetaState {
@@ -86,7 +96,7 @@ interface GameStore {
   npcRelations: NPCRelations;
 
   setScreen: (screen: GameScreen) => void;
-  startNewRun: (classData: ClassStats, surveyResults: SurveyResult[], seed: string) => void;
+  startNewRun: (classData: ClassStats, surveyResults: SurveyResult[], seed: string, persona: Persona | null) => void;
   updateRun: (updates: Partial<RunState>) => void;
   applyHpChange: (delta: number) => void;
   applyGoldChange: (delta: number) => void;
@@ -128,6 +138,7 @@ const DEFAULT_RUN: RunState = {
   mapFragments: 0,
   eliteKills: 0,
   ghostBattleWins: 0,
+  persona: null,
 };
 
 const DEFAULT_META: MetaState = {
@@ -148,7 +159,7 @@ export const useGameState = create<GameStore>()(
 
       setScreen: (screen) => set({ screen }),
 
-      startNewRun: (classData, surveyResults, seed) =>
+      startNewRun: (classData, surveyResults, seed, persona) =>
         set((state) => {
           const statChanges = surveyResults.flatMap(r => r.statChanges);
           let hpBonus = 0, atkBonus = 0, defBonus = 0, goldBonus = 0;
@@ -200,6 +211,7 @@ export const useGameState = create<GameStore>()(
               skills: metaSkills,
               surveyResults,
               randomSeed: seed,
+              persona,
             },
           };
         }),
