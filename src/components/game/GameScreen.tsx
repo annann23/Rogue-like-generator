@@ -373,6 +373,7 @@ export default function GameScreen() {
         {/* NPC 방 페이즈 */}
         {phase === 'npc' && selectedNpcRef.current && (
           <NPCRoom
+            key={`${selectedNpcRef.current.id}-${currentDepth}`}
             npc={selectedNpcRef.current}
             relation={npcRelations[selectedNpcRef.current.id] ?? { familiarity: 0, meetCount: 0 }}
             onDone={handleNPCDone}

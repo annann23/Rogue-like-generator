@@ -33,6 +33,7 @@ export default function NPCRoom({ npc, relation, onDone }: NPCRoomProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
   // 친밀도 단계 계산
   const currentFamiliarity = relation.familiarity + totalFamiliarityDelta;
@@ -45,13 +46,15 @@ export default function NPCRoom({ npc, relation, onDone }: NPCRoomProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // 마운트 시 첫 NPC 대사
+  // 마운트 시 첫 NPC 대사 (StrictMode 이중 실행 방지)
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     const playerInput =
       relation.meetCount > 0
         ? '*이전에 만난 적 있는 상대가 다시 나타났다*'
         : '*처음 만났다*';
-    void callNPC(playerInput, [], totalFamiliarityDelta);
+    void callNPC(playerInput, [], 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
