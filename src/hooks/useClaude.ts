@@ -45,6 +45,9 @@ function parseJSON<T>(raw: string): T {
   return JSON.parse(cleaned) as T;
 }
 
+// 모든 한국어 생성 프롬프트에 공통 삽입
+const KO_STYLE = `문체 규칙: 한국어 문장에서 부연 설명을 이을 때 '-' 기호(대시)를 절대 사용하지 말 것. 쉼표(,), 마침표(.), 또는 별도 문장으로 풀어 쓸 것.`;
+
 // ─── 타입 정의 ───────────────────────────────
 
 export interface SurveyQuestion {
@@ -171,6 +174,7 @@ export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse
    - "~인가?", "~하는가?", "~있는가?", "~되는가?", "~이더냐?" 같은 고전적 어미 사용
    - "~어?", "~야?", "~해?" 같은 현대 구어체 금지
    - 예시: "네 신발의 크기는 얼마인가?", "지금 이 순간 네 지갑 속에 현금이 얼마나 들어있는가?"
+${KO_STYLE}
 
 JSON으로만 응답:
 {
@@ -253,6 +257,8 @@ export async function interpretSurveyAnswers(
 
 답변 목록:
 ${answersText}${finalWordsSection}
+
+${KO_STYLE}
 
 JSON으로만 응답:
 {
@@ -360,6 +366,7 @@ export async function generateRoom(params: {
 4. 최소 1개: classOnly 지정 (warrior/rogue/mage 중 상황에 맞는 것).
 5. 나머지 1개: 누구나 선택 가능, requiredSkill null, classOnly null.
 6. 성향 반영: ${personaAlignment === 'malevolent' ? '어두운 선택지와 위험한 유혹 위주로' : personaAlignment === 'benevolent' ? '협력과 도움의 선택지 포함' : '균형 있게'} 구성할 것.
+${KO_STYLE}
 
 JSON으로만 응답:
 {
@@ -433,6 +440,7 @@ export async function generateRoomResult(params: {
 피해/보상 기준 (반드시 준수): ${guide}
 결과 묘사는 한국어 2~3문장. skillChange는 해당 스킬이 사용된 경우에만.
 렐릭은 shop/event에서 드물게만 (20% 확률).
+${KO_STYLE}
 
 JSON으로만 응답:
 {
@@ -521,6 +529,7 @@ ${hintSection}
 친밀도별 응답 길이 준수 (0~19: 1~2문장, 20~39: 2~3문장, 40~59: 3~4문장, 60~79: 4~5문장, 80~: 제한없음).
 meetCount > 1이면 이전 만남 자연스럽게 언급.
 모든 대사는 한국어.
+${KO_STYLE}
 
 JSON으로만 응답:
 {
@@ -578,6 +587,7 @@ export async function generateGhostBattle(params: {
 유령과의 사투를 서사적으로 묘사하라. 한국어, 3~5문장.
 승리 시: 유령이 남긴 희귀한 무기 또는 패시브 스킬을 1개 드랍하라.
 패배 시: 끔찍한 사인을 명시하라.
+${KO_STYLE}
 
 JSON으로만 응답:
 {
