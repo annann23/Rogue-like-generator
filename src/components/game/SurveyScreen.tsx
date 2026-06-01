@@ -70,6 +70,7 @@ export default function SurveyScreen() {
         // 결과를 게임 상태에 저장
         updateRun({
           surveyResults: res.results as SurveyResultItem[],
+          surveyFinalSummary: res.finalSummary,
           randomSeed: seed,
           surveyAnswers: questions.map((q, i) => ({
             questionId: q.id,

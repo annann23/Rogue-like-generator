@@ -61,6 +61,7 @@ export interface RunState {
   roomType: RoomType | null;
   surveyAnswers: SurveyAnswer[];
   surveyResults: SurveyResult[];
+  surveyFinalSummary: string;
   randomSeed: string;
   skillUseCounts: Record<SkillType, number>;
   isAlive: boolean;
@@ -111,6 +112,7 @@ const DEFAULT_RUN: RunState = {
   roomType: null,
   surveyAnswers: [],
   surveyResults: [],
+  surveyFinalSummary: '',
   randomSeed: '',
   skillUseCounts: { intelligence: 0, negotiation: 0, lockpick: 0, stealth: 0, strength: 0, arcane: 0 },
   isAlive: true,
