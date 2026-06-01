@@ -27,15 +27,15 @@ function StatRow({ label, base, bonus }: { label: string; base: number; bonus: n
   const final = Math.max(0, base + bonus);
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="font-pixel" style={{ fontSize: '11px', color: '#9878c0' }}>{label}</span>
-      <div className="flex items-center gap-2">
+      <span className="font-pixel" style={{ fontSize: '11px', color: '#9878c0', whiteSpace: 'nowrap' }}>{label}</span>
+      <div className="flex items-center gap-1" style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
         <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>{base}</span>
         {bonus !== 0 && (
           <>
             <span className="font-pixel" style={{ fontSize: '11px', color: bonus > 0 ? '#40c040' : '#e04040' }}>
               {bonus > 0 ? `+${bonus}` : bonus}
             </span>
-            <span className="font-pixel" style={{ fontSize: '12px', color: '#f0c040' }}>= {final}</span>
+            <span className="font-pixel" style={{ fontSize: '12px', color: '#f0c040' }}>={final}</span>
           </>
         )}
       </div>
@@ -90,17 +90,17 @@ function ClassCard({
         transition: 'border-color 0.15s, box-shadow 0.15s',
       }}
     >
-      {/* 헤더 */}
-      <div className="flex items-center gap-3 mb-4">
-        <span style={{ fontSize: '32px' }}>{cls.icon}</span>
-        <div>
+      {/* 헤더 — 고정 높이로 카드 간 정렬 통일 */}
+      <div style={{ minHeight: '90px' }} className="mb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <span style={{ fontSize: '32px', flexShrink: 0 }}>{cls.icon}</span>
           <p className="font-pixel" style={{ fontSize: '16px', color: selected ? '#f0c040' : '#e8d8b8' }}>
             {cls.name}
           </p>
-          <p className="font-pixel mt-1" style={{ fontSize: '10px', color: '#6b4fa0', lineHeight: '1.8' }}>
-            {cls.description}
-          </p>
         </div>
+        <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', lineHeight: '2' }}>
+          {cls.description}
+        </p>
       </div>
 
       <PixelDivider />
@@ -111,9 +111,7 @@ function ClassCard({
         <StatRow label="⚔️ ATK" base={cls.atk} bonus={(bonuses.atk ?? 0) + (bonuses.attack ?? 0)} />
         <StatRow label="🛡️ DEF" base={cls.def} bonus={(bonuses.def ?? 0) + (bonuses.defense ?? 0)} />
         <StatRow label="💰 골드" base={cls.startGold} bonus={bonuses.gold ?? 0} />
-        {cls.mana !== undefined && (
-          <StatRow label="💙 마나" base={cls.mana} bonus={0} />
-        )}
+        <StatRow label="💙 마나" base={cls.mana ?? 0} bonus={0} />
       </div>
 
       <PixelDivider className="mt-4" />
