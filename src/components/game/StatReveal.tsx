@@ -31,16 +31,14 @@ const BLESSING_LABEL: Record<string, string> = {
   curse:  '🗿 저주받음',
 };
 
-// 스탯 변화 수치 표현
 function StatChangeBadge({ stat, change }: { stat: string; change: number }) {
   const isPositive = change > 0;
   const color = isPositive ? '#40c040' : '#e04040';
   const sign = isPositive ? '+' : '';
   const label = STAT_LABELS[stat] ?? stat;
-
   return (
     <span
-      className="font-pixel inline-block px-2 py-1 mr-2 mb-1"
+      className="font-pixel inline-block px-2 py-1 mr-1 mb-1"
       style={{
         fontSize: '7px',
         color,
@@ -53,16 +51,18 @@ function StatChangeBadge({ stat, change }: { stat: string; change: number }) {
   );
 }
 
-// 결과 카드 1개
+// 결과 카드 — visible prop으로 fade-in 제어
 function ResultCard({
   result,
   index,
   visible,
+  typing,        // 현재 이 카드가 타이핑 중인지
   onTypingDone,
 }: {
   result: SurveyResult;
   index: number;
   visible: boolean;
+  typing: boolean;
   onTypingDone: () => void;
 }) {
   const accentColor = BLESSING_COLOR[result.curseOrBlessing] ?? '#f0c040';
@@ -71,76 +71,96 @@ function ResultCard({
     <div
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(12px)',
-        transition: 'opacity 0.4s ease, transform 0.4s ease',
+        transform: visible ? 'translateY(0)' : 'translateY(16px)',
+        transition: `opacity 0.45s ease ${index * 0.08}s, transform 0.45s ease ${index * 0.08}s`,
       }}
     >
       <PixelPanel variant="dark" className="p-4">
-        {/* Q 번호 + 축복/저주 배지 */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-pixel" style={{ fontSize: '7px', color: '#6b4fa0' }}>
-            Q{index + 1}. {result.question}
-          </span>
+        {/* 헤더 */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1">
+            <span className="font-pixel" style={{ fontSize: '7px', color: '#6b4fa0' }}>
+              Q{index + 1}.
+            </span>
+            <span className="font-pixel ml-2" style={{ fontSize: '7px', color: '#9878c0' }}>
+              {result.question}
+            </span>
+          </div>
           <span
-            className="font-pixel px-2 py-1 shrink-0 ml-2"
-            style={{ fontSize: '6px', color: accentColor, border: `2px solid ${accentColor}60`, background: `${accentColor}18` }}
+            className="font-pixel shrink-0 px-2 py-1"
+            style={{
+              fontSize: '6px',
+              color: accentColor,
+              border: `2px solid ${accentColor}60`,
+              background: `${accentColor}18`,
+            }}
           >
             {BLESSING_LABEL[result.curseOrBlessing]}
           </span>
         </div>
 
         {/* 답변 */}
-        <p className="font-pixel mb-3" style={{ fontSize: '7px', color: '#9878c0' }}>
+        <p className="font-pixel mb-3" style={{ fontSize: '7px', color: '#c8874a' }}>
           → &quot;{result.answer}&quot;
         </p>
 
-        {/* 신의 해석 (타이핑) */}
+        {/* 신의 해석 */}
         <div
           className="p-3 mb-3"
           style={{
             background: '#120a1e',
-            border: `2px solid ${accentColor}40`,
             borderLeft: `4px solid ${accentColor}`,
+            border: `2px solid ${accentColor}30`,
+            borderLeftWidth: '4px',
+            minHeight: '40px',
           }}
         >
-          <TypewriterText
-            text={result.interpretation}
-            speed={20}
-            onComplete={onTypingDone}
-          />
+          {typing ? (
+            <TypewriterText
+              text={result.interpretation}
+              speed={18}
+              onComplete={onTypingDone}
+            />
+          ) : (
+            <p className="font-pixel" style={{ fontSize: '8px', lineHeight: '2', color: '#e8d8b8' }}>
+              {result.interpretation}
+            </p>
+          )}
         </div>
 
         {/* 플레이버 텍스트 */}
-        <p className="font-pixel mb-3 italic" style={{ fontSize: '7px', color: '#6b4fa0' }}>
-          "{result.flavorText}"
-        </p>
+        {result.flavorText && (
+          <p className="font-pixel mb-3" style={{ fontSize: '7px', color: '#6b4fa0', fontStyle: 'italic' }}>
+            &ldquo;{result.flavorText}&rdquo;
+          </p>
+        )}
 
-        {/* 스탯 변화 */}
-        <div className="flex flex-wrap">
-          {result.statChanges.map((sc, i) => (
-            <StatChangeBadge key={i} stat={sc.stat} change={sc.change} />
-          ))}
-        </div>
+        {/* 스탯 변화 — 모두 표시 */}
+        {result.statChanges && result.statChanges.length > 0 ? (
+          <div className="flex flex-wrap gap-0">
+            {result.statChanges.map((sc, i) => (
+              <StatChangeBadge key={i} stat={sc.stat} change={sc.change} />
+            ))}
+          </div>
+        ) : (
+          <p className="font-pixel" style={{ fontSize: '6px', color: '#4a3070' }}>
+            스탯 변화 없음
+          </p>
+        )}
       </PixelPanel>
     </div>
   );
 }
 
-// 최종 스탯 계산
-function calcFinalStats(
-  results: SurveyResult[],
-  base = { hp: 100, atk: 10, def: 5 },
-) {
-  const totals: Record<string, number> = { hp: base.hp, atk: base.atk, def: base.def };
+// 최종 스탯 미리보기 계산 (클래스 선택 전이라 기본값 기준)
+function calcTotalChanges(results: SurveyResult[]) {
+  const totals: Record<string, number> = {};
   for (const r of results) {
-    for (const { stat, change } of r.statChanges) {
+    for (const { stat, change } of r.statChanges ?? []) {
       const key = stat === 'attack' ? 'atk' : stat === 'defense' ? 'def' : stat;
-      if (key in totals) totals[key] = (totals[key] ?? 0) + change;
+      totals[key] = (totals[key] ?? 0) + change;
     }
   }
-  totals.hp = Math.max(10, totals.hp);
-  totals.atk = Math.max(1, totals.atk);
-  totals.def = Math.max(0, totals.def);
   return totals;
 }
 
@@ -148,46 +168,50 @@ export default function StatReveal() {
   const { run, setScreen } = useGameState();
   const results = run.surveyResults;
 
-  // 몇 번째 카드까지 표시됐는지
+  // 표시된 카드 수 (순차 공개)
   const [revealedCount, setRevealedCount] = useState(0);
-  // 현재 카드 타이핑 완료됐는지
-  const [typingDone, setTypingDone] = useState(false);
-  // 최종 요약까지 표시됐는지
+  // 현재 타이핑 중인 카드 인덱스
+  const [typingIdx, setTypingIdx] = useState(0);
+  // 최종 요약 표시 여부
   const [showSummary, setShowSummary] = useState(false);
-  // 버튼 활성화
   const [canProceed, setCanProceed] = useState(false);
 
-  const allRevealed = revealedCount >= results.length;
-
-  // 설문 결과가 없으면 (직접 접근 등) 스킵
+  // 설문 결과가 없으면 스킵
   useEffect(() => {
     if (results.length === 0) {
       setScreen('character-select');
-    } else {
-      // 첫 카드 바로 표시
-      setRevealedCount(1);
+      return;
     }
+    // 카드를 0.6초 간격으로 순차 공개
+    let count = 0;
+    const reveal = () => {
+      count++;
+      setRevealedCount(count);
+      if (count < results.length) {
+        setTimeout(reveal, 600);
+      }
+    };
+    setTimeout(reveal, 300);
   }, []);
 
-  // 타이핑 완료 → 다음 버튼 활성화
-  const handleTypingDone = () => setTypingDone(true);
-
-  // 다음 카드 공개
-  const handleNext = () => {
-    if (!allRevealed) {
-      setRevealedCount((c) => c + 1);
-      setTypingDone(false);
-    } else if (!showSummary) {
-      setShowSummary(true);
-      setTimeout(() => setCanProceed(true), 600);
+  // 카드 타이핑 완료 → 다음 카드 타이핑 시작
+  const handleTypingDone = () => {
+    const next = typingIdx + 1;
+    if (next < results.length) {
+      setTypingIdx(next);
+    } else {
+      // 모든 카드 타이핑 완료 → 최종 요약 표시
+      setTimeout(() => {
+        setShowSummary(true);
+        setTimeout(() => setCanProceed(true), 800);
+      }, 400);
     }
   };
 
-  const finalStats = calcFinalStats(results);
-  const isLastCard = revealedCount === results.length && !showSummary;
-  const showNextBtn = typingDone && !canProceed;
-
   if (results.length === 0) return null;
+
+  const totalChanges = calcTotalChanges(results);
+  const changedStats = Object.entries(totalChanges).filter(([, v]) => v !== 0);
 
   return (
     <div className="flex items-center justify-center w-full h-full dungeon-bg p-4 overflow-y-auto">
@@ -196,14 +220,14 @@ export default function StatReveal() {
         {/* 헤더 */}
         <div className="text-center">
           <p
-            className="font-pixel text-sm"
-            style={{ color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}
+            className="font-pixel"
+            style={{ fontSize: '11px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}
           >
             💀 던전의 신이 판결한다 💀
           </p>
         </div>
 
-        {/* 결과 카드들 */}
+        {/* 결과 카드 5개 */}
         <div className="flex flex-col gap-3">
           {results.map((result, i) => (
             <ResultCard
@@ -211,23 +235,11 @@ export default function StatReveal() {
               result={result}
               index={i}
               visible={i < revealedCount}
-              onTypingDone={i === revealedCount - 1 ? handleTypingDone : () => {}}
+              typing={i === typingIdx && i < revealedCount}
+              onTypingDone={handleTypingDone}
             />
           ))}
         </div>
-
-        {/* 다음/최종 버튼 */}
-        {showNextBtn && (
-          <div className="flex justify-center">
-            <PixelButton
-              variant="secondary"
-              size="md"
-              onClick={handleNext}
-            >
-              {isLastCard ? '판결을 듣는다 →' : `다음 판결 (${revealedCount}/${results.length}) →`}
-            </PixelButton>
-          </div>
-        )}
 
         {/* 최종 요약 */}
         {showSummary && (
@@ -237,46 +249,36 @@ export default function StatReveal() {
               transition: 'opacity 0.5s ease',
             }}
           >
-            <PixelDivider label="신의 최종 판결" />
+            <PixelDivider label="신의 최종 판결" className="my-2" />
 
             {/* finalSummary */}
-            <PixelPanel variant="brown" className="p-4 my-3 text-center">
+            <PixelPanel variant="brown" className="p-4 my-3">
               <TypewriterText
                 text={run.surveyFinalSummary || '신은 아무 말도 하지 않는다...'}
-                speed={25}
+                speed={22}
               />
             </PixelPanel>
 
-            {/* 최종 스탯 */}
-            <PixelPanel variant="dark" className="p-4 mt-3">
-              <p className="font-pixel mb-3 text-center" style={{ fontSize: '7px', color: '#9878c0' }}>
-                최종 초기 스탯
-              </p>
-              <div className="flex justify-center gap-6">
-                <div className="text-center">
-                  <p className="font-pixel" style={{ fontSize: '8px', color: '#e04040' }}>❤️ HP</p>
-                  <p className="font-pixel mt-1" style={{ fontSize: '12px', color: '#f0c040' }}>{finalStats.hp}</p>
+            {/* 전체 스탯 변화 총합 */}
+            {changedStats.length > 0 && (
+              <PixelPanel variant="dark" className="p-4 mt-3">
+                <p className="font-pixel mb-3" style={{ fontSize: '7px', color: '#9878c0' }}>
+                  설문 결과 총 스탯 변화
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {changedStats.map(([stat, val]) => (
+                    <StatChangeBadge key={stat} stat={stat} change={val} />
+                  ))}
                 </div>
-                <div className="text-center">
-                  <p className="font-pixel" style={{ fontSize: '8px', color: '#e8d8b8' }}>⚔️ ATK</p>
-                  <p className="font-pixel mt-1" style={{ fontSize: '12px', color: '#f0c040' }}>{finalStats.atk}</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-pixel" style={{ fontSize: '8px', color: '#e8d8b8' }}>🛡️ DEF</p>
-                  <p className="font-pixel mt-1" style={{ fontSize: '12px', color: '#f0c040' }}>{finalStats.def}</p>
-                </div>
-              </div>
-              <p className="font-pixel text-center mt-3" style={{ fontSize: '6px', color: '#4a3070' }}>
-                ※ 클래스 기본 스탯에 위 수치가 가산됩니다
-              </p>
-            </PixelPanel>
+                <p className="font-pixel mt-3" style={{ fontSize: '6px', color: '#4a3070' }}>
+                  ※ 선택한 클래스 기본 스탯에 가산됩니다
+                </p>
+              </PixelPanel>
+            )}
 
             {/* 진행 버튼 */}
             {canProceed && (
-              <div
-                className="flex justify-center mt-4"
-                style={{ animation: 'fadeIn 0.4s ease' }}
-              >
+              <div className="flex justify-center mt-5">
                 <PixelButton
                   variant="primary"
                   size="lg"
