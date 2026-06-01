@@ -630,6 +630,7 @@ JSON으로만 응답:
 
 export interface InitCombatResponse {
   enemy: {
+    id: string;
     name: string;
     description: string;
     hp: number;

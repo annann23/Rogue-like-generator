@@ -14,6 +14,7 @@ export function localInitCombat(depth: number): InitCombatResponse {
 
   return {
     enemy: {
+      id:            template.id,
       name:          template.name,
       description:   template.description,
       hp:            scaled.hp,

@@ -8,7 +8,7 @@ import {
   TypewriterText,
 } from '@/components/game/UIFrame';
 import Sprite from './Sprite';
-import type { SpriteKey } from '@/constants/spriteMap';
+import { MONSTER_SPRITES, type SpriteKey } from '@/constants/spriteMap';
 import type {
   CombatState,
   PlayerAction,
@@ -52,11 +52,13 @@ function LoadingDots() {
 }
 
 // ─── 스프라이트 키 결정 ───────────────────────
-function getEnemySpriteKey(tier: EnemyTier, depth: number): SpriteKey {
-  if (tier === 'boss') return 'dragon';
-  if (tier === 'elite') return 'zombie';
-  const normalSprites: SpriteKey[] = ['goblin', 'skeleton', 'slime', 'rat'];
-  return normalSprites[depth % 4];
+function getEnemySpriteKey(enemyId: string, tier: EnemyTier): SpriteKey {
+  const key = MONSTER_SPRITES[enemyId];
+  if (key) return key;
+  // fallback
+  if (tier === 'boss')  return 'monster_cyclops';
+  if (tier === 'elite') return 'monster_scorpion';
+  return 'monster_bat';
 }
 
 // ─── 티어 배지 색상 ───────────────────────────
@@ -503,7 +505,7 @@ export default function CombatRoom({
           {/* 적 이름 + 스프라이트 */}
           <div className="flex items-center gap-4 mb-3">
             <Sprite
-              spriteKey={getEnemySpriteKey(state.enemy.tier, depth)}
+              spriteKey={getEnemySpriteKey(state.enemy.id ?? '', state.enemy.tier)}
               scale={5}
               animation={
                 state.phase === 'resolving' ? 'combat' : 'idle'

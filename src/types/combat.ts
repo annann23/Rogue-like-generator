@@ -2,6 +2,7 @@ export type EnemyTrait = 'aggressive' | 'cunning' | 'defensive';
 export type EnemyTier = 'normal' | 'elite' | 'boss';
 
 export interface Enemy {
+  id: string;
   name: string;
   description: string;
   hp: number;

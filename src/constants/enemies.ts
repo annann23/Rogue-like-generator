@@ -18,133 +18,97 @@ export interface EnemyTemplate {
 export const ENEMY_TEMPLATES: EnemyTemplate[] = [
   // ── Normal ──────────────────────────────────
   {
-    id: 'goblin', name: '고블린', tier: 'normal', trait: 'cunning',
-    baseHp: 30, baseAtk: 12, baseDef: 3, initRage: 0, depthMin: 1,
-    description: '날카로운 눈빛에 영리해 보이는 체형의 녀석이다.',
+    id: 'bat', name: '박쥐', tier: 'normal', trait: 'aggressive',
+    baseHp: 22, baseAtk: 11, baseDef: 2, initRage: 10, depthMin: 1,
+    description: '날카로운 발톱과 날카로운 초음파로 공격하는 동굴 박쥐다.',
     openingLines: [
-      '고블린이 킬킬거리며 주변을 살핀다. 무언가를 꾸미고 있는 것 같다.',
-      '고블린이 이빨을 드러내며 앞뒤로 움직인다. 방심할 수 없다.',
+      '박쥐 떼가 어둠 속에서 날아오른다. 날개 소리가 귀를 찌른다.',
+      '천장에 매달려 있던 박쥐가 급강하한다!',
     ],
   },
   {
-    id: 'slime', name: '슬라임', tier: 'normal', trait: 'defensive',
-    baseHp: 45, baseAtk: 8, baseDef: 8, initRage: 0, depthMin: 1,
-    description: '반투명 젤리 같은 몸체가 느릿느릿 흔들린다.',
+    id: 'field_rat', name: '들쥐', tier: 'normal', trait: 'cunning',
+    baseHp: 20, baseAtk: 10, baseDef: 2, initRage: 0, depthMin: 1,
+    description: '빠르고 교활한 들쥐다. 틈만 나면 물어뜯는다.',
     openingLines: [
-      '슬라임이 소리 없이 몸을 부풀리며 다가온다.',
-      '슬라임이 바닥을 미끄러지듯 다가온다. 끈적한 기운이 느껴진다.',
+      '들쥐가 주변을 재빠르게 살피며 접근한다.',
+      '끼익! 들쥐가 이빨을 드러내며 달려든다.',
     ],
   },
   {
-    id: 'rat', name: '거대 쥐', tier: 'normal', trait: 'aggressive',
-    baseHp: 25, baseAtk: 14, baseDef: 2, initRage: 15, depthMin: 1,
-    description: '개만한 크기의 흉악한 쥐다. 날카로운 발톱이 번쩍인다.',
+    id: 'cave_rat', name: '동굴쥐', tier: 'normal', trait: 'defensive',
+    baseHp: 28, baseAtk: 9, baseDef: 5, initRage: 0, depthMin: 2,
+    description: '두꺼운 가죽을 가진 동굴 서식 쥐다. 느리지만 질기다.',
     openingLines: [
-      '거대한 쥐가 잇새를 갈며 달려들 태세를 취한다.',
-      '쥐가 귀를 납작하게 눕히며 앞발을 긁는다. 당장이라도 뛰어들 것 같다.',
+      '거대한 동굴쥐가 으르렁거리며 등줄기를 곤두세운다.',
+      '동굴쥐가 코를 씰룩이며 발을 긁는다. 공격할 틈을 노리는 것 같다.',
     ],
   },
   {
-    id: 'skeleton', name: '해골 전사', tier: 'normal', trait: 'aggressive',
-    baseHp: 35, baseAtk: 13, baseDef: 5, initRage: 10, depthMin: 1,
-    description: '녹슨 갑옷을 걸친 해골이 뼈 부딪히는 소리를 내며 서 있다.',
+    id: 'spider', name: '거미', tier: 'normal', trait: 'cunning',
+    baseHp: 25, baseAtk: 13, baseDef: 3, initRage: 0, depthMin: 2,
+    description: '여덟 개의 눈이 어둠 속에서 빛난다. 거미줄로 움직임을 제한한다.',
     openingLines: [
-      '해골 전사가 텅 빈 눈구멍으로 당신을 바라본다. 공허한 살의가 느껴진다.',
-      '뼈가 부딪히는 소리와 함께 해골이 무기를 치켜든다.',
-    ],
-  },
-  {
-    id: 'zombie', name: '좀비', tier: 'normal', trait: 'defensive',
-    baseHp: 50, baseAtk: 11, baseDef: 7, initRage: 0, depthMin: 2,
-    description: '생기 없는 눈으로 비틀거리며 다가오는 언데드다.',
-    openingLines: [
-      '좀비가 신음을 내뱉으며 두 팔을 뻗어 다가온다.',
-      '썩은 냄새가 진동한다. 좀비가 느릿하지만 멈추지 않고 다가온다.',
-    ],
-  },
-  {
-    id: 'giant_spider', name: '독 거미', tier: 'normal', trait: 'cunning',
-    baseHp: 28, baseAtk: 15, baseDef: 3, initRage: 0, depthMin: 2,
-    description: '여덟 개의 눈이 어둠 속에서 빛난다. 독침이 번들거린다.',
-    openingLines: [
-      '독 거미가 천장에서 내려오며 독액을 뚝뚝 흘린다.',
-      '거미가 무언가 실을 내뱉으며 움직임을 가린다. 조심해야 한다.',
-    ],
-  },
-  {
-    id: 'bandit', name: '산적', tier: 'normal', trait: 'cunning',
-    baseHp: 40, baseAtk: 14, baseDef: 5, initRage: 0, depthMin: 3,
-    description: '낡은 갑옷을 걸친 인간 도적이다. 눈빛이 교활하다.',
-    openingLines: [
-      '산적이 칼을 빙글빙글 돌리며 씩 웃는다. "지갑이나 목숨, 둘 중 하나만 내놔."',
-      '산적이 뒤로 물러서며 허리춤의 단검을 빼든다.',
+      '천장에서 거미줄을 타고 내려온다. 독액이 뚝뚝 떨어진다.',
+      '거미가 실을 내뿜으며 포위망을 친다. 조심해야 한다.',
     ],
   },
 
   // ── Elite ──────────────────────────────────
   {
-    id: 'goblin_chief', name: '고블린 대장', tier: 'elite', trait: 'cunning',
-    baseHp: 75, baseAtk: 20, baseDef: 10, initRage: 0, depthMin: 3,
-    description: '갑옷을 두른 고블린 우두머리다. 부하들의 함성이 메아리친다.',
+    id: 'scorpion', name: '전갈', tier: 'elite', trait: 'aggressive',
+    baseHp: 65, baseAtk: 22, baseDef: 8, initRage: 15, depthMin: 3,
+    description: '강렬한 독침을 가진 거대 전갈이다. 꼬리 하나에 치명적인 독이 담겨 있다.',
     openingLines: [
-      '고블린 대장이 배를 두드리며 웃는다. "겁쟁이 인간이 왔군!"',
-      '고블린 대장이 전투 곤봉을 땅에 찍으며 포효한다.',
+      '전갈이 독침을 높이 치켜들며 집게발을 딱딱거린다.',
+      '거대한 꼬리가 공기를 가르며 낙하한다. 독이 튄다!',
     ],
   },
   {
-    id: 'dark_mage', name: '암흑 마법사', tier: 'elite', trait: 'cunning',
-    baseHp: 60, baseAtk: 26, baseDef: 5, initRage: 0, depthMin: 4,
-    description: '검은 로브로 얼굴을 가린 마법사다. 기이한 주문이 속삭인다.',
+    id: 'ghost', name: '유령', tier: 'elite', trait: 'cunning',
+    baseHp: 55, baseAtk: 20, baseDef: 12, initRage: 0, depthMin: 3,
+    description: '실체 없이 떠다니는 망령이다. 물리 공격이 잘 통하지 않는다.',
     openingLines: [
-      '암흑 마법사가 양손을 펼치며 어둠의 마력을 끌어모은다.',
-      '"흥미롭군... 네 영혼을 분석하겠다." 마법사의 눈이 붉게 빛난다.',
+      '차가운 기운과 함께 희뿌연 형체가 나타난다. 공기가 얼어붙는다.',
+      '"...살아있는 자여, 돌아가라." 유령의 목소리가 머릿속을 울린다.',
     ],
   },
   {
-    id: 'bone_knight', name: '뼈 기사', tier: 'elite', trait: 'aggressive',
-    baseHp: 90, baseAtk: 23, baseDef: 12, initRage: 20, depthMin: 4,
-    description: '완전한 갑주를 걸친 해골 기사다. 죽음의 기운이 넘친다.',
+    id: 'mimic', name: '미믹', tier: 'elite', trait: 'cunning',
+    baseHp: 80, baseAtk: 25, baseDef: 10, initRage: 0, depthMin: 4,
+    description: '보물 상자로 위장한 괴물이다. 뚜껑이 열리는 순간 날카로운 이빨이 드러난다.',
     openingLines: [
-      '뼈 기사가 검을 들어 올리며 무릎을 굽힌다. 살의가 폭발적으로 커진다.',
-      '뼈 기사의 갑옷이 달그락거리며 전투 자세를 취한다.',
-    ],
-  },
-  {
-    id: 'troll', name: '트롤', tier: 'elite', trait: 'aggressive',
-    baseHp: 110, baseAtk: 22, baseDef: 8, initRage: 10, depthMin: 5,
-    description: '재생 능력을 가진 거대 괴물이다. 피부에 상처가 아물고 있다.',
-    openingLines: [
-      '트롤이 묵직한 주먹으로 가슴을 치며 으르렁댄다.',
-      '트롤이 땅을 쿵쿵 밟으며 다가온다. 진동이 발바닥을 통해 전해진다.',
+      '상자가 갑자기 덜컹거리더니... 뚜껑이 열리며 이빨을 드러낸다!',
+      '무심코 가까이 다가간 순간, 상자가 살아있음을 깨달았다!',
     ],
   },
 
   // ── Boss ──────────────────────────────────
   {
-    id: 'dragon_spawn', name: '새끼 용', tier: 'boss', trait: 'aggressive',
-    baseHp: 150, baseAtk: 32, baseDef: 14, initRage: 30, depthMin: 5,
-    description: '비늘이 칼날처럼 날카롭다. 성체는 아니지만 충분히 위험하다.',
+    id: 'cyclops', name: '키클롭스', tier: 'boss', trait: 'aggressive',
+    baseHp: 140, baseAtk: 30, baseDef: 12, initRage: 25, depthMin: 5,
+    description: '하나뿐인 거대한 눈이 빛난다. 압도적인 힘으로 주변을 파괴한다.',
     openingLines: [
-      '새끼 용이 날개를 펼치며 화염을 내뿜는다. 열기가 얼굴을 달군다.',
-      '용의 황금빛 눈이 당신을 포식자의 시선으로 훑는다.',
+      '대지가 흔들린다. 키클롭스의 거대한 발걸음이 동굴을 진동시킨다.',
+      '외눈이 당신을 포착한다. 거인이 으르렁거리며 팔을 치켜든다.',
     ],
   },
   {
-    id: 'lich', name: '리치', tier: 'boss', trait: 'cunning',
-    baseHp: 120, baseAtk: 38, baseDef: 8, initRage: 0, depthMin: 6,
-    description: '수천 년을 살아온 불사의 마법사다. 말 하나하나에 마력이 실린다.',
+    id: 'golem', name: '석골렘', tier: 'boss', trait: 'defensive',
+    baseHp: 170, baseAtk: 28, baseDef: 20, initRage: 0, depthMin: 6,
+    description: '고대 마법으로 움직이는 돌 거인이다. 균열 사이로 붉은 마력이 새어나온다.',
     openingLines: [
-      '"또 하나의 어리석은 모험가로군." 리치가 지팡이를 들어 올린다.',
-      '리치의 해골이 빙글 돌아 당신을 정면으로 마주한다. 죽음의 기운이 방 전체를 압도한다.',
+      '돌이 부딪히는 굉음과 함께 석골렘이 깨어난다. 붉은 눈이 번쩍인다.',
+      '"침입자... 제거." 석골렘이 돌벽을 부수며 앞으로 걸어 나온다.',
     ],
   },
   {
-    id: 'death_knight', name: '죽음의 기사', tier: 'boss', trait: 'aggressive',
-    baseHp: 180, baseAtk: 30, baseDef: 18, initRage: 20, depthMin: 7,
-    description: '암흑의 힘으로 되살아난 전설의 기사다. 눈에서 검은 불꽃이 타오른다.',
+    id: 'dragon', name: '용', tier: 'boss', trait: 'aggressive',
+    baseHp: 200, baseAtk: 36, baseDef: 15, initRage: 30, depthMin: 7,
+    description: '불꽃을 내뿜는 전설의 용이다. 한 번의 날개짓으로 폭풍이 인다.',
     openingLines: [
-      '죽음의 기사가 대검을 빼내며 허공을 베어낸다. "너의 죽음이 나의 영광이 되리."',
-      '검은 갑옷이 울리며 기사가 걸음을 내딛는다. 발자국마다 바닥이 서리로 덮인다.',
+      '용이 날개를 펼치며 화염을 내뿜는다. 열기가 얼굴을 달군다.',
+      '"감히 내 영역을 침범하다니." 용의 황금빛 눈이 당신을 노린다.',
     ],
   },
 ];
@@ -156,7 +120,6 @@ function pick<T>(arr: T[]): T {
 export function pickEnemyTemplate(depth: number): EnemyTemplate {
   const tier = pickTier(depth);
   const pool = ENEMY_TEMPLATES.filter(e => e.tier === tier && e.depthMin <= depth);
-  // 후보가 없으면 depthMin 무시
   const candidates = pool.length > 0 ? pool : ENEMY_TEMPLATES.filter(e => e.tier === tier);
   return pick(candidates);
 }
@@ -164,14 +127,14 @@ export function pickEnemyTemplate(depth: number): EnemyTemplate {
 export function pickTier(depth: number): EnemyTier {
   if (depth >= 8) {
     const r = Math.random();
-    return r < 0.25 ? 'boss' : r < 0.55 ? 'elite' : 'normal';
+    return r < 0.30 ? 'boss' : r < 0.60 ? 'elite' : 'normal';
   }
   if (depth >= 5) {
     const r = Math.random();
-    return r < 0.12 ? 'boss' : r < 0.38 ? 'elite' : 'normal';
+    return r < 0.15 ? 'boss' : r < 0.40 ? 'elite' : 'normal';
   }
   if (depth >= 3) {
-    return Math.random() < 0.22 ? 'elite' : 'normal';
+    return Math.random() < 0.25 ? 'elite' : 'normal';
   }
   return 'normal';
 }

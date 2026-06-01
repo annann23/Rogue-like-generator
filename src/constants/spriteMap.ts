@@ -5,7 +5,9 @@
 
 export type SpriteKey =
   | 'warrior' | 'rogue' | 'mage'
-  | 'skeleton' | 'goblin' | 'slime' | 'dragon' | 'rat' | 'zombie'
+  | 'monster_bat' | 'monster_field_rat' | 'monster_cave_rat' | 'monster_spider'
+  | 'monster_scorpion' | 'monster_ghost' | 'monster_mimic'
+  | 'monster_cyclops' | 'monster_golem' | 'monster_dragon'
   | 'chest' | 'key' | 'potion' | 'sword' | 'shield' | 'staff'
   | 'floor' | 'wall' | 'door' | 'stairs'
   | 'npc_merchant' | 'npc_wizard' | 'npc_guard' | 'npc_innkeeper' | 'npc_thief'
@@ -14,17 +16,25 @@ export type SpriteKey =
 // tile 번호 → 파일명: tile_${String(n).padStart(4,'0')}.png
 export const SPRITE_TILES: Record<SpriteKey, number> = {
   // 플레이어 캐릭터
-  warrior:      96,  // 헬멧 쓴 전사
+  warrior:      96,
   rogue:        112,
   mage:         84,
 
-  // 몬스터 (row 4~5)
-  skeleton:     48,
-  goblin:       49,
-  slime:        50,
-  dragon:       51,
-  rat:          52,
-  zombie:       54,
+  // 몬스터 — Normal
+  monster_bat:        120,
+  monster_field_rat:  123,
+  monster_cave_rat:   124,
+  monster_spider:     122,
+
+  // 몬스터 — Elite
+  monster_scorpion:   110,
+  monster_ghost:      121,
+  monster_mimic:      92,
+
+  // 몬스터 — Boss
+  monster_cyclops:    109,
+  monster_golem:      200,  // 커스텀 픽셀 아트
+  monster_dragon:     201,  // 커스텀 픽셀 아트
 
   // NPC
   npc_guard:    86,   // 대장장이 이고르
@@ -33,7 +43,7 @@ export const SPRITE_TILES: Record<SpriteKey, number> = {
   npc_wizard:   111,  // 마법사 엘릭
   npc_thief:    88,   // 도둑 섀도우
 
-  // 아이템 (row 6~7)
+  // 아이템
   chest:        72,
   potion:       73,
   key:          74,
@@ -42,13 +52,13 @@ export const SPRITE_TILES: Record<SpriteKey, number> = {
   staff:        77,
   coin:         78,
 
-  // 던전 타일 (row 8~9)
+  // 던전 타일
   floor:        96,
   wall:         97,
   door:         98,
   stairs:       99,
 
-  // UI 요소 (row 10)
+  // UI 요소
   skull:        120,
   heart:        121,
   star:         122,
@@ -63,9 +73,23 @@ export function getSpritePath(key: SpriteKey): string {
   return getTilePath(SPRITE_TILES[key]);
 }
 
+// 몬스터 ID → SpriteKey
+export const MONSTER_SPRITES: Record<string, SpriteKey> = {
+  bat:        'monster_bat',
+  field_rat:  'monster_field_rat',
+  cave_rat:   'monster_cave_rat',
+  spider:     'monster_spider',
+  scorpion:   'monster_scorpion',
+  ghost:      'monster_ghost',
+  mimic:      'monster_mimic',
+  cyclops:    'monster_cyclops',
+  golem:      'monster_golem',
+  dragon:     'monster_dragon',
+};
+
 // 방 타입별 대표 스프라이트
 export const ROOM_TYPE_SPRITES: Record<string, SpriteKey> = {
-  combat: 'goblin',
+  combat: 'monster_bat',
   event:  'chest',
   npc:    'npc_merchant',
   shop:   'potion',
