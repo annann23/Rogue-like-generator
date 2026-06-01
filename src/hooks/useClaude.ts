@@ -537,3 +537,207 @@ JSON으로만 응답:
     return { safe: true };
   }
 }
+
+// ─── 턴제 전투 타입 정의 ─────────────────────────
+
+export interface InitCombatResponse {
+  enemy: {
+    name: string;
+    description: string;
+    hp: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    trait: 'aggressive' | 'cunning' | 'defensive';
+    tier: 'normal' | 'elite' | 'boss';
+    rageGauge: number;
+    currentIntent: {
+      type: 'attack' | 'defend' | 'buff' | 'special' | 'unknown';
+      description: string;
+      isRevealed: boolean;
+    };
+    statusEffects: [];
+  };
+  openingNarrative: string;
+  rewardGold: number;
+  maxTurns: number;
+}
+
+export interface TurnResultResponse {
+  narrative: string;
+  hpChange: number;
+  enemyHpChange: number;
+  enemyRageChange: number;
+  newEnemyIntent: {
+    type: 'attack' | 'defend' | 'buff' | 'special' | 'unknown';
+    description: string;
+    isRevealed: boolean;
+  };
+  specialEffect: 'flee_success' | 'flee_fail' | 'negotiate_success' | 'bluff_success' | 'bluff_fail' | null;
+  statusApplied: { type: 'weakened' | 'enraged' | 'cowered' | 'confused'; turnsRemaining: number } | null;
+  isCombatOver: boolean;
+  isPlayerDefeated: boolean;
+  deathCause: string | null;
+}
+
+// ─── 턴제 전투 API 함수 ──────────────────────────
+
+export async function initCombat(params: {
+  depth: number;
+  characterClass: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  skills: Record<string, number>;
+  relics: string[];
+}): Promise<InitCombatResponse> {
+  const { depth, characterClass, hp, maxHp, atk, def, skills, relics } = params;
+
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 다크하고 긴장감 넘치는 던전 전투 판정자다.
+
+플레이어 정보:
+- 직업: ${characterClass} | HP: ${hp}/${maxHp} | ATK: ${atk} | DEF: ${def}
+- 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+- 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
+- 현재 층: ${depth}/10
+
+적 생성 규칙:
+- depth 1~4: tier="normal", atk 10~20, hp 30~60, maxTurns=3
+- depth 5 또는 10: tier="boss", atk 25~45, hp 80~150, maxTurns=5
+- depth 3, 6, 8: tier="elite", atk 18~32, hp 55~100, maxTurns=4
+- 나머지 depth 4~9: tier는 normal~elite 혼합, maxTurns 3~4
+- trait별 특성:
+  * aggressive → rageGauge를 20으로 시작, 공격적인 성향
+  * cunning → currentIntent.isRevealed를 false로, description을 모호하게 작성
+  * defensive → def 값을 높게 (12~20)
+- currentIntent.isRevealed는 trait에 상관없이 항상 false로 초기화
+- openingNarrative: 한국어 2문장 전투 시작 서사 (긴장감 있게)
+- rewardGold: ${depth * 8} ~ ${depth * 15} 범위의 정수
+- 모든 텍스트는 한국어
+
+JSON으로만 응답:
+{
+  "enemy": {
+    "name": "적 이름",
+    "description": "적 외형/특성 묘사 (한 문장)",
+    "hp": 45,
+    "maxHp": 45,
+    "atk": 14,
+    "def": 6,
+    "trait": "aggressive",
+    "tier": "normal",
+    "rageGauge": 0,
+    "currentIntent": {
+      "type": "attack",
+      "description": "무언가를 꾸미는 것 같다",
+      "isRevealed": false
+    },
+    "statusEffects": []
+  },
+  "openingNarrative": "전투 시작 서사 2문장",
+  "rewardGold": ${Math.floor(depth * 8 + Math.random() * (depth * 7))},
+  "maxTurns": 3
+}`,
+      },
+    ],
+    1024,
+  );
+
+  return parseJSON<InitCombatResponse>(text);
+}
+
+export async function resolveCombatTurn(params: {
+  playerAction: string;
+  enemy: {
+    name: string;
+    hp: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    trait: string;
+    tier: string;
+    rageGauge: number;
+    currentIntent: { type: string; description: string; isRevealed: boolean };
+    statusEffects: Array<{ type: string; turnsRemaining: number }>;
+  };
+  playerStats: {
+    hp: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    skills: Record<string, number>;
+  };
+  turn: number;
+  maxTurns: number;
+  isLastTurn: boolean;
+}): Promise<TurnResultResponse> {
+  const { playerAction, enemy, playerStats, turn, maxTurns, isLastTurn } = params;
+
+  const statusEffectsDesc = enemy.statusEffects.length > 0
+    ? enemy.statusEffects.map((e) => `${e.type}(${e.turnsRemaining}턴)`).join(', ')
+    : '없음';
+
+  const text = await claudeFetch(
+    [
+      {
+        role: "user",
+        content: `당신은 턴제 전투 판정자다. 규칙에 따라 정확히 계산하고 한국어로 서사를 서술하라.
+
+현재 상태:
+- 턴: ${turn}/${maxTurns}${isLastTurn ? ' (마지막 턴 — 전투 반드시 종결)' : ''}
+- 플레이어 행동: "${playerAction}"
+- 플레이어: HP=${playerStats.hp}/${playerStats.maxHp}, ATK=${playerStats.atk}, DEF=${playerStats.def}
+  스킬: 지능 ${playerStats.skills.intelligence ?? 0}, 협상 ${playerStats.skills.negotiation ?? 0}, 은신 ${playerStats.skills.stealth ?? 0}, 완력 ${playerStats.skills.strength ?? 0}, 마법감지 ${playerStats.skills.arcane ?? 0}
+- 적(${enemy.name}): HP=${enemy.hp}/${enemy.maxHp}, ATK=${enemy.atk}, DEF=${enemy.def}, trait=${enemy.trait}, tier=${enemy.tier}, rageGauge=${enemy.rageGauge}
+  currentIntent: type=${enemy.currentIntent.type}, isRevealed=${enemy.currentIntent.isRevealed}
+  상태이상: ${statusEffectsDesc}
+
+행동별 판정 규칙 (반드시 준수):
+- attack: 플레이어 피해 = 적ATK - (플레이어DEF * 0.5), 적 피해 = 플레이어ATK * 0.8 - (적DEF * 0.4). 양쪽 최소 피해는 5.
+- defend: 이번 턴 플레이어 피해 절반. 적 피해 없음.
+- taunt: enemyRageChange = +20~35. rageGauge+변화 >= 80이면 적 다음 공격 1.5배 + 20% 실수 확률 명시.
+- bluff: 성공률 = negotiation * 15 + 25 %. 성공 시 statusApplied={type:"cowered",turnsRemaining:2}, specialEffect="bluff_success". 실패 시 statusApplied={type:"enraged",turnsRemaining:1}, specialEffect="bluff_fail".
+- read: intelligence >= 2 필요. 성공 시 newEnemyIntent.isRevealed=true, description을 구체적으로 서술.
+- negotiate: negotiation >= 3 조건. specialEffect="negotiate_success", isCombatOver=true.
+- flee: 성공률 = stealth * 18 + 10 %. 성공 시 specialEffect="flee_success", isCombatOver=true. 실패 시 hpChange=-(적ATK * 0.8).
+- skill_attack: strength 또는 arcane 중 높은 쪽 * 4 추가 피해를 enemyHpChange에 포함.
+
+상태이상 적용:
+- 적의 enraged 상태: 적 공격 1.5배
+- 적의 cowered 상태: 적 공격 0.6배
+- 플레이어의 weakened 상태: 플레이어 공격 0.7배
+
+isLastTurn=true이면: isCombatOver=true로 강제 종결. 플레이어가 살아있으면 isPlayerDefeated=false.
+
+hpChange는 음수(플레이어 피해), enemyHpChange는 음수(적 피해).
+narrative: 한국어 2~3문장으로 이번 턴 전투 서사.
+
+JSON으로만 응답:
+{
+  "narrative": "이번 턴 서사 (한국어 2~3문장)",
+  "hpChange": -10,
+  "enemyHpChange": -8,
+  "enemyRageChange": 0,
+  "newEnemyIntent": {
+    "type": "attack",
+    "description": "다음 의도 묘사",
+    "isRevealed": false
+  },
+  "specialEffect": null,
+  "statusApplied": null,
+  "isCombatOver": false,
+  "isPlayerDefeated": false,
+  "deathCause": null
+}`,
+      },
+    ],
+    768,
+  );
+
+  return parseJSON<TurnResultResponse>(text);
+}
