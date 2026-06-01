@@ -8,6 +8,7 @@ import NPCRoom from './NPCRoom';
 import { NPC_TEMPLATES, type NPCTemplate } from '@/constants/npcs';
 import Sprite from './Sprite';
 import { ROOM_TYPE_SPRITES, CLASS_SPRITES } from '@/constants/spriteMap';
+import DungeonBackground from './DungeonBackground';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'choosing' | 'resolving' | 'result' | 'error';
@@ -259,7 +260,8 @@ export default function GameScreen() {
   const currentRoomType = pickedRoomTypeRef.current;
 
   return (
-    <div className="flex flex-col w-full h-full min-h-screen" style={{ background: '#0a0612' }}>
+    <div className="flex flex-col w-full h-full min-h-screen" style={{ background: '#0a0612', position: 'relative' }}>
+      <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
       {/* HUD */}
       <PixelHUD
         hp={run.hp}
@@ -269,10 +271,11 @@ export default function GameScreen() {
         def={run.def}
         depth={run.depth}
         skills={run.skills as unknown as Record<string, number>}
+        className="relative"
       />
 
       {/* 콘텐츠 영역 */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
         {/* 방 타입 배지 + 스프라이트 씬 + 층 표시 */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">

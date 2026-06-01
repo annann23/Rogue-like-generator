@@ -13,10 +13,10 @@ export type SpriteKey =
 
 // tile 번호 → 파일명: tile_${String(n).padStart(4,'0')}.png
 export const SPRITE_TILES: Record<SpriteKey, number> = {
-  // 플레이어 캐릭터 (row 0)
-  warrior:      0,
-  rogue:        1,
-  mage:         2,
+  // 플레이어 캐릭터
+  warrior:      96,  // 헬멧 쓴 전사
+  rogue:        112,
+  mage:         84,
 
   // 몬스터 (row 4~5)
   skeleton:     48,
