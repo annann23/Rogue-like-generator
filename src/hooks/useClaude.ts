@@ -42,6 +42,10 @@ function parseJSON<T>(raw: string): T {
     .replace(/^```\s*/i, "")
     .replace(/```\s*$/i, "")
     .trim();
+  // 잘린 JSON 조기 감지 (응답 토큰 초과 시)
+  if (!cleaned.endsWith('}') && !cleaned.endsWith(']')) {
+    throw new Error(`API 응답이 잘렸습니다 (응답 길이: ${cleaned.length}자). 재시도해주세요.`);
+  }
   return JSON.parse(cleaned) as T;
 }
 
@@ -245,6 +249,12 @@ export async function interpretSurveyAnswers(
 5. 텍스트: 연상 속성/온도/색/계절/감정으로 해석
 6. stat 이름은 영어 소문자: hp, atk, def, gold, intelligence, negotiation, lockpick, stealth, strength, arcane 중 하나
 7. 해석은 "이 영혼의 다음 생에 ~한 영향을 줄 것이다" 형식으로 환생 맥락으로 서술
+8. 글자 수 제한 (JSON 용량 절약):
+   - interpretation: 40자 이내
+   - flavorText: 30자 이내
+   - finalSummary: 60자 이내
+   - birthNarrative: 80자 이내
+   - innateTraits 각 항목: 20자 이내
 
 페르소나 생성 규칙:
 - good이 많을수록 benevolent, bad/curse가 많을수록 malevolent, 균형이면 neutral
@@ -252,7 +262,7 @@ export async function interpretSurveyAnswers(
 - pastLife: 전생의 직업/역할 한 줄 (예: "전장을 누비던 기사", "시장의 사기꾼")
 - personality: 성격 2~3 단어 (예: "냉소적이고 계산적인", "순수하고 충동적인")
 - alignment: good 합계 기준
-- birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 2~3문장, 신이 선고하는 어조
+- birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 신이 선고하는 어조
 - innateTraits: 타고난 특성 2~3개 (예: "악몽에서 힘을 얻는다", "금속의 냄새를 맡을 수 있다")
 
 답변 목록:
@@ -266,20 +276,20 @@ JSON으로만 응답:
     {
       "question": "질문",
       "answer": "답변",
-      "interpretation": "환생 맥락의 해석 (한국어)",
-      "flavorText": "신의 독백 (한국어)",
+      "interpretation": "환생 맥락의 해석 (40자 이내)",
+      "flavorText": "신의 독백 (30자 이내)",
       "statChanges": [{ "stat": "hp", "change": -7 }],
       "curseOrBlessing": "mixed"
     }
   ],
-  "finalSummary": "신의 최종 환생 선고문 (예: '이 영혼은 무거운 업보를 안고 태어날 것이다...')",
+  "finalSummary": "신의 최종 환생 선고문 (60자 이내)",
   "persona": {
     "name": "이름",
     "pastLife": "전생 한 줄",
     "personality": "성격 묘사",
     "alignment": "neutral",
-    "birthNarrative": "탄생 선고 2~3문장",
-    "innateTraits": ["특성1", "특성2"]
+    "birthNarrative": "탄생 선고 (80자 이내)",
+    "innateTraits": ["특성1 (20자 이내)", "특성2"]
   },
   "lastWordEffect": {
     "type": "death_immune",
@@ -289,7 +299,7 @@ JSON으로만 응답:
 }`,
       },
     ],
-    2048,
+    4096,
   );
 
   return parseJSON<SurveyInterpretResponse>(text);
