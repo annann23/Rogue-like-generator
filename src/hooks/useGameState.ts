@@ -4,6 +4,7 @@ import type { CharacterClass, ClassStats } from '@/constants/classes';
 import type { SkillType } from '@/constants/skills';
 import type { Relic } from '@/constants/relics';
 import type { NPCRelations } from '@/constants/npcs';
+import type { LastWordEffect } from '@/hooks/useClaude';
 
 export interface Persona {
   name: string;
@@ -75,10 +76,11 @@ export interface RunState {
   skillUseCounts: Record<SkillType, number>;
   isAlive: boolean;
   deathCause: string | null;
-  mapFragments: number;      // 고대 지도 조각 (0~3)
-  eliteKills: number;        // 엘리트/보스 처치 횟수
-  ghostBattleWins: number;   // 유령 전투 승리 횟수
+  mapFragments: number;
+  eliteKills: number;
+  ghostBattleWins: number;
   persona: Persona | null;
+  lastWordEffect: LastWordEffect | null;
 }
 
 export interface MetaState {
@@ -96,7 +98,7 @@ interface GameStore {
   npcRelations: NPCRelations;
 
   setScreen: (screen: GameScreen) => void;
-  startNewRun: (classData: ClassStats, surveyResults: SurveyResult[], seed: string, persona: Persona | null) => void;
+  startNewRun: (classData: ClassStats, surveyResults: SurveyResult[], seed: string, persona: Persona | null, lastWordEffect: LastWordEffect | null) => void;
   updateRun: (updates: Partial<RunState>) => void;
   applyHpChange: (delta: number) => void;
   applyGoldChange: (delta: number) => void;
@@ -113,6 +115,7 @@ interface GameStore {
   addMapFragment: () => void;
   addEliteKill: () => void;
   addGhostBattleWin: () => void;
+  consumeLastWordEffect: () => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -139,6 +142,7 @@ const DEFAULT_RUN: RunState = {
   eliteKills: 0,
   ghostBattleWins: 0,
   persona: null,
+  lastWordEffect: null,
 };
 
 const DEFAULT_META: MetaState = {
@@ -159,7 +163,7 @@ export const useGameState = create<GameStore>()(
 
       setScreen: (screen) => set({ screen }),
 
-      startNewRun: (classData, surveyResults, seed, persona) =>
+      startNewRun: (classData, surveyResults, seed, persona, lastWordEffect) =>
         set((state) => {
           const statChanges = surveyResults.flatMap(r => r.statChanges);
           let hpBonus = 0, atkBonus = 0, defBonus = 0, goldBonus = 0;
@@ -174,27 +178,35 @@ export const useGameState = create<GameStore>()(
           const maxHp = Math.max(10, classData.hp + hpBonus);
           const skills = { ...classData.skills };
 
-          // 설문 스킬 보너스 적용
           for (const { stat, change } of statChanges) {
             if (stat in skills) {
               (skills as Record<string, number>)[stat] = Math.max(0, ((skills as Record<string, number>)[stat] || 0) + change);
             }
           }
 
-          // 메타 업그레이드 보너스 적용
           const u = state.meta.upgrades;
           const finalMaxHp = Math.max(10, maxHp + (u['hp'] ?? 0) * 15);
           const finalAtk = Math.max(1, classData.atk + atkBonus + (u['atk'] ?? 0) * 2);
           const finalDef = Math.max(0, classData.def + defBonus + (u['def'] ?? 0) * 2);
-          const finalGold = Math.max(0, classData.startGold + goldBonus + (u['gold'] ?? 0) * 25);
+          let finalGold = Math.max(0, classData.startGold + goldBonus + (u['gold'] ?? 0) * 25);
 
-          // 스킬 메타 보너스
           const metaSkills = { ...skills };
           for (const skillId of ['intelligence', 'negotiation', 'stealth', 'strength', 'lockpick', 'arcane']) {
             if (u[skillId]) {
               (metaSkills as Record<string, number>)[skillId] =
                 Math.min(5, ((metaSkills as Record<string, number>)[skillId] ?? 0) + u[skillId]);
             }
+          }
+
+          // 마지막 말 효과 즉시 적용 (gold_bonus, skill_up)
+          if (lastWordEffect?.type === 'gold_bonus') {
+            finalGold += 50;
+          }
+          if (lastWordEffect?.type === 'skill_up') {
+            const skillKeys = ['intelligence', 'negotiation', 'stealth', 'strength', 'lockpick', 'arcane'];
+            const randomSkill = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+            (metaSkills as Record<string, number>)[randomSkill] =
+              Math.min(5, ((metaSkills as Record<string, number>)[randomSkill] ?? 0) + 1);
           }
 
           return {
@@ -212,6 +224,10 @@ export const useGameState = create<GameStore>()(
               surveyResults,
               randomSeed: seed,
               persona,
+              // gold_bonus·skill_up는 이미 적용했으므로 null, 나머지는 유지
+              lastWordEffect: (lastWordEffect?.type === 'none' || lastWordEffect?.type === 'gold_bonus' || lastWordEffect?.type === 'skill_up')
+                ? null
+                : lastWordEffect,
             },
           };
         }),
@@ -316,6 +332,9 @@ export const useGameState = create<GameStore>()(
         set((state) => ({
           run: { ...state.run, ghostBattleWins: state.run.ghostBattleWins + 1 },
         })),
+
+      consumeLastWordEffect: () =>
+        set((state) => ({ run: { ...state.run, lastWordEffect: null } })),
     }),
     {
       name: 'dungeon-rpg-state',

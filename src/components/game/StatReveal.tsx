@@ -294,6 +294,26 @@ export default function StatReveal() {
               </div>
             )}
 
+            {/* 마지막 말 효과 */}
+            {showPersona && run.lastWordEffect && run.lastWordEffect.type !== 'none' && (
+              <div style={{ animation: 'pageIn 0.6s ease' }}>
+                <PixelDivider label="신의 선물" className="my-4" />
+                <PixelPanel variant="dark" className="p-4 my-3">
+                  <div className="flex items-start gap-3">
+                    <span style={{ fontSize: '24px' }}>⚡</span>
+                    <div>
+                      <p className="font-pixel mb-1" style={{ fontSize: '13px', color: '#f0c040' }}>
+                        {run.lastWordEffect.label}
+                      </p>
+                      <p className="font-pixel" style={{ fontSize: '11px', color: '#9878c0', lineHeight: '1.8' }}>
+                        {run.lastWordEffect.description}
+                      </p>
+                    </div>
+                  </div>
+                </PixelPanel>
+              </div>
+            )}
+
             {canProceed && (
               <div className="flex justify-center mt-5">
                 <PixelButton variant="primary" size="lg" onClick={() => setScreen('character-select')}>

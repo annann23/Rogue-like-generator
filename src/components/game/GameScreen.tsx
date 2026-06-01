@@ -127,6 +127,8 @@ export default function GameScreen() {
     addMapFragment,
     addEliteKill,
     addGhostBattleWin,
+    consumeLastWordEffect,
+    updateRun,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -145,6 +147,8 @@ export default function GameScreen() {
       addMapFragment: s.addMapFragment,
       addEliteKill: s.addEliteKill,
       addGhostBattleWin: s.addGhostBattleWin,
+      consumeLastWordEffect: s.consumeLastWordEffect,
+      updateRun: s.updateRun,
     }))
   );
 
@@ -324,6 +328,32 @@ export default function GameScreen() {
 
       const willDie = res.isDead || run.hp + res.hpChange <= 0;
       if (willDie) {
+        // 즉사 면제 효과 처리
+        if (run.lastWordEffect?.type === 'death_immune') {
+          consumeLastWordEffect();
+          applyHpChange(1 - run.hp);
+          setResult({
+            ...res,
+            isDead: false,
+            hpChange: 1 - run.hp,
+            result: `${res.result}\n\n⚡ 죽음의 순간, 마지막으로 한 말이 신의 마음을 움직였다. HP 1로 살아남았다! (즉사 면제 소모)`,
+          });
+          setPhase('result');
+          return;
+        }
+        // HP 전체 회복 효과 처리
+        if (run.lastWordEffect?.type === 'hp_restore') {
+          consumeLastWordEffect();
+          applyHpChange(run.maxHp - run.hp);
+          setResult({
+            ...res,
+            isDead: false,
+            hpChange: run.maxHp - run.hp,
+            result: `${res.result}\n\n💚 위기의 순간, 신의 가호로 HP가 완전히 회복되었다! (HP 전체 회복 소모)`,
+          });
+          setPhase('result');
+          return;
+        }
         const cause = res.deathCause ?? '알 수 없는 이유';
         killPlayer(cause);
         setPendingDeathCause(cause);
@@ -622,6 +652,8 @@ export default function GameScreen() {
               setLastWords('');
               setPhase('dying');
             }}
+            fleeGuaranteed={run.lastWordEffect?.type === 'flee_guaranteed'}
+            onConsumeFleeEffect={consumeLastWordEffect}
             onFled={() => {
               const nextD = currentDepthRef.current + 1;
               schedulePrefetch(nextD);

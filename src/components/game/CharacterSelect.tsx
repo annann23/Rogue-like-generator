@@ -160,7 +160,7 @@ export default function CharacterSelect() {
   const handleConfirm = () => {
     if (!selectedClass || confirming) return;
     setConfirming(true);
-    startNewRun(selectedClass, run.surveyResults, run.randomSeed, run.persona);
+    startNewRun(selectedClass, run.surveyResults, run.randomSeed, run.persona, run.lastWordEffect);
     setScreen('game');
   };
 

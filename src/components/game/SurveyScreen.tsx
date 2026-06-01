@@ -110,6 +110,7 @@ export default function SurveyScreen() {
         surveyResults: res.results as SurveyResultItem[],
         surveyFinalSummary: res.finalSummary,
         persona: res.persona ?? null,
+        lastWordEffect: res.lastWordEffect ?? null,
         randomSeed: seed,
         surveyAnswers: questions.map((q, i) => ({
           questionId: q.id,

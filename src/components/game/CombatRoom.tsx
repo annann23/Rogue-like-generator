@@ -35,6 +35,8 @@ interface CombatRoomProps {
   onDefeat: (deathCause: string) => void;
   onFled: () => void;
   onNegotiated: () => void;
+  fleeGuaranteed?: boolean;
+  onConsumeFleeEffect?: () => void;
 }
 
 // ─── 로딩 점 애니메이션 ────────────────────────
@@ -85,6 +87,8 @@ export default function CombatRoom({
   onDefeat,
   onFled,
   onNegotiated,
+  fleeGuaranteed = false,
+  onConsumeFleeEffect,
 }: CombatRoomProps) {
   const [state, setState] = useState<CombatState>({
     enemy: null,
@@ -252,6 +256,18 @@ export default function CombatRoom({
   async function handleAction(action: PlayerAction) {
     if (!state.enemy || state.phase !== 'player_turn') return;
     if (action.disabled) return;
+
+    // 도망 보장 효과 즉시 발동
+    if (action.type === 'flee' && fleeGuaranteed) {
+      onConsumeFleeEffect?.();
+      setCombatLog((prev) => [
+        ...prev,
+        { turn: state.currentTurn + 1, text: '⚡ 신의 가호로 완벽하게 도망쳤다! (도망 보장 소모)' },
+      ]);
+      setState((prev) => ({ ...prev, phase: 'fled' }));
+      setTimeout(() => onFled(), 1000);
+      return;
+    }
 
     // flee / negotiate 시도 기록
     const newFleeAttempted =
