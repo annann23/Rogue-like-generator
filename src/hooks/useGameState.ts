@@ -72,6 +72,7 @@ export interface MetaState {
   legacyPoints: number;
   upgrades: string[];
   totalRuns: number;
+  totalClears: number;
   bestDepth: number;
 }
 
@@ -91,6 +92,7 @@ interface GameStore {
   setDepth: (depth: number) => void;
   setRoomType: (type: RoomType) => void;
   killPlayer: (cause: string) => void;
+  clearRun: () => void;
   updateNPCRelation: (npcId: string, familiarity: number, meetCount: number) => void;
   addLegacyPoints: (points: number) => void;
   purchaseUpgrade: (upgradeId: string, cost: number) => void;
@@ -123,6 +125,7 @@ const DEFAULT_META: MetaState = {
   legacyPoints: 0,
   upgrades: [],
   totalRuns: 0,
+  totalClears: 0,
   bestDepth: 0,
 };
 
@@ -219,6 +222,16 @@ export const useGameState = create<GameStore>()(
             ...state.meta,
             totalRuns: state.meta.totalRuns + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
+          },
+        })),
+
+      clearRun: () =>
+        set((state) => ({
+          meta: {
+            ...state.meta,
+            totalRuns: state.meta.totalRuns + 1,
+            totalClears: state.meta.totalClears + 1,
+            bestDepth: 10,
           },
         })),
 

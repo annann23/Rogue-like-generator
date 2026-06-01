@@ -84,7 +84,7 @@ function LoadingDots() {
 
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
-  const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, incrementSkillUse, npcRelations, updateNPCRelation } =
+  const { run, setScreen, setDepth, setRoomType, applyHpChange, applyGoldChange, addRelic, killPlayer, clearRun, incrementSkillUse, npcRelations, updateNPCRelation } =
     useGameState(
       useShallow((s) => ({
         run: s.run,
@@ -95,6 +95,7 @@ export default function GameScreen() {
         applyGoldChange: s.applyGoldChange,
         addRelic: s.addRelic,
         killPlayer: s.killPlayer,
+        clearRun: s.clearRun,
         incrementSkillUse: s.incrementSkillUse,
         npcRelations: s.npcRelations,
         updateNPCRelation: s.updateNPCRelation,
@@ -276,6 +277,7 @@ export default function GameScreen() {
     const current = currentDepthRef.current;
 
     if (current >= 10) {
+      clearRun();
       setScreen('clear');
       return;
     }
