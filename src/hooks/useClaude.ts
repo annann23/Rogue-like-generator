@@ -116,18 +116,30 @@ export interface NPCDialogueResponse {
 // ─── API 함수 ────────────────────────────────
 
 export async function generateSurveyQuestions(): Promise<SurveyQuestionsResponse> {
+  const questionSeed = Math.random().toString(36).substring(2, 10);
+
   const text = await claudeFetch([
     {
       role: 'user',
       content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
 유저가 시작 전 답해야 할 5가지 질문을 만드세요.
 
+오늘의 질문 변형 코드: ${questionSeed}
+→ 이 코드를 기반으로 매번 완전히 다른 주제와 순서로 질문을 생성할 것
+
 규칙:
 1. 겉으론 평범한 일상 질문처럼 보일 것
 2. 숫자 답변 질문 3개 포함
 3. 주관식 텍스트 답변 질문 2개 포함
 4. 질문에서 결과를 유추할 수 없을 것
-5. 매 런마다 완전히 다른 질문 생성
+5. 아래 주제는 절대 사용 금지 (너무 자주 나옴):
+   - 기상 시간 / 일어난 시간 / 몇 시에 일어났는지
+   - 오늘 몇 시간 잤는지 / 수면 시간
+6. 숫자 질문의 주제 예시 (매번 다르게): 신발 사이즈, 핸드폰 번호 끝자리,
+   가장 좋아하는 숫자, 오늘 걸음 수, 지갑 속 현금, 나이, 형제 수,
+   마지막으로 먹은 음식 칼로리, 지금 창문 밖 온도 등
+7. 텍스트 질문의 주제 예시 (매번 다르게): 가장 싫어하는 색, 어릴 때 꿈,
+   마지막으로 거짓말한 내용, 가장 두려운 것, 지금 기분을 날씨로 표현 등
 
 JSON으로만 응답:
 {
