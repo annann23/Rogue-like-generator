@@ -63,7 +63,7 @@ export default function SurveyScreen() {
   const handleStartSurvey = () => {
     setPhase('loading');
     setErrorPhase(null);
-    generateSurveyQuestions()
+    generateSurveyQuestions(meta.totalRuns)
       .then((res) => {
         setQuestions(res.questions);
         setAnswers(new Array(res.questions.length).fill(''));
