@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameState, type RoomType, type RunState, type MetaState } from '@/hooks/useGameState';
-import { generateRoom, generateRoomResult, generateGhostBattle, moderateLastWords, type RoomResponse, type RoomChoice, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
+import { generateRoomWithResults, generateGhostBattle, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, PixelInput, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
 import NPCRoom from './NPCRoom';
@@ -16,12 +16,12 @@ import InventoryPanel from './InventoryPanel';
 import { ITEMS } from '@/constants/items';
 
 // ─── Types ────────────────────────────────────
-type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'shop' | 'exit' | 'choosing' | 'resolving' | 'result' | 'dying' | 'error';
+type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
 
 interface PrefetchEntry {
   roomType: RoomType;
-  // NPC 방은 null, 일반 방은 RoomResponse promise
-  promise: Promise<RoomResponse | null>;
+  // NPC/combat/ghost 방은 null, event/rest/shop 방은 RoomWithResults promise
+  promise: Promise<RoomWithResults | null>;
 }
 
 // ─── Constants ────────────────────────────────
@@ -112,13 +112,6 @@ function LoadingDots() {
 }
 
 // ─── GodOverlay ───────────────────────────────
-const RESOLVING_LINES = [
-  '운명을 결정하는 중이야...',
-  '이 선택의 결과가... 보인다.',
-  '잠깐, 계산 중이야.',
-  '흠. 예상보다 복잡하군.',
-  '곧 알게 될 거야.',
-];
 const ROOM_LOADING_LINES = [
   '다음 방을 준비하는 중이야.',
   '던전이 형태를 갖추는 중이야.',
@@ -222,7 +215,7 @@ export default function GameScreen() {
 
   const [phase, setPhase] = useState<GamePhase>('loading');
   const [showInventory, setShowInventory] = useState(false);
-  const [room, setRoom] = useState<RoomResponse | null>(null);
+  const [room, setRoom] = useState<RoomWithResults | null>(null);
   const [result, setResult] = useState<RoomResultResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [currentRoomType, setCurrentRoomType] = useState<RoomType>('combat');
@@ -277,7 +270,7 @@ export default function GameScreen() {
             .join(', ')
         : '없음';
 
-    const promise = generateRoom({
+    const promise = generateRoomWithResults({
       characterClass: run.characterClass ?? 'warrior',
       hp: run.hp,
       maxHp: run.maxHp,
@@ -376,97 +369,59 @@ export default function GameScreen() {
     startRoom(d);
   }, []); // eslint-disable-line
 
-  // ─── 선택지 클릭 ─────────────────────────────
-  async function handleChoiceClick(choice: RoomChoice) {
+  // ─── 선택지 클릭 (pre-resolved 결과 즉시 적용, 2차 API 호출 없음) ──
+  function handleChoiceClick(choice: ChoiceWithResult) {
     if (!room) return;
-    setPhase('resolving');
 
     if (choice.requiredSkill) {
       incrementSkillUse(choice.requiredSkill.type as SkillType);
     }
 
-    try {
-      const res = await generateRoomResult({
-        choice: choice.text,
-        description: room.description,
-        roomType: currentRoomType,
-        depth: currentDepthRef.current,
-        hp: run.hp,
-        maxHp: run.maxHp,
-        atk: run.atk,
-        def: run.def,
-        gold: run.gold,
-        skills: run.skills as unknown as Record<string, number>,
-      });
+    applyHpChange(choice.hpChange);
+    applyGoldChange(choice.goldChange);
 
-      applyHpChange(res.hpChange);
-      applyGoldChange(res.goldChange);
+    if (choice.skillChange) {
+      incrementSkillUse(choice.skillChange.type as SkillType);
+    }
 
-      if (res.skillChange) {
-        incrementSkillUse(res.skillChange.type as SkillType);
-      }
+    if (choice.newRelic) {
+      addRelic({ name: choice.newRelic.name, effect: choice.newRelic.effect, isCursed: choice.newRelic.isCursed, icon: '🗿' });
+    }
 
-      if (res.newRelic) {
-        addRelic({
-          name: res.newRelic.name,
-          effect: res.newRelic.effect,
-          isCursed: res.newRelic.isCursed,
-          icon: '🗿',
-        });
-      }
-
-      const willDie = res.isDead || run.hp + res.hpChange <= 0;
-      if (willDie) {
-        // 즉사 면제 효과 처리
-        if (run.lastWordEffect?.type === 'death_immune') {
-          consumeLastWordEffect();
-          applyHpChange(1 - run.hp);
-          setResult({
-            ...res,
-            isDead: false,
-            hpChange: 1 - run.hp,
-            result: `${res.result}\n\n⚡ 죽음의 순간, 마지막으로 한 말이 신의 마음을 움직였다. HP 1로 살아남았다! (즉사 면제 소모)`,
-          });
-          setPhase('result');
-          return;
-        }
-        // HP 전체 회복 효과 처리
-        if (run.lastWordEffect?.type === 'hp_restore') {
-          consumeLastWordEffect();
-          applyHpChange(run.maxHp - run.hp);
-          setResult({
-            ...res,
-            isDead: false,
-            hpChange: run.maxHp - run.hp,
-            result: `${res.result}\n\n💚 위기의 순간, 신의 가호로 HP가 완전히 회복되었다! (HP 전체 회복 소모)`,
-          });
-          setPhase('result');
-          return;
-        }
-        const cause = res.deathCause ?? '알 수 없는 이유';
-        killPlayer(cause);
-        setPendingDeathCause(cause);
-        setLastWords('');
-        setPhase('dying');
+    const willDie = choice.isDead || run.hp + choice.hpChange <= 0;
+    if (willDie) {
+      if (run.lastWordEffect?.type === 'death_immune') {
+        consumeLastWordEffect();
+        applyHpChange(1 - run.hp);
+        setResult({ result: `${choice.result}\n\n⚡ 죽음의 순간, 마지막으로 한 말이 신의 마음을 움직였다. HP 1로 살아남았다! (즉사 면제 소모)`, hpChange: 1 - run.hp, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+        setPhase('result');
         return;
       }
-
-      // 이벤트 방: 5% 확률로 지도 조각 드랍
-      if (currentRoomType === 'event' && Math.random() < 0.05) {
-        addMapFragment();
+      if (run.lastWordEffect?.type === 'hp_restore') {
+        consumeLastWordEffect();
+        applyHpChange(run.maxHp - run.hp);
+        setResult({ result: `${choice.result}\n\n💚 위기의 순간, 신의 가호로 HP가 완전히 회복되었다! (HP 전체 회복 소모)`, hpChange: run.maxHp - run.hp, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+        setPhase('result');
+        return;
       }
-
-      // 결과 보여주는 동안 다음 방 2개 프리페치
-      const nextD = currentDepthRef.current + 1;
-      schedulePrefetch(nextD);
-      schedulePrefetch(nextD + 1);
-
-      setResult(res);
-      setPhase('result');
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : '알 수 없는 오류');
-      setPhase('error');
+      const cause = choice.deathCause ?? '알 수 없는 이유';
+      killPlayer(cause);
+      setPendingDeathCause(cause);
+      setLastWords('');
+      setPhase('dying');
+      return;
     }
+
+    if (currentRoomType === 'event' && Math.random() < 0.05) {
+      addMapFragment();
+    }
+
+    const nextD = currentDepthRef.current + 1;
+    schedulePrefetch(nextD);
+    schedulePrefetch(nextD + 1);
+
+    setResult({ result: choice.result, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
+    setPhase('result');
   }
 
   // ─── NPC 대화 종료 ───────────────────────────
@@ -604,7 +559,7 @@ export default function GameScreen() {
   }
 
   // ─── 선택지 잠금 ─────────────────────────────
-  function isChoiceLocked(choice: RoomChoice): { locked: boolean; lockReason?: string } {
+  function isChoiceLocked(choice: ChoiceWithResult): { locked: boolean; lockReason?: string } {
     if (choice.requiredSkill) {
       const { type, level } = choice.requiredSkill;
       const skillValue = (run.skills as unknown as Record<string, number>)[type] ?? 0;
@@ -635,7 +590,6 @@ export default function GameScreen() {
           onClose={() => setShowInventory(false)}
         />
       )}
-      {phase === 'resolving' && <GodOverlay lines={RESOLVING_LINES} />}
       {phase === 'loading' && <GodOverlay lines={ROOM_LOADING_LINES} />}
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
 
@@ -709,7 +663,7 @@ export default function GameScreen() {
             <Sprite
               spriteKey={CLASS_SPRITES[run.characterClass ?? 'warrior']}
               scale={3}
-              animation={phase === 'choosing' ? 'idle' : phase === 'resolving' ? 'combat' : 'none'}
+              animation={phase === 'choosing' ? 'idle' : 'none'}
             />
             {phase !== 'npc' && ROOM_TYPE_SPRITES[currentRoomType] && (
               <Sprite
@@ -965,7 +919,7 @@ export default function GameScreen() {
         )}
 
         {/* 방 설명 */}
-        {(phase === 'choosing' || phase === 'resolving' || phase === 'result') && room && (
+        {(phase === 'choosing' || phase === 'result') && room && (
           <PixelPanel variant="dark" className="p-5">
             <TypewriterText text={room.description} speed={25} />
           </PixelPanel>
@@ -1005,7 +959,7 @@ export default function GameScreen() {
         )}
 
         {/* 선택지 */}
-        {(phase === 'choosing' || phase === 'resolving') && room && (
+        {phase === 'choosing' && room && (
           <>
             <PixelDivider label="선택" />
             <div className="flex flex-col gap-3">
@@ -1016,12 +970,11 @@ export default function GameScreen() {
                     key={idx}
                     text={choice.text}
                     icon={choice.icon}
-                    locked={locked || phase === 'resolving'}
+                    locked={locked}
                     lockReason={lockReason}
                     classOnly={choice.classOnly}
                     playerClass={run.characterClass ?? undefined}
                     onClick={() => handleChoiceClick(choice)}
-                    disabled={phase === 'resolving'}
                   />
                 );
               })}

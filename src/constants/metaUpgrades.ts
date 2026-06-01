@@ -8,10 +8,10 @@ export interface MetaUpgrade {
 }
 
 export const META_UPGRADES: MetaUpgrade[] = [
-  { id: 'hp',           name: '유산의 피',   description: '시작 최대 HP +15',  costPerLevel: 3, maxLevel: 5, icon: '❤️' },
+  { id: 'hp',           name: '유산의 피',   description: '시작 최대 HP +25',  costPerLevel: 3, maxLevel: 5, icon: '❤️' },
   { id: 'gold',         name: '황금 유산',   description: '시작 골드 +25',     costPerLevel: 3, maxLevel: 5, icon: '💰' },
-  { id: 'atk',          name: '전투 혈통',   description: '시작 ATK +2',       costPerLevel: 5, maxLevel: 3, icon: '⚔️' },
-  { id: 'def',          name: '철갑 가문',   description: '시작 DEF +2',       costPerLevel: 5, maxLevel: 3, icon: '🛡️' },
+  { id: 'atk',          name: '전투 혈통',   description: '시작 ATK +4',       costPerLevel: 5, maxLevel: 3, icon: '⚔️' },
+  { id: 'def',          name: '철갑 가문',   description: '시작 DEF +4',       costPerLevel: 5, maxLevel: 3, icon: '🛡️' },
   { id: 'intelligence', name: '학자의 유산', description: '지능 스킬 +1',      costPerLevel: 6, maxLevel: 3, icon: '🧠' },
   { id: 'negotiation',  name: '상인의 혈통', description: '협상 스킬 +1',      costPerLevel: 6, maxLevel: 3, icon: '🗣️' },
   { id: 'stealth',      name: '그림자 가문', description: '은신 스킬 +1',      costPerLevel: 6, maxLevel: 3, icon: '👁️' },

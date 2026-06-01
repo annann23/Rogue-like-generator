@@ -198,9 +198,9 @@ export const useGameState = create<GameStore>()(
           }
 
           const u = state.meta.upgrades;
-          const finalMaxHp = Math.max(10, maxHp + (u['hp'] ?? 0) * 15);
-          const finalAtk = Math.max(1, classData.atk + atkBonus + (u['atk'] ?? 0) * 2);
-          const finalDef = Math.max(0, classData.def + defBonus + (u['def'] ?? 0) * 2);
+          const finalMaxHp = Math.max(10, maxHp + (u['hp'] ?? 0) * 25);
+          const finalAtk = Math.max(1, classData.atk + atkBonus + (u['atk'] ?? 0) * 4);
+          const finalDef = Math.max(0, classData.def + defBonus + (u['def'] ?? 0) * 4);
           let finalGold = Math.max(0, classData.startGold + goldBonus + (u['gold'] ?? 0) * 25);
 
           const metaSkills = { ...skills };
@@ -289,7 +289,7 @@ export const useGameState = create<GameStore>()(
             ...state.meta,
             totalRuns: state.meta.totalRuns + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
-            legacyPoints: state.meta.legacyPoints + state.run.depth * 2,
+            legacyPoints: state.meta.legacyPoints + 10 + state.run.depth * 3,
           },
         })),
 
@@ -300,7 +300,7 @@ export const useGameState = create<GameStore>()(
             totalRuns: state.meta.totalRuns + 1,
             totalClears: state.meta.totalClears + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
-            legacyPoints: state.meta.legacyPoints + 50,
+            legacyPoints: state.meta.legacyPoints + 80,
           },
         })),
 

@@ -158,6 +158,21 @@ export interface RoomResultResponse {
   deathCause: string | null;
 }
 
+export interface ChoiceWithResult extends RoomChoice {
+  result: string;
+  hpChange: number;
+  goldChange: number;
+  skillChange: SkillChange | null;
+  newRelic: RelicItem | null;
+  isDead: boolean;
+  deathCause: string | null;
+}
+
+export interface RoomWithResults {
+  description: string;
+  choices: ChoiceWithResult[];
+}
+
 export interface NPCDialogueResponse {
   dialogue: string;
   familiarityChange: number;
@@ -436,6 +451,110 @@ JSON으로만 응답:
   return parseJSON<RoomResponse>(text);
 }
 
+export async function generateRoomWithResults(params: {
+  characterClass: string;
+  hp: number;
+  maxHp: number;
+  atk: number;
+  def: number;
+  gold: number;
+  skills: Record<string, number>;
+  surveyEffects: string;
+  relics: string[];
+  depth: number;
+  roomType: string;
+  personaName?: string;
+  personaPersonality?: string;
+  personaAlignment?: string;
+}): Promise<RoomWithResults> {
+  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType, personaName, personaPersonality, personaAlignment } = params;
+
+  const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
+  const tierDesc = {
+    early: '초반(1~3층): 비교적 안전. 보상이 풍부하다.',
+    mid:   '중반(4~6층): 위험이 커진다. 함정과 강적이 뒤섞인다.',
+    late:  '후반(7~10층): 매우 위험. 강적과 극한의 선택만 남아있다.',
+  }[tier];
+
+  const roomGuide: Record<string, string> = {
+    event:  `이벤트: 함정·기회·수수께끼 등 특이한 상황.`,
+    rest:   `휴식처: 안전한 공간. 치료·명상·탐색 등.`,
+    shop:   `상점: 상인. 구매·협상·절도 등.`,
+  };
+
+  const hpGuideByType: Record<string, string> = {
+    event: {
+      early: '각 선택별 HP: -(0~20) 또는 +(0~20), 골드: -(0~15) 또는 +(0~20).',
+      mid:   '각 선택별 HP: -(10~35) 또는 +(0~25), 골드: -(0~30) 또는 +(0~30).',
+      late:  '각 선택별 HP: -(20~50) 또는 +(0~20), 골드: -(0~50) 또는 +(0~50).',
+    }[tier],
+    rest: {
+      early: '안전 선택: HP +(25~50). 탐색 선택: HP +(10~25) + 골드 소량. 위험 선택: HP -(5~20) 또는 +(30~60).',
+      mid:   '안전 선택: HP +(20~40). 탐색 선택: HP +(10~20) + 골드. 위험 선택: HP -(10~30) 또는 +(30~55).',
+      late:  '안전 선택: HP +(15~30). 탐색 선택: HP +(5~15). 위험 선택: HP -(15~40) 또는 +(25~50).',
+    }[tier],
+    shop: {
+      early: '구매 선택: 골드 -(15~35). 협상 선택: 골드 -(10~20) 또는 렐릭 획득. 절도 선택: 골드 변화없음·HP -(0~20) 위험.',
+      mid:   '구매 선택: 골드 -(25~55). 협상 선택: 골드 -(15~35) 또는 렐릭. 절도 선택: HP -(0~30) 위험.',
+      late:  '구매 선택: 골드 -(40~80). 협상 선택: 골드 -(25~50) 또는 렐릭. 절도 선택: HP -(0~50) 위험.',
+    }[tier],
+  };
+
+  const hpGuide = hpGuideByType[roomType] ?? hpGuideByType['event'];
+  const personaSection = personaName ? `페르소나: ${personaName} (${personaPersonality}, ${personaAlignment})` : '';
+
+  const text = await claudeFetch(
+    [
+      {
+        role: 'user',
+        content: `당신은 다크하고 유머러스한 던전 내레이터다.
+
+플레이어:
+- 클래스: ${characterClass} | HP: ${hp}/${maxHp} | ATK: ${atk} | DEF: ${def} | 골드: ${gold}
+- 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
+- 설문 효과: ${surveyEffects} | 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
+- 현재 층: ${depth}/10 | 난이도: ${tierDesc}
+- 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
+${personaSection}
+
+규칙:
+1. 방 묘사 2~3문장.
+2. 선택지 정확히 3개. 각각 서로 다른 방식 (직접/기술/창의적).
+3. 최소 1개: requiredSkill 포함 (레벨 초반 1~2, 중반 2~3, 후반 3~4).
+4. 최소 1개: classOnly 지정 (warrior/rogue/mage 중 상황에 맞는 것).
+5. 각 선택지마다 결과(result)와 수치 변화를 미리 결정해서 포함시켜라.
+6. 피해/보상 기준 (반드시 준수): ${hpGuide}
+7. 렐릭(newRelic)은 event/shop에서 20% 확률로만.
+8. skillChange는 해당 스킬이 실제로 사용된 선택지에서만.
+${KO_STYLE}
+
+JSON으로만 응답:
+{
+  "description": "방 묘사 2~3문장",
+  "choices": [
+    {
+      "text": "선택지 텍스트",
+      "icon": "이모지",
+      "classOnly": null,
+      "requiredSkill": null,
+      "result": "결과 묘사 2~3문장",
+      "hpChange": 0,
+      "goldChange": 0,
+      "skillChange": null,
+      "newRelic": null,
+      "isDead": false,
+      "deathCause": null
+    }
+  ]
+}`,
+      },
+    ],
+    1024,
+  );
+
+  return parseJSON<RoomWithResults>(text);
+}
+
 export async function generateRoomResult(params: {
   choice: string;
   description: string;
@@ -455,7 +574,7 @@ export async function generateRoomResult(params: {
   // 방 타입별 hpChange 가이드
   const hpGuide: Record<string, Record<string, string>> = {
     combat: {
-      early: `전투 피해: -(10~30). DEF ${def} 적용 후 최종 피해 = 원래피해 - ${Math.floor(def * 0.6)}. 사망 확률 5%.`,
+      early: `전투 피해: -(10~30). DEF ${def} 적용 후 최종 피해 = 원래피해 - ${def}. 사망 확률 5%.`,
       mid:   `전투 피해: -(20~50). DEF ${def} 적용. 사망 확률 15% (HP ${hp}/${maxHp} 고려).`,
       late:  `전투 피해: -(35~80). DEF ${def} 적용. 사망 확률 30% (HP ${hp}/${maxHp} 고려).`,
     },
