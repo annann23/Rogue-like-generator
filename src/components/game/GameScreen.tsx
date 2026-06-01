@@ -11,9 +11,12 @@ import { ROOM_TYPE_SPRITES, CLASS_SPRITES } from '@/constants/spriteMap';
 import DungeonBackground from './DungeonBackground';
 import { fetchGhosts, saveGhost, type Ghost } from '@/hooks/useGhosts';
 import CombatRoom from './CombatRoom';
+import ShopRoom from './ShopRoom';
+import InventoryPanel from './InventoryPanel';
+import { ITEMS } from '@/constants/items';
 
 // ─── Types ────────────────────────────────────
-type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'exit' | 'choosing' | 'resolving' | 'result' | 'dying' | 'error';
+type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'shop' | 'exit' | 'choosing' | 'resolving' | 'result' | 'dying' | 'error';
 
 interface PrefetchEntry {
   roomType: RoomType;
@@ -186,6 +189,10 @@ export default function GameScreen() {
     addGhostBattleWin,
     consumeLastWordEffect,
     setBgmTrack,
+    addItem,
+    useItem,
+    equipItem,
+    unequipItem,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -206,10 +213,15 @@ export default function GameScreen() {
       addGhostBattleWin: s.addGhostBattleWin,
       consumeLastWordEffect: s.consumeLastWordEffect,
       setBgmTrack: s.setBgmTrack,
+      addItem: s.addItem,
+      useItem: s.useItem,
+      equipItem: s.equipItem,
+      unequipItem: s.unequipItem,
     }))
   );
 
   const [phase, setPhase] = useState<GamePhase>('loading');
+  const [showInventory, setShowInventory] = useState(false);
   const [room, setRoom] = useState<RoomResponse | null>(null);
   const [result, setResult] = useState<RoomResultResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -225,7 +237,7 @@ export default function GameScreen() {
 
   // ─── BGM 제어 ────────────────────────────────
   useEffect(() => {
-    if (phase === 'npc' || currentRoomType === 'rest' || currentRoomType === 'shop') {
+    if (phase === 'npc' || phase === 'shop' || currentRoomType === 'rest' || currentRoomType === 'shop') {
       setBgmTrack('encounter-npc.mp3');
     } else if (phase === 'combat') {
       // 적 초기화 전까지는 dungeon-normal 유지, 초기화 후 onEnemyInitialized에서 교체
@@ -312,6 +324,11 @@ export default function GameScreen() {
     // exit 방 등장 (depth >= 8, 조건 충족, 15% 확률)
     if (isExitAvailable && depth >= 8 && Math.random() < 0.15) {
       setPhase('exit');
+      return;
+    }
+
+    if (roomType === 'shop') {
+      setPhase('shop');
       return;
     }
 
@@ -604,6 +621,20 @@ export default function GameScreen() {
 
   return (
     <div className="flex flex-col w-full" style={{ background: '#0a0612', position: 'relative', height: '100dvh' }}>
+      {showInventory && (
+        <InventoryPanel
+          items={run.items}
+          equipment={run.equipment}
+          hp={run.hp}
+          maxHp={run.maxHp}
+          atk={run.atk}
+          def={run.def}
+          onUseItem={(i) => { useItem(i); }}
+          onEquipItem={(i) => { equipItem(i); }}
+          onUnequipItem={(slot) => { unequipItem(slot); }}
+          onClose={() => setShowInventory(false)}
+        />
+      )}
       {phase === 'resolving' && <GodOverlay lines={RESOLVING_LINES} />}
       {phase === 'loading' && <GodOverlay lines={ROOM_LOADING_LINES} />}
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
@@ -658,6 +689,20 @@ export default function GameScreen() {
             >
               {ROOM_LABELS[currentRoomType] ?? currentRoomType}
             </span>
+            <button
+              onClick={() => setShowInventory(true)}
+              className="font-pixel"
+              style={{
+                fontSize: '11px',
+                color: run.items.length > 0 ? '#f0c040' : '#5a4a7a',
+                background: '#1a0f2e',
+                border: `2px solid ${run.items.length > 0 ? '#6b4fa0' : '#2a1a4a'}`,
+                padding: '3px 8px',
+                cursor: 'pointer',
+              }}
+            >
+              🎒 ({run.items.length})
+            </button>
           </div>
           {/* 플레이어 vs 방 스프라이트 */}
           <div className="flex items-center gap-4">
@@ -679,6 +724,25 @@ export default function GameScreen() {
             {currentDepth} 층
           </span>
         </div>
+
+        {/* 상점 방 */}
+        {phase === 'shop' && (
+          <ShopRoom
+            depth={currentDepth}
+            gold={run.gold}
+            onBuy={(item) => {
+              applyGoldChange(-item.value);
+              addItem(item);
+            }}
+            onLeave={() => {
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '상점을 떠났다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+          />
+        )}
 
         {/* NPC 방 페이즈 */}
         {phase === 'npc' && selectedNpcRef.current && (
@@ -714,6 +778,13 @@ export default function GameScreen() {
               if (isEliteOrBoss) addEliteKill();
               // 전투 승리 보상: 5% 확률로 지도 조각
               if (Math.random() < 0.05) addMapFragment();
+              // 20% 확률로 소비 아이템 드롭
+              if (Math.random() < 0.2) {
+                const dropPool = ['potion_small', 'potion_medium', 'scroll_atk', 'scroll_def'];
+                const id = dropPool[Math.floor(Math.random() * dropPool.length)];
+                const dropped = ITEMS.find((it) => it.id === id);
+                if (dropped) addItem(dropped);
+              }
               const nextD = currentDepthRef.current + 1;
               schedulePrefetch(nextD);
               schedulePrefetch(nextD + 1);

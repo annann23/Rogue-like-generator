@@ -5,6 +5,7 @@ import type { SkillType } from '@/constants/skills';
 import type { Relic } from '@/constants/relics';
 import type { NPCRelations } from '@/constants/npcs';
 import type { LastWordEffect } from '@/hooks/useClaude';
+import type { Item, EquipmentSlots } from '@/constants/items';
 
 export interface Persona {
   name: string;
@@ -81,6 +82,8 @@ export interface RunState {
   ghostBattleWins: number;
   persona: Persona | null;
   lastWordEffect: LastWordEffect | null;
+  items: Item[];
+  equipment: EquipmentSlots;
 }
 
 export interface MetaState {
@@ -118,6 +121,10 @@ interface GameStore {
   addEliteKill: () => void;
   addGhostBattleWin: () => void;
   consumeLastWordEffect: () => void;
+  addItem: (item: Item) => void;
+  useItem: (itemIndex: number) => void;
+  equipItem: (itemIndex: number) => void;
+  unequipItem: (slot: 'weapon' | 'armor') => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -145,6 +152,8 @@ const DEFAULT_RUN: RunState = {
   ghostBattleWins: 0,
   persona: null,
   lastWordEffect: null,
+  items: [],
+  equipment: { weapon: null, armor: null },
 };
 
 const DEFAULT_META: MetaState = {
@@ -339,6 +348,93 @@ export const useGameState = create<GameStore>()(
 
       consumeLastWordEffect: () =>
         set((state) => ({ run: { ...state.run, lastWordEffect: null } })),
+
+      addItem: (item) =>
+        set((state) => ({
+          run: { ...state.run, items: [...state.run.items, item] },
+        })),
+
+      useItem: (itemIndex) =>
+        set((state) => {
+          const item = state.run.items[itemIndex];
+          if (!item || item.category !== 'consumable') return state;
+          const newItems = state.run.items.filter((_, i) => i !== itemIndex);
+          let hp = state.run.hp;
+          let atk = state.run.atk;
+          let def = state.run.def;
+          let mana = state.run.mana;
+          switch (item.effect.type) {
+            case 'heal':
+              hp = Math.min(state.run.maxHp, hp + item.effect.amount);
+              break;
+            case 'heal_full':
+              hp = state.run.maxHp;
+              break;
+            case 'atk_up':
+              atk += item.effect.amount;
+              break;
+            case 'def_up':
+              def += item.effect.amount;
+              break;
+            case 'mana_up':
+              mana = Math.min(state.run.maxMana, mana + item.effect.amount);
+              break;
+          }
+          return { run: { ...state.run, hp, atk, def, mana, items: newItems } };
+        }),
+
+      equipItem: (itemIndex) =>
+        set((state) => {
+          const item = state.run.items[itemIndex];
+          if (!item || item.category === 'consumable') return state;
+          const slot = item.category as 'weapon' | 'armor';
+          const oldEquipped = state.run.equipment[slot];
+
+          let atk = state.run.atk;
+          let def = state.run.def;
+
+          // 기존 장비 효과 제거
+          if (oldEquipped) {
+            if (oldEquipped.effect.type === 'atk_up') atk -= oldEquipped.effect.amount;
+            if (oldEquipped.effect.type === 'def_up') def -= oldEquipped.effect.amount;
+          }
+          // 새 장비 효과 적용
+          if (item.effect.type === 'atk_up') atk += item.effect.amount;
+          if (item.effect.type === 'def_up') def += item.effect.amount;
+
+          // 인벤토리: 새 아이템 제거, 기존 장비 반납
+          const newItems = state.run.items.filter((_, i) => i !== itemIndex);
+          if (oldEquipped) newItems.push(oldEquipped);
+
+          return {
+            run: {
+              ...state.run,
+              atk,
+              def,
+              items: newItems,
+              equipment: { ...state.run.equipment, [slot]: item },
+            },
+          };
+        }),
+
+      unequipItem: (slot) =>
+        set((state) => {
+          const item = state.run.equipment[slot];
+          if (!item) return state;
+          let atk = state.run.atk;
+          let def = state.run.def;
+          if (item.effect.type === 'atk_up') atk -= item.effect.amount;
+          if (item.effect.type === 'def_up') def -= item.effect.amount;
+          return {
+            run: {
+              ...state.run,
+              atk,
+              def,
+              items: [...state.run.items, item],
+              equipment: { ...state.run.equipment, [slot]: null },
+            },
+          };
+        }),
     }),
     {
       name: 'dungeon-rpg-state',
