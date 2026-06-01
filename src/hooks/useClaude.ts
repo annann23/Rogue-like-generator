@@ -785,46 +785,25 @@ export async function resolveCombatTurn(params: {
   currentIntent: type=${enemy.currentIntent.type}, isRevealed=${enemy.currentIntent.isRevealed}
   상태이상: ${statusEffectsDesc}
 
-행동별 판정 규칙 (반드시 준수):
-- attack: 플레이어 피해 = 적ATK - (플레이어DEF * 0.5), 적 피해 = 플레이어ATK * 0.8 - (적DEF * 0.4). 양쪽 최소 피해는 5.
-- defend: 이번 턴 플레이어 피해 절반. 적 피해 없음.
-- taunt: enemyRageChange = +20~35. rageGauge+변화 >= 80이면 적 다음 공격 1.5배 + 20% 실수 확률 명시.
-- bluff: 성공률 = negotiation * 15 + 25 %. 성공 시 statusApplied={type:"cowered",turnsRemaining:2}, specialEffect="bluff_success". 실패 시 statusApplied={type:"enraged",turnsRemaining:1}, specialEffect="bluff_fail".
-- read: intelligence >= 2 필요. 성공 시 newEnemyIntent.isRevealed=true, description을 구체적으로 서술.
-- negotiate: negotiation >= 3 조건. specialEffect="negotiate_success", isCombatOver=true.
-- flee: 성공률 = stealth * 18 + 10 %. 성공 시 specialEffect="flee_success", isCombatOver=true. 실패 시 hpChange=-(적ATK * 0.8).
-- skill_attack: strength 또는 arcane 중 높은 쪽 * 4 추가 피해를 enemyHpChange에 포함.
+행동 판정 (수치만 계산, narrative는 한국어 1문장):
+- attack: hpChange=-(적ATK-플DEF*0.5, min-5), enemyHpChange=-(플ATK*0.8-적DEF*0.4, min-5)
+- defend: hpChange=-(적ATK-플DEF*0.5)*0.5, enemyHpChange=0
+- taunt: enemyRageChange=+20~35, hpChange=0, enemyHpChange=0
+- bluff: 성공률=negotiation*15+25%. 성공→statusApplied={type:"cowered",turnsRemaining:2},specialEffect="bluff_success". 실패→statusApplied={type:"enraged",turnsRemaining:1},specialEffect="bluff_fail"
+- read: newEnemyIntent.isRevealed=true, description 구체 서술, hpChange=0
+- negotiate: specialEffect="negotiate_success", isCombatOver=true, hpChange=0
+- flee: 성공률=stealth*18+10%. 성공→specialEffect="flee_success",isCombatOver=true. 실패→hpChange=-(적ATK*0.8)
+- skill_attack: enemyHpChange에 max(strength,arcane)*4 추가 피해 포함
 
-상태이상 적용:
-- 적의 enraged 상태: 적 공격 1.5배
-- 적의 cowered 상태: 적 공격 0.6배
-- 플레이어의 weakened 상태: 플레이어 공격 0.7배
+상태이상: 적enraged→적공격*1.5 / 적cowered→적공격*0.6 / 플weakened→플공격*0.7
+isLastTurn=true → isCombatOver=true 강제, 플레이어 생존 시 isPlayerDefeated=false.
+hpChange=음수(플피해), enemyHpChange=음수(적피해).
 
-isLastTurn=true이면: isCombatOver=true로 강제 종결. 플레이어가 살아있으면 isPlayerDefeated=false.
-
-hpChange는 음수(플레이어 피해), enemyHpChange는 음수(적 피해).
-narrative: 한국어 2~3문장으로 이번 턴 전투 서사.
-
-JSON으로만 응답:
-{
-  "narrative": "이번 턴 서사 (한국어 2~3문장)",
-  "hpChange": -10,
-  "enemyHpChange": -8,
-  "enemyRageChange": 0,
-  "newEnemyIntent": {
-    "type": "attack",
-    "description": "다음 의도 묘사",
-    "isRevealed": false
-  },
-  "specialEffect": null,
-  "statusApplied": null,
-  "isCombatOver": false,
-  "isPlayerDefeated": false,
-  "deathCause": null
-}`,
+JSON만 출력 (다른 텍스트 금지):
+{"narrative":"한국어 1문장","hpChange":-10,"enemyHpChange":-8,"enemyRageChange":0,"newEnemyIntent":{"type":"attack","description":"묘사","isRevealed":false},"specialEffect":null,"statusApplied":null,"isCombatOver":false,"isPlayerDefeated":false,"deathCause":null}`,
       },
     ],
-    768,
+    512,
   );
 
   return parseJSON<TurnResultResponse>(text);
