@@ -23,6 +23,7 @@ export default defineConfig({
     sourcemap: true,
     outDir: 'dist',
   },
+  // @ts-ignore - vitest extends vite config
   test: {
     globals: true,
     environment: 'jsdom',
