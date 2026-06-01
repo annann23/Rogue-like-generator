@@ -1,83 +1,110 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
-const FADE_DURATION = 800; // ms
-const FADE_INTERVAL = 50;  // ms
+const FADE_MS = 800;
+const STEP_MS = 50;
 
-function fadeVolume(
-  audio: HTMLAudioElement,
-  targetVolume: number,
-  onComplete?: () => void,
-) {
-  const steps = FADE_DURATION / FADE_INTERVAL;
-  const delta = (targetVolume - audio.volume) / steps;
-  let tick = 0;
-
-  const timer = setInterval(() => {
-    tick++;
+function applyFade(audio: HTMLAudioElement, target: number, onDone?: () => void) {
+  const steps = FADE_MS / STEP_MS;
+  const delta = (target - audio.volume) / steps;
+  let n = 0;
+  const id = setInterval(() => {
+    n++;
     audio.volume = Math.min(1, Math.max(0, audio.volume + delta));
-
-    if (tick >= steps) {
-      clearInterval(timer);
-      audio.volume = targetVolume;
-      onComplete?.();
-    }
-  }, FADE_INTERVAL);
-
-  return timer;
+    if (n >= steps) { clearInterval(id); audio.volume = target; onDone?.(); }
+  }, STEP_MS);
+  return id;
 }
 
-export function useBGM(track: string | null, volume = 0.45) {
+export function useBGM(track: string | null, baseVolume = 0.45) {
+  const [muted,   setMuted]   = useState(false);
+  const [blocked, setBlocked] = useState(false);
+
   const audioRef   = useRef<HTMLAudioElement | null>(null);
   const trackRef   = useRef<string | null>(null);
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mutedRef   = useRef(false);
+  const fadeRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const volumeRef  = useRef(baseVolume);
 
+  volumeRef.current = baseVolume;
+
+  // ── 페이드 취소 ─────────────────────────────
+  const clearFade = () => {
+    if (fadeRef.current) { clearInterval(fadeRef.current); fadeRef.current = null; }
+  };
+
+  // ── 실제 재생 시도 ──────────────────────────
+  const tryPlay = useCallback((audio: HTMLAudioElement) => {
+    audio.play()
+      .then(() => {
+        setBlocked(false);
+        if (!mutedRef.current) {
+          clearFade();
+          fadeRef.current = applyFade(audio, volumeRef.current);
+        }
+      })
+      .catch(() => setBlocked(true));
+  }, []);
+
+  // ── 트랙 변경 ──────────────────────────────
   useEffect(() => {
     if (track === trackRef.current) return;
+    trackRef.current = track;
+    clearFade();
 
-    const oldAudio = audioRef.current;
+    const old = audioRef.current;
 
-    // 기존 페이드 타이머 제거
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    const startNew = () => {
+      if (!track) { audioRef.current = null; return; }
 
-    const playNew = (newTrack: string) => {
-      const audio = new Audio(`/bgm/${newTrack}`);
-      audio.loop = true;
-      audio.volume = 0;
-      audioRef.current = audio;
-      trackRef.current = newTrack;
-
-      audio.play().catch(() => {
-        // 브라우저 자동재생 정책으로 실패 시 조용히 무시
-      });
-
-      timerRef.current = fadeVolume(audio, volume);
+      const next = new Audio(`/bgm/${track}`);
+      next.loop   = true;
+      next.volume = 0;
+      audioRef.current = next;
+      tryPlay(next);
     };
 
-    if (oldAudio && !oldAudio.paused) {
-      // 기존 트랙 페이드 아웃 후 새 트랙 재생
-      timerRef.current = fadeVolume(oldAudio, 0, () => {
-        oldAudio.pause();
-        oldAudio.src = '';
-        if (track) playNew(track);
-        else { audioRef.current = null; trackRef.current = null; }
-      });
+    if (old && !old.paused) {
+      fadeRef.current = applyFade(old, 0, () => { old.pause(); old.src = ''; startNew(); });
     } else {
-      if (track) playNew(track);
-      else trackRef.current = null;
+      old?.pause();
+      startNew();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track]);
 
-    return undefined;
-  }, [track, volume]);
+  // ── 뮤트 토글 ──────────────────────────────
+  const toggleMute = useCallback(() => {
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    setMuted(next);
 
-  // 언마운트 시 정리
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      audioRef.current?.pause();
-      audioRef.current = null;
-    };
+    const audio = audioRef.current;
+    if (!audio) return;
+    clearFade();
+    fadeRef.current = applyFade(audio, next ? 0 : volumeRef.current);
   }, []);
+
+  // ── 첫 인터랙션 → 차단된 오디오 재시도 ────
+  useEffect(() => {
+    const retry = () => {
+      const audio = audioRef.current;
+      if (audio && audio.paused) tryPlay(audio);
+    };
+    document.addEventListener('click',   retry, { once: true });
+    document.addEventListener('keydown', retry, { once: true });
+    return () => {
+      document.removeEventListener('click',   retry);
+      document.removeEventListener('keydown', retry);
+    };
+  }, [tryPlay]);
+
+  // ── 언마운트 정리 ───────────────────────────
+  useEffect(() => () => {
+    clearFade();
+    audioRef.current?.pause();
+    audioRef.current = null;
+    trackRef.current = null;
+  }, []);
+
+  return { muted, blocked, toggleMute };
 }
