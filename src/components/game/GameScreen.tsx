@@ -106,10 +106,10 @@ function StatChangeBadge({ label, value, positive }: StatChangeBadgeProps) {
 
 // ─── GodOverlay ───────────────────────────────
 const ROOM_LOADING_LINES = [
-  '다음 방을 준비하는 중이야.',
-  '던전이 형태를 갖추는 중이야.',
-  '좀만 기다려.',
-  '...거의 다 됐어.',
+  '너에게 주어질 시련을 준비하는 중이다.',
+  '던전이 형태를 갖추는 중이다.',
+  '좀만 기다리거라.',
+  '...거의 다 됐다.',
 ];
 
 function GodOverlay({ lines }: { lines: string[] }) {

@@ -225,7 +225,7 @@ export default function CharacterSelect() {
 
         {/* 잠금 안내 */}
         {CHARACTER_CLASSES.some(cls => isLocked(cls)) && (
-          <p className="font-pixel text-center" style={{ fontSize: '9px', color: '#4a3070', lineHeight: 2 }}>
+          <p className="font-pixel text-center" style={{ fontSize: '9px', color: '#9878c0', lineHeight: 2 }}>
             🔒 잠긴 클래스는 유산 계승 화면에서 해금할 수 있습니다 (보유: {meta.legacyPoints} pt)
           </p>
         )}

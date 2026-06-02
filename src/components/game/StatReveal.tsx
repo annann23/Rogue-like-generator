@@ -73,7 +73,7 @@ function ResultCard({ result, index }: { result: SurveyResult; index: number }) 
           ))}
         </div>
       ) : (
-        <p className="font-pixel" style={{ fontSize: '12px', color: '#4a3070' }}>스탯 변화 없음</p>
+        <p className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>스탯 변화 없음</p>
       )}
     </PixelPanel>
   );
@@ -220,7 +220,7 @@ export default function StatReveal() {
                     <StatChangeBadge key={stat} stat={stat} change={val} />
                   ))}
                 </div>
-                <p className="font-pixel mt-3" style={{ fontSize: '11px', color: '#4a3070' }}>
+                <p className="font-pixel mt-3" style={{ fontSize: '11px', color: '#9878c0' }}>
                   ※ 선택한 클래스 기본 스탯에 가산됩니다
                 </p>
               </PixelPanel>
@@ -305,14 +305,14 @@ export default function StatReveal() {
                           fontFamily: "'Press Start 2P', monospace",
                           fontSize: '10px',
                           background: 'transparent',
-                          color: '#4a3070',
+                          color: '#9878c0',
                           border: '2px solid #4a3070',
                           padding: '4px 6px',
                           cursor: 'pointer',
                           flexShrink: 0,
                         }}
                         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#9878c0'; (e.currentTarget as HTMLElement).style.borderColor = '#9878c0'; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#4a3070'; (e.currentTarget as HTMLElement).style.borderColor = '#4a3070'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#9878c0'; (e.currentTarget as HTMLElement).style.borderColor = '#9878c0'; }}
                       >
                         ✎
                       </button>

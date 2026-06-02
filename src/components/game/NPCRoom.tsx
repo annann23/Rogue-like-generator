@@ -100,7 +100,7 @@ function GiftPanel({
           );
         })}
       </div>
-      <p className="font-pixel mt-2" style={{ fontSize: '10px', color: '#4a3070' }}>
+      <p className="font-pixel mt-2" style={{ fontSize: '10px', color: '#9878c0' }}>
         ※ NPC마다 좋아하는 선물이 다릅니다. 대화 속 힌트를 주의 깊게 들으세요.
       </p>
     </div>

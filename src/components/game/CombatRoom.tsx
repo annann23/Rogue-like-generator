@@ -568,7 +568,7 @@ export default function CombatRoom({
                 {state.enemy.currentIntent.description}
               </span>
             ) : (
-              <span style={{ color: '#4a3070' }}>??? (알 수 없다)</span>
+              <span style={{ color: '#9878c0' }}>??? (알 수 없다)</span>
             )}
           </div>
 
