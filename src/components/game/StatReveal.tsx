@@ -131,6 +131,7 @@ export default function StatReveal() {
       scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         setShowPersona(true);
+        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         setTimeout(() => setCanProceed(true), 1500);
       }, 1000);
     }
