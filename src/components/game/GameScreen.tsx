@@ -730,27 +730,6 @@ export default function GameScreen() {
         className="relative"
       />
 
-      {/* 탈출 조건 현황 바 (depth >= 5) */}
-      {currentDepth >= 5 && (
-        <div className="flex gap-2 flex-wrap px-4 pb-2" style={{ position: 'relative', zIndex: 1 }}>
-          {checkExitConditions(run, meta, npcRelations).conditions.map((c, i) => (
-            <span
-              key={i}
-              className="font-pixel"
-              style={{
-                fontSize: '9px',
-                color: c.done ? '#40c060' : '#4a3070',
-                background: '#0a0612',
-                border: `1px solid ${c.done ? '#206030' : '#2a1a4a'}`,
-                padding: '2px 6px',
-              }}
-            >
-              {c.label}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* 콘텐츠 영역 — 외부: 스크롤 / 내부: 세로 중앙정렬 */}
       <div className="flex-1 overflow-y-auto" style={{ position: 'relative', zIndex: 1 }}>
       <div className={`min-h-full p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full${phase === 'result' ? ' justify-center' : ''}`}>
