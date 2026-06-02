@@ -105,7 +105,7 @@ export default function PrologueScreen() {
         useGameState.setState((state) => ({
           meta: { ...state.meta, prologueShown: true },
         }));
-        setScreen('game');
+        setScreen('survey');
       }, 600);
     } else {
       setPanelIdx((i) => i + 1);

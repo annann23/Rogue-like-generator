@@ -186,7 +186,7 @@ export default function CharacterSelect() {
     if (!selectedClass || confirming) return;
     setConfirming(true);
     startNewRun(selectedClass, run.surveyResults, run.randomSeed, run.persona, run.lastWordEffect);
-    setScreen(meta.prologueShown ? 'game' : 'prologue');
+    setScreen('game');
   };
 
   return (

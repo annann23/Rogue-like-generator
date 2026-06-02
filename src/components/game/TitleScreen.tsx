@@ -37,7 +37,7 @@ export default function TitleScreen() {
             <PixelDivider label="선택" />
 
             <div className="flex flex-col items-center gap-3">
-              <PixelButton size="lg" variant="primary" onClick={() => setScreen('survey')}>
+              <PixelButton size="lg" variant="primary" onClick={() => setScreen(meta.prologueShown ? 'survey' : 'prologue')}>
                 ⚔️ 던전에 도전하라
               </PixelButton>
 
