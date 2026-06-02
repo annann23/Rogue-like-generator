@@ -272,6 +272,128 @@ function BusinessPage() {
           </div>
         </Section>
 
+        {/* 로드맵 */}
+        <section style={{ marginBottom: '56px' }}>
+          {/* 섹션 헤더 + 현재 단계 뱃지 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '2px solid #3a2460', paddingBottom: '12px', marginBottom: '28px' }}>
+            <p className="font-pixel" style={{ fontSize: '16px', color: '#c0a0e8', letterSpacing: '3px' }}>
+              ✦ 제품 로드맵 ✦
+            </p>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ width: '8px', height: '8px', background: '#80e080', display: 'inline-block', animation: 'none' }} />
+              <span className="font-pixel" style={{ fontSize: '11px', color: '#80e080', background: '#0a1a0a', border: '2px solid #1a4a1a', padding: '4px 10px' }}>
+                현재: PROTOTYPE
+              </span>
+            </div>
+          </div>
+
+          {/* 핵심 방향 */}
+          <div style={{ background: '#0e0820', border: '3px solid #6b4fa0', padding: '20px', marginBottom: '24px' }}>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#f0c040', marginBottom: '10px' }}>목표</p>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', lineHeight: '1.9' }}>
+              Balatro가 중독적인 이유 — 단순한 규칙 위에서 <span style={{ color: '#f0c040' }}>플레이어가 직접 시너지를 발견</span>하는 경험.<br />
+              이 게임의 목표: AI 서사 + 로그라이크 빌드 깊이의 결합으로 <span style={{ color: '#f0c040' }}>"한 판만 더"</span>를 만드는 것.
+            </p>
+          </div>
+
+          {/* 페이즈 그리드 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+            {[
+              {
+                phase: 'NOW',
+                status: '진행 중',
+                statusColor: '#80e080',
+                statusBg: '#0a1a0a',
+                borderColor: '#2a5a2a',
+                color: '#80e080',
+                title: '프로토타입',
+                items: [
+                  'AI 방·NPC·전투 생성',
+                  '페르소나 + 보석 메타',
+                  '유언 메시지 시스템',
+                  'NPC 관계 기억',
+                ],
+              },
+              {
+                phase: 'PHASE 1',
+                status: '다음 목표',
+                statusColor: '#f0c040',
+                statusBg: '#1a1200',
+                borderColor: '#5a4a00',
+                color: '#f0c040',
+                title: '빌드 시너지',
+                items: [
+                  '아이템 조합 시 예상 외 효과 발생',
+                  '스킬 숙련도 → 전설 기술 언락',
+                  '보석 간 연계 시너지',
+                  'AI 동료 파티원 (전투 참여)',
+                ],
+              },
+              {
+                phase: 'PHASE 2',
+                status: '계획',
+                statusColor: '#b090d8',
+                statusBg: '#0e0820',
+                borderColor: '#4a2d7a',
+                color: '#b090d8',
+                title: '소셜 & 기억',
+                items: [
+                  'AI 기억 — 선택이 다음 모험에 영향',
+                  '멀티엔딩 분기',
+                  '길드/파티 던전 공략',
+                  '유언 → 유령으로 등장해 도움',
+                ],
+              },
+              {
+                phase: 'PHASE 3',
+                status: '계획',
+                statusColor: '#b090d8',
+                statusBg: '#0e0820',
+                borderColor: '#4a2d7a',
+                color: '#b090d8',
+                title: '시즌 & 커스터마이징',
+                items: [
+                  '캐릭터 외형·장비·스킬 커스터마이징',
+                  '시즌 이벤트 + 한정 보상',
+                  '일일 시드 런 글로벌 랭킹',
+                  'AI 내레이터 — 실시간 영웅담 묘사',
+                ],
+              },
+            ].map(({ phase, status, statusColor, statusBg, borderColor, color, title, items }) => (
+              <div
+                key={phase}
+                className="font-pixel"
+                style={{ background: '#0a0612', border: `2px solid ${borderColor}`, padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '14px', color, letterSpacing: '2px' }}>{phase}</span>
+                  <span style={{ fontSize: '11px', color: statusColor, background: statusBg, border: `1px solid ${borderColor}`, padding: '2px 8px' }}>{status}</span>
+                </div>
+                <p style={{ fontSize: '15px', color: '#e8d0ff', margin: 0 }}>{title}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {items.map(item => (
+                    <div key={item} style={{ display: 'flex', gap: '8px' }}>
+                      <span style={{ color, flexShrink: 0, fontSize: '12px' }}>▸</span>
+                      <span style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.6' }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 핵심 질문 */}
+          <div style={{ background: '#080413', border: '2px solid #3a2460', borderLeft: '4px solid #f0c040', padding: '16px 20px' }}>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '8px' }}>설계 원칙</p>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#f0c040', lineHeight: '1.9' }}>
+              "플레이어가 어떤 선택으로 게임을 스스로 부수는 경험을 할 수 있는가?"
+            </p>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.8', marginTop: '8px' }}>
+              AI 서사는 배경. 빌드 시너지 발견이 중독의 핵심입니다.
+            </p>
+          </div>
+        </section>
+
         {/* 수익 모델 */}
         <Section title="수익화 전략">
 
@@ -419,106 +541,6 @@ function BusinessPage() {
           </div>
         </Section>
 
-        {/* 목표 — Balatro처럼 */}
-        <Section title="중독성 있는 게임이 되려면">
-          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '20px', lineHeight: '1.8' }}>
-            Balatro가 중독적인 이유는 단순한 규칙 위에서 시너지를 직접 발견하는 경험입니다.
-            이 게임이 그 수준에 가려면 "한 판만 더"를 유발하는 메커닉 깊이가 필요합니다.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-            {[
-              {
-                phase: 'PHASE 1',
-                color: '#9070c0',
-                title: '빌드 시너지 시스템',
-                items: [
-                  '아이템 조합 시 예상치 못한 효과 발생 (ex. 독 + 도발 = 적이 스스로 공격)',
-                  '스킬 숙련도가 10 이상 되면 "전설 기술" 언락 — 페르소나별 전용',
-                  '보석 2개 이상 보유 시 조합 시너지 발동 (보석 간 연계 효과)',
-                ],
-              },
-              {
-                phase: 'PHASE 2',
-                color: '#b090d8',
-                title: '동료 & 소셜 시스템',
-                items: [
-                  'AI 동료 — 같이 싸우고 성장하는 파티원. 대화·관계도·전투 역할 분담',
-                  '길드/파티 시스템 — 친구와 팀 만들어 함께 던전 공략 (비동기 or 실시간)',
-                  '유언 메시지 확장 — 고인의 스탯·아이템이 다음 런 유령으로 등장해 도움 제공',
-                ],
-              },
-              {
-                phase: 'PHASE 3',
-                color: '#c8a8e8',
-                title: '세계 기억 & 멀티엔딩',
-                items: [
-                  'AI 기억 기능 — 내 선택·행동 누적 기억, 다음 모험의 세계관에 영향',
-                  '멀티엔딩 — 선택 따라 세계가 달라지고 결말도 복수로 분기',
-                  '스토리 아크 — NPC 3회 이상 재회 시 개인 서사 완결 이벤트',
-                  '업적 도전 — "협상만으로 클리어", "골드 0원 클리어" 등 플레이 방식 제약',
-                ],
-              },
-              {
-                phase: 'PHASE 4',
-                color: '#c8a8e8',
-                title: '커스터마이징 & 시즌',
-                items: [
-                  '캐릭터 커스터마이징 — 외형·장비·스킬 자유롭게 설정, 구독자 전용 스킨',
-                  '시즌 이벤트 — 시즌별 AI 시나리오, 한정 보상, 시즌 패스',
-                  '일일 시드 런 — 전 세계 동일 조건 랭킹 경쟁',
-                  'AI 내레이터 — 플레이어 행동을 실시간 영웅담으로 묘사',
-                ],
-              },
-            ].map(({ phase, color, title, items }) => (
-              <div
-                key={phase}
-                className="font-pixel"
-                style={{
-                  background: '#0a0612',
-                  borderLeft: `4px solid ${color}`,
-                  padding: '14px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '14px', color, letterSpacing: '2px' }}>{phase}</span>
-                  <span style={{ fontSize: '13px', color: '#c8a8e8' }}>{title}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {items.map((item) => (
-                    <div key={item} style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#b090d8', lineHeight: '1.6' }}>
-                      <span style={{ color, flexShrink: 0 }}>▸</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              background: '#0e0820',
-              border: '2px solid #4a2d7a',
-              padding: '16px',
-              fontFamily: 'monospace',
-            }}
-          >
-            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '10px' }}>핵심 질문</p>
-            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', lineHeight: '1.9' }}>
-              Balatro는 "조커 조합을 내가 발견했다"는 능동적 성취감을 줍니다.<br />
-              이 게임이 중독성을 갖기 위해 답해야 할 질문은<br />
-              <span style={{ color: '#f0c040' }}>
-                "플레이어가 어떤 선택으로 게임을 스스로 부수는 경험을 할 수 있는가?"
-              </span><br />
-              입니다. AI가 이야기를 만들어 주는 것만으로는 충분하지 않습니다.<br />
-              플레이어가 시스템을 이해하고, 조합을 발견하고, 의도적으로 깨는 재미가 있어야 합니다.
-            </p>
-          </div>
-        </Section>
 
         {/* 기술 스택 */}
         <Section title="기술 스택">
