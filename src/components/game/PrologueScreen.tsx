@@ -159,8 +159,8 @@ export default function PrologueScreen() {
         <p
           className="font-pixel text-center mb-8"
           style={{
-            fontSize: '10px',
-            color: '#6b4fa0',
+            fontSize: '13px',
+            color: '#9878c0',
             letterSpacing: '4px',
           }}
         >
@@ -174,13 +174,13 @@ export default function PrologueScreen() {
               key={`${panelIdx}-${idx}`}
               className="font-pixel"
               style={{
-                fontSize: '12px',
-                lineHeight: '2.6',
+                fontSize: '14px',
+                lineHeight: '3',
                 textAlign: 'center',
                 color: line === '' ? undefined
-                  : line.startsWith('"') ? (panel.color ?? '#c8b0e8')
-                  : '#9878c0',
-                minHeight: line === '' ? '16px' : undefined,
+                  : line.startsWith('"') ? (panel.color ?? '#e8d8b8')
+                  : '#c8b0e8',
+                minHeight: line === '' ? '20px' : undefined,
                 fontStyle: line.startsWith('"') ? 'italic' : 'normal',
               }}
             >
@@ -220,13 +220,13 @@ export default function PrologueScreen() {
             <p
               className="font-pixel"
               style={{
-                fontSize: '10px',
-                color: '#4a3070',
+                fontSize: '13px',
+                color: '#9878c0',
                 letterSpacing: '2px',
                 animation: 'pulse 1.8s ease-in-out infinite',
               }}
             >
-              클릭하여 계속
+              클릭하여 계속 ▶
             </p>
           )}
         </div>
