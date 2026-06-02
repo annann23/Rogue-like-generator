@@ -1,5 +1,12 @@
 export type CharacterClass = 'warrior' | 'rogue' | 'mage';
 
+// null = 처음부터 해금, number = 필요 유산 포인트
+export const CLASS_UNLOCK_COSTS: Record<CharacterClass, number | null> = {
+  warrior: null,
+  mage:    20,
+  rogue:   50,
+};
+
 export interface ClassStats {
   id: CharacterClass;
   name: string;
