@@ -18,6 +18,32 @@ import type {
   EnemyTier,
 } from '@/types/combat';
 
+// ─── FloatingDamage ───────────────────────────
+interface FloatText {
+  id: number;
+  text: string;
+  color: string;
+  fontSize: string;
+  x: number;
+  y: number;
+}
+
+function FloatingDamageLayer({ texts }: { texts: FloatText[] }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'visible', pointerEvents: 'none', zIndex: 50 }}>
+      {texts.map((ft) => (
+        <div
+          key={ft.id}
+          className="float-damage font-pixel"
+          style={{ left: `${ft.x}%`, top: `${ft.y}%`, color: ft.color, fontSize: ft.fontSize }}
+        >
+          {ft.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Props ────────────────────────────────────
 interface CombatRoomProps {
   depth: number;
@@ -117,12 +143,28 @@ export default function CombatRoom({
 
   const [playerBuffs, setPlayerBuffs] = useState<PlayerBuff[]>([]);
 
-  // 전투 로그 (문자열 배열)
-  const [combatLog, setCombatLog] = useState<{ turn: number; text: string }[]>([]);
+  // 전투 로그
+  const [combatLog, setCombatLog] = useState<{ turn: number; text: string; type?: 'player-damage' | 'enemy-damage' | 'player-heal' | 'info' }[]>([]);
   const [initError, setInitError] = useState<string | null>(null);
 
+  // ─── 이펙트 state ────────────────────────────
+  const [screenShake, setScreenShake] = useState(false);
+  const [enemyAnim, setEnemyAnim] = useState<string>('idle');
+  const [playerAnim, setPlayerAnim] = useState<string>('none');
+  const [floatTexts, setFloatTexts] = useState<FloatText[]>([]);
+  const [victoryClass, setVictoryClass] = useState<string>('');
+
+  const floatIdRef = useRef(0);
   const logEndRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
+
+  function spawnFloat(text: string, color: string, fontSize: string, isEnemy: boolean) {
+    const id = ++floatIdRef.current;
+    const x = isEnemy ? 10 + Math.random() * 25 : 60 + Math.random() * 20;
+    const y = isEnemy ? 15 + Math.random() * 15 : 45 + Math.random() * 15;
+    setFloatTexts(prev => [...prev, { id, text, color, fontSize, x, y }]);
+    setTimeout(() => setFloatTexts(prev => prev.filter(t => t.id !== id)), 1100);
+  }
 
   // 스크롤 맨 아래로
   useEffect(() => {
@@ -136,6 +178,16 @@ export default function CombatRoom({
     initializeCombat();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ─── 보스 등장 연출 ──────────────────────────
+  useEffect(() => {
+    if (state.enemy?.tier === 'boss' && state.phase === 'player_turn' && state.currentTurn === 0) {
+      setEnemyAnim('boss-enter');
+      const t = setTimeout(() => setEnemyAnim('idle'), 700);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.enemy?.tier, state.phase]);
 
   function initializeCombat() {
     try {
@@ -347,7 +399,53 @@ export default function CombatRoom({
         statusApplied: res.statusApplied ?? undefined,
       };
 
-      setCombatLog((prev) => [...prev, { turn: nextTurn, text: res.narrative }]);
+      // ─── 이펙트 처리 ─────────────────────────
+      const dmg = Math.abs(res.enemyHpChange);
+      const isCritical = res.enemyHpChange < 0 && state.enemy != null && Math.abs(res.enemyHpChange) >= state.enemy.atk * 1.8;
+
+      // 적 피격
+      if (res.enemyHpChange < 0) {
+        if (isCritical) {
+          setEnemyAnim('hit-critical');
+          setTimeout(() => setEnemyAnim('idle'), 500);
+        } else {
+          setEnemyAnim('hit-blue');
+          setTimeout(() => setEnemyAnim('idle'), 500);
+        }
+        spawnFloat(
+          isCritical ? '★' + dmg + '★' : '-' + dmg,
+          isCritical ? '#f0c040' : '#ff5050',
+          isCritical ? '16px' : '13px',
+          true,
+        );
+      }
+
+      // 플레이어 피격
+      if (res.hpChange < 0) {
+        setScreenShake(true);
+        setTimeout(() => setScreenShake(false), 350);
+        setEnemyAnim('combat');
+        setPlayerAnim('hit-red');
+        setTimeout(() => {
+          setEnemyAnim('idle');
+          setPlayerAnim('none');
+        }, 500);
+        spawnFloat('-' + Math.abs(res.hpChange), '#a0a0ff', '12px', false);
+      }
+
+      // 플레이어 회복
+      if (res.hpChange > 0) {
+        spawnFloat('+' + res.hpChange, '#50e080', '12px', false);
+      }
+
+      // 로그 type 분류
+      const logType: 'player-damage' | 'enemy-damage' | 'player-heal' | 'info' =
+        res.hpChange < 0 ? 'player-damage' :
+        res.enemyHpChange < 0 ? 'enemy-damage' :
+        res.hpChange > 0 ? 'player-heal' :
+        'info';
+
+      setCombatLog((prev) => [...prev, { turn: nextTurn, text: res.narrative, type: logType }]);
 
       setState((prev) => ({
         ...prev,
@@ -406,7 +504,7 @@ export default function CombatRoom({
       if (res.isPlayerDefeated) {
         setCombatLog((prev) => [
           ...prev,
-          { turn: nextTurn, text: res.deathCause ?? '전투에서 쓰러졌다...' },
+          { turn: nextTurn, text: res.deathCause ?? '전투에서 쓰러졌다...', type: 'player-damage' as const },
         ]);
         setState((prev) => ({
           ...prev,
@@ -414,6 +512,7 @@ export default function CombatRoom({
           isPlayerDefeated: true,
           defeatCause: res.deathCause,
         }));
+        setVictoryClass('combat-defeat');
         setTimeout(() => onDefeat(res.deathCause ?? '알 수 없는 이유로 쓰러졌다'), 800);
         return;
       }
@@ -425,9 +524,11 @@ export default function CombatRoom({
           {
             turn: nextTurn,
             text: `${updatedEnemy.name}을(를) 쓰러뜨렸다! 골드 ${state.rewardGold}G 획득!`,
+            type: 'info' as const,
           },
         ]);
         setState((prev) => ({ ...prev, phase: 'victory' }));
+        setVictoryClass('combat-victory');
         const isEliteOrBoss =
           updatedEnemy.tier === 'elite' || updatedEnemy.tier === 'boss';
         setTimeout(
@@ -483,8 +584,10 @@ export default function CombatRoom({
   const actions = buildActions();
 
   // ─── 렌더링 ───────────────────────────────────
+  const rootClass = ['flex flex-col gap-4 w-full', screenShake ? 'screen-shake' : '', victoryClass].filter(Boolean).join(' ');
+
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className={rootClass}>
 
       {/* 초기화 오류 */}
       {initError && (
@@ -509,7 +612,8 @@ export default function CombatRoom({
 
       {/* 적 정보 패널 */}
       {state.enemy && (
-        <PixelPanel variant="dark" className="p-4">
+        <PixelPanel variant="dark" className="p-4" style={{ position: 'relative' }}>
+          <FloatingDamageLayer texts={floatTexts} />
           {/* 티어 배지 */}
           <div className="flex items-center gap-2 mb-3">
             <span
@@ -525,9 +629,7 @@ export default function CombatRoom({
             <Sprite
               spriteKey={getEnemySpriteKey(state.enemy.id ?? '', state.enemy.tier)}
               scale={5}
-              animation={
-                state.phase === 'resolving' ? 'combat' : 'idle'
-              }
+              animation={enemyAnim as any}
               flip
             />
             <div className="flex-1 min-w-0">
@@ -594,8 +696,13 @@ export default function CombatRoom({
           >
             {combatLog.map((log, idx) => {
               const isRecent = idx >= combatLog.length - 3;
+              const borderStyle: React.CSSProperties =
+                log.type === 'player-damage' ? { borderLeft: '3px solid #e0505080', paddingLeft: '6px' } :
+                log.type === 'enemy-damage'  ? { borderLeft: '3px solid #5080e080', paddingLeft: '6px' } :
+                log.type === 'player-heal'   ? { borderLeft: '3px solid #40c06080', paddingLeft: '6px' } :
+                {};
               return (
-                <div key={idx} className="font-pixel" style={{ fontSize: '12px', lineHeight: '2' }}>
+                <div key={idx} className="font-pixel" style={{ fontSize: '12px', lineHeight: '2', ...borderStyle }}>
                   {log.turn > 0 && (
                     <span style={{ color: '#6b4fa0', marginRight: '6px' }}>
                       [{log.turn}턴]

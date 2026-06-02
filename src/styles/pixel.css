@@ -108,3 +108,90 @@
   pointer-events: none;
   z-index: 50;
 }
+
+/* ─── 전투 이펙트 ──────────────────────────── */
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10%       { transform: translate(-5px, -2px); }
+  20%       { transform: translate(5px,  2px); }
+  30%       { transform: translate(-4px,  3px); }
+  40%       { transform: translate(4px, -3px); }
+  50%       { transform: translate(-3px,  2px); }
+  60%       { transform: translate(3px, -2px); }
+  70%       { transform: translate(-5px,  1px); }
+  80%       { transform: translate(5px, -1px); }
+  90%       { transform: translate(-2px,  3px); }
+}
+.screen-shake {
+  animation: screen-shake 0.35s ease-out 1;
+}
+
+@keyframes sprite-hit-red {
+  0%, 100% { filter: none; }
+  20%, 60% { filter: brightness(2.5) sepia(1) saturate(8) hue-rotate(-20deg); }
+  40%, 80% { filter: none; }
+}
+@keyframes sprite-hit-blue {
+  0%, 100% { filter: none; }
+  20%, 60% { filter: brightness(2.5) sepia(1) saturate(8) hue-rotate(180deg); }
+  40%, 80% { filter: none; }
+}
+@keyframes sprite-hit-critical {
+  0%   { filter: none; transform: scale(1); }
+  20%  { filter: brightness(4) sepia(1) saturate(10) hue-rotate(20deg); transform: scale(1.25); }
+  50%  { filter: brightness(3) sepia(1) saturate(8) hue-rotate(35deg); transform: scale(1.15); }
+  100% { filter: none; transform: scale(1); }
+}
+@keyframes sprite-knockback {
+  0%   { transform: scaleX(var(--flip,1)) translateX(0); }
+  30%  { transform: scaleX(var(--flip,1)) translateX(10px); }
+  60%  { transform: scaleX(var(--flip,1)) translateX(-5px); }
+  100% { transform: scaleX(var(--flip,1)) translateX(0); }
+}
+@keyframes boss-enter {
+  0%   { transform: scaleX(-1) scale(0.15); opacity: 0; }
+  60%  { transform: scaleX(-1) scale(1.18); opacity: 1; }
+  100% { transform: scaleX(-1) scale(1);    opacity: 1; }
+}
+.sprite-hit-red      { animation: sprite-hit-red      0.5s ease-out 1; }
+.sprite-hit-blue     { animation: sprite-hit-blue     0.5s ease-out 1; }
+.sprite-hit-critical { animation: sprite-hit-critical 0.55s ease-out 1; }
+.sprite-knockback    { animation: sprite-knockback    0.35s ease-out 1; }
+.sprite-boss-enter   { animation: boss-enter          0.7s ease-out 1 both; }
+
+@keyframes float-up-damage {
+  0%   { opacity: 1; transform: translateY(0px)  scale(1);   }
+  55%  { opacity: 1; transform: translateY(-32px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-52px) scale(0.85); }
+}
+.float-damage {
+  animation: float-up-damage 1.1s ease-out forwards;
+  pointer-events: none;
+  position: absolute;
+  font-family: 'Press Start 2P', monospace;
+  image-rendering: pixelated;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  white-space: nowrap;
+  z-index: 100;
+}
+
+@keyframes hp-pulse-low {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 10px 2px #e0404080; }
+}
+.hp-bar-low {
+  animation: hp-pulse-low 1.1s ease-in-out infinite;
+}
+
+@keyframes victory-flash {
+  0%   { filter: brightness(1) saturate(1); }
+  30%  { filter: brightness(2) saturate(2) hue-rotate(15deg); }
+  60%  { filter: brightness(1.5) saturate(1.5); }
+  100% { filter: brightness(1) saturate(1); }
+}
+@keyframes defeat-darken {
+  0%   { filter: brightness(1) saturate(1); }
+  100% { filter: brightness(0.35) saturate(0.2) sepia(0.4); }
+}
+.combat-victory { animation: victory-flash 0.8s ease-out 1; }
+.combat-defeat  { animation: defeat-darken 1.0s ease-out 1 forwards; }

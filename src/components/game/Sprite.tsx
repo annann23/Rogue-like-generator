@@ -1,6 +1,6 @@
 import { type SpriteKey, getSpritePath, getTilePath } from '@/constants/spriteMap';
 
-type SpriteAnimation = 'idle' | 'combat' | 'hit' | 'float' | 'none';
+type SpriteAnimation = 'idle' | 'combat' | 'hit' | 'float' | 'none' | 'hit-red' | 'hit-blue' | 'hit-critical' | 'knockback' | 'boss-enter';
 
 interface SpriteProps {
   // 스프라이트 지정: key 이름 또는 tile 번호
@@ -15,11 +15,16 @@ interface SpriteProps {
 }
 
 const ANIM_CLASS: Record<SpriteAnimation, string> = {
-  idle:   'sprite-idle',
-  combat: 'sprite-combat',
-  hit:    'sprite-hit',
-  float:  'sprite-float',
-  none:   '',
+  idle:          'sprite-idle',
+  combat:        'sprite-combat',
+  hit:           'sprite-hit',
+  float:         'sprite-float',
+  none:          '',
+  'hit-red':     'sprite-hit-red',
+  'hit-blue':    'sprite-hit-blue',
+  'hit-critical':'sprite-hit-critical',
+  'knockback':   'sprite-knockback',
+  'boss-enter':  'sprite-boss-enter',
 };
 
 export default function Sprite({

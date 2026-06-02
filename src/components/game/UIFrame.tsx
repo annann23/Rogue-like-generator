@@ -141,7 +141,7 @@ export function PixelBar({ value, max, variant = 'hp', label, showNumbers = true
     <div className={`flex items-center gap-2 ${className}`}>
       {label && <span className="font-pixel shrink-0" style={{ fontSize: '12px', color: '#e8d8b8', minWidth: '28px' }}>{label}</span>}
       <div className="relative flex-1" style={{ height: '14px', background: c.bg, border: `2px solid ${c.border}`, boxShadow: 'inset 0 2px 0 #00000030', imageRendering: 'pixelated' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: c.fill, boxShadow: `inset 0 2px 0 ${c.shine}60`, transition: 'width 0.2s ease-out' }} />
+        <div className={variant === 'hp' && pct <= 25 ? 'hp-bar-low' : ''} style={{ width: `${pct}%`, height: '100%', background: c.fill, boxShadow: `inset 0 2px 0 ${c.shine}60`, transition: 'width 0.2s ease-out' }} />
         {[25, 50, 75].map(tick => (
           <div key={tick} style={{ position: 'absolute', top: 0, left: `${tick}%`, width: '1px', height: '100%', background: '#00000040' }} />
         ))}

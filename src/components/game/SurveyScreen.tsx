@@ -388,6 +388,15 @@ export default function SurveyScreen() {
               marginBottom: '32px',
             }}
           >
+            <div className="flex justify-center mb-2">
+              <img
+                src="/sprites/ui/demon.svg"
+                alt=""
+                width={48}
+                height={48}
+                style={{ imageRendering: 'pixelated', opacity: 0.85 }}
+              />
+            </div>
             <TypewriterText
               text={story.demonLine}
               speed={35}
@@ -433,6 +442,16 @@ export default function SurveyScreen() {
       <div className="flex items-center justify-center w-full h-full dungeon-bg p-4">
         <div className="w-full max-w-lg flex flex-col gap-6">
           <PixelPanel variant="brown" className="p-6 flex flex-col gap-5">
+            {/* 악마 이미지 */}
+            <div className="flex justify-center mb-2">
+              <img
+                src="/sprites/ui/demon.svg"
+                alt="던전의 악마"
+                width={80}
+                height={80}
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
             {/* 타이틀 */}
             <p
               className="font-pixel text-center"
