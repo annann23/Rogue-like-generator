@@ -6,16 +6,16 @@ export const Route = createFileRoute('/business')({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: '48px' }}>
+    <section style={{ marginBottom: '56px' }}>
       <p
         className="font-pixel"
         style={{
-          fontSize: '13px',
-          color: '#9878c0',
+          fontSize: '16px',
+          color: '#c0a0e8',
           letterSpacing: '3px',
-          marginBottom: '20px',
-          borderBottom: '2px solid #2a1a4a',
-          paddingBottom: '8px',
+          marginBottom: '24px',
+          borderBottom: '2px solid #3a2460',
+          paddingBottom: '10px',
         }}
       >
         ✦ {title} ✦
@@ -31,18 +31,18 @@ function Card({ icon, title, desc }: { icon: string; title: string; desc: string
       className="font-pixel"
       style={{
         background: '#120a1e',
-        border: '2px solid #4a2d7a',
-        padding: '16px',
+        border: '2px solid #5a3d8a',
+        padding: '18px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '10px',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '20px' }}>{icon}</span>
-        <span style={{ fontSize: '11px', color: '#c8a8e8' }}>{title}</span>
+        <span style={{ fontSize: '22px' }}>{icon}</span>
+        <span style={{ fontSize: '14px', color: '#e0c8f8' }}>{title}</span>
       </div>
-      <p style={{ fontSize: '10px', color: '#6b4fa0', lineHeight: '1.7' }}>{desc}</p>
+      <p style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.8' }}>{desc}</p>
     </div>
   );
 }
@@ -52,7 +52,7 @@ function BusinessPage() {
   return (
     <div
       style={{
-        minHeight: '100dvh',
+        height: '100%',
         background: '#05020c',
         color: '#e8d0ff',
         overflowY: 'auto',
@@ -75,11 +75,11 @@ function BusinessPage() {
         <a
           href="/"
           className="font-pixel"
-          style={{ fontSize: '11px', color: '#9878c0', textDecoration: 'none' }}
+          style={{ fontSize: '14px', color: '#c8a8e8', textDecoration: 'none' }}
         >
           ← 게임으로 돌아가기
         </a>
-        <p className="font-pixel" style={{ fontSize: '10px', color: '#4a2d7a' }}>
+        <p className="font-pixel" style={{ fontSize: '13px', color: '#9070c0' }}>
           for investors &amp; partners
         </p>
       </nav>
@@ -88,7 +88,7 @@ function BusinessPage() {
 
         {/* 히어로 */}
         <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', letterSpacing: '4px', marginBottom: '16px' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', letterSpacing: '4px', marginBottom: '16px' }}>
             AI × ROGUELIKE
           </p>
           <h1
@@ -105,8 +105,8 @@ function BusinessPage() {
           <p
             className="font-pixel"
             style={{
-              fontSize: '11px',
-              color: '#9878c0',
+              fontSize: '14px',
+              color: '#c8a8e8',
               lineHeight: '1.9',
               maxWidth: '560px',
               margin: '0 auto 32px',
@@ -117,10 +117,10 @@ function BusinessPage() {
             오늘은 어떤 이야기가 펼쳐질지 매번 기대하게 됩니다.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            {['🎮 지금 무료 플레이', '📩 파트너십 문의'].map((label, i) => (
+            {['🎮 지금 무료 플레이'].map((label, i) => (
               <a
                 key={label}
-                href={i === 0 ? '/' : 'mailto:ann@keykycode.com'}
+                href='/'
                 className="font-pixel"
                 style={{
                   display: 'inline-block',
@@ -128,7 +128,7 @@ function BusinessPage() {
                   background: i === 0 ? '#3a1f6e' : 'transparent',
                   border: `2px solid ${i === 0 ? '#6b4fa0' : '#4a2d7a'}`,
                   color: i === 0 ? '#f0c040' : '#9878c0',
-                  fontSize: '10px',
+                  fontSize: '13px',
                   textDecoration: 'none',
                   cursor: 'pointer',
                 }}
@@ -166,14 +166,14 @@ function BusinessPage() {
               }}
             >
               <p style={{ fontSize: '22px', color: '#f0c040', marginBottom: '6px' }}>{num}</p>
-              <p style={{ fontSize: '9px', color: '#6b4fa0' }}>{label}</p>
+              <p style={{ fontSize: '12px', color: '#b090d8' }}>{label}</p>
             </div>
           ))}
         </div>
 
         {/* 감정 포인트 */}
         <Section title="플레이어가 구독하는 이유">
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', marginBottom: '20px', lineHeight: '1.8' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '20px', lineHeight: '1.8' }}>
             "결제 = 나만의 세계를 계속 이어가기, 끝없이 모험하기."<br />
             구독 동기는 기능이 아니라 감정입니다.
           </p>
@@ -214,9 +214,9 @@ function BusinessPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '18px' }}>{icon}</span>
-                  <span style={{ fontSize: '11px', color: '#f0c040' }}>{label}</span>
+                  <span style={{ fontSize: '14px', color: '#f0c040' }}>{label}</span>
                 </div>
-                <p style={{ fontSize: '9px', color: '#6b4fa0', lineHeight: '1.7' }}>{desc}</p>
+                <p style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.7' }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -228,7 +228,7 @@ function BusinessPage() {
               padding: '14px 16px',
             }}
           >
-            <p className="font-pixel" style={{ fontSize: '10px', color: '#9878c0', lineHeight: '1.9' }}>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', lineHeight: '1.9' }}>
               무료 플레이로 세계에 입문하고, 구독으로 그 세계를 <span style={{ color: '#f0c040' }}>끝없이 이어갑니다.</span><br />
               오늘 플레이한 선택이 내일의 던전과 NPC에 영향을 주는 경험 —<br />
               그 연속성이 구독을 유지하게 만드는 핵심 동기입니다.
@@ -286,8 +286,8 @@ function BusinessPage() {
               gap: '6px',
             }}
           >
-            <p className="font-pixel" style={{ fontSize: '9px', color: '#4a2d7a', letterSpacing: '2px', marginBottom: '4px' }}>REFERENCE — AI DUNGEON</p>
-            <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', lineHeight: '1.8' }}>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', letterSpacing: '2px', marginBottom: '4px' }}>REFERENCE — AI DUNGEON</p>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', lineHeight: '1.8' }}>
               가장 유사한 선행 사례인 AI Dungeon은 에너지 시스템을 폐기하고
               <span style={{ color: '#c8a8e8' }}> "AI 모델 품질"로 무료/유료를 구분</span>하는 구독 방식으로 전환했습니다.
               무료 유저는 무제한 플레이 가능하지만 기본 모델만 사용,
@@ -296,7 +296,7 @@ function BusinessPage() {
             </p>
           </div>
 
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', marginBottom: '24px', lineHeight: '1.8' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '24px', lineHeight: '1.8' }}>
             같은 원리를 적용합니다. Claude Haiku(무료)와 Claude Sonnet(유료)의
             서사 품질 차이가 체감될 정도로 크기 때문에, 에너지 제한 없이도
             자연스러운 업그레이드 동기가 생깁니다. Haiku는 Sonnet 대비 약 25배 저렴해
@@ -375,18 +375,18 @@ function BusinessPage() {
                   <div style={{
                     position: 'absolute', top: '-1px', right: '12px',
                     background: '#f0c040', color: '#080413',
-                    fontSize: '8px', padding: '3px 8px',
+                    fontSize: '14px', padding: '3px 8px',
                   }}>
                     {tag}
                   </div>
                 )}
-                <p style={{ fontSize: '9px', color: '#4a2d7a', letterSpacing: '2px', marginBottom: '6px' }}>{name}</p>
+                <p style={{ fontSize: '12px', color: '#9070c0', letterSpacing: '2px', marginBottom: '6px' }}>{name}</p>
                 <p style={{ fontSize: '18px', color: priceColor, marginBottom: '14px' }}>{price}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
                   {features.map((f) => (
                     <div key={f.text} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '9px', color: f.ok ? '#80e080' : '#2a1a4a', flexShrink: 0 }}>{f.ok ? '✓' : '✗'}</span>
-                      <span style={{ fontSize: '9px', color: f.ok ? '#c8a8e8' : '#2a1a4a', lineHeight: '1.5' }}>{f.text}</span>
+                      <span style={{ fontSize: '12px', color: f.ok ? '#80e080' : '#604880', flexShrink: 0 }}>{f.ok ? '✓' : '✗'}</span>
+                      <span style={{ fontSize: '12px', color: f.ok ? '#e0d0f8' : '#705090', lineHeight: '1.5' }}>{f.text}</span>
                     </div>
                   ))}
                 </div>
@@ -404,10 +404,10 @@ function BusinessPage() {
               textAlign: 'center',
             }}
           >
-            <p className="font-pixel" style={{ fontSize: '11px', color: '#f0c040', lineHeight: '2' }}>
+            <p className="font-pixel" style={{ fontSize: '14px', color: '#f0c040', lineHeight: '2' }}>
               무료: 세계에 입문, 하루 몇 번 생성, 기본 AI<br />
               구독: <span style={{ color: '#e8d0ff' }}>나만의 세계를 끝없이 이어가기</span><br />
-              <span style={{ fontSize: '9px', color: '#6b4fa0' }}>무제한 생성 · 고급 AI · 동료와 시나리오 저장 · 특수 이벤트 참여</span>
+              <span style={{ fontSize: '12px', color: '#b090d8' }}>무제한 생성 · 고급 AI · 동료와 시나리오 저장 · 특수 이벤트 참여</span>
             </p>
           </div>
 
@@ -422,14 +422,14 @@ function BusinessPage() {
               gap: '10px',
             }}
           >
-            <p className="font-pixel" style={{ fontSize: '10px', color: '#9878c0' }}>API 비용 방어 구조</p>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8' }}>API 비용 방어 구조</p>
             {[
               { icon: '🤖', text: '무료 유저 → Haiku 사용. Sonnet 대비 ~25배 저렴해 대규모 무료 유저도 감당 가능' },
               { icon: '💰', text: '유료 유저 → ₩7,900/월이 Sonnet 호출 비용을 충당하고 마진 남김' },
               { icon: '📈', text: '서사 품질 차이가 직접 체감되므로 에너지 제한 없이도 자연스러운 업그레이드 유도' },
               { icon: '🏢', text: 'B2B 라이선스 — AI 스토리텔링 엔진을 타 서비스에 제공해 고정 수익 추가 가능' },
             ].map(({ icon, text }) => (
-              <div key={text} className="font-pixel" style={{ display: 'flex', gap: '10px', fontSize: '10px', color: '#6b4fa0' }}>
+              <div key={text} className="font-pixel" style={{ display: 'flex', gap: '10px', fontSize: '13px', color: '#b090d8' }}>
                 <span>{icon}</span><span>{text}</span>
               </div>
             ))}
@@ -438,7 +438,7 @@ function BusinessPage() {
 
         {/* 현실적 진단 */}
         <Section title="현실적 진단">
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', marginBottom: '20px', lineHeight: '1.8' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '20px', lineHeight: '1.8' }}>
             이 게임의 콘셉트는 진짜 차별점이 있습니다. 다만 수익화 구조에 아직 해결되지 않은 모순이 있습니다.
           </p>
 
@@ -474,14 +474,14 @@ function BusinessPage() {
                   gap: '6px',
                 }}
               >
-                <span style={{ fontSize: '10px', color: '#c87070' }}>{label}</span>
-                <span style={{ fontSize: '9px', color: '#6b4f4f', lineHeight: '1.7' }}>{text}</span>
+                <span style={{ fontSize: '13px', color: '#e89090' }}>{label}</span>
+                <span style={{ fontSize: '12px', color: '#c09090', lineHeight: '1.7' }}>{text}</span>
               </div>
             ))}
           </div>
 
           {/* 현실적 대안 */}
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#9878c0', marginBottom: '14px' }}>현실적인 대안 경로</p>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', marginBottom: '14px' }}>현실적인 대안 경로</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
             {[
               {
@@ -513,8 +513,8 @@ function BusinessPage() {
                 }}
               >
                 <span style={{ fontSize: '18px' }}>{icon}</span>
-                <span style={{ fontSize: '10px', color: '#80e080' }}>{title}</span>
-                <span style={{ fontSize: '9px', color: '#3a6a3a', lineHeight: '1.7' }}>{desc}</span>
+                <span style={{ fontSize: '13px', color: '#80e080' }}>{title}</span>
+                <span style={{ fontSize: '12px', color: '#70b870', lineHeight: '1.7' }}>{desc}</span>
               </div>
             ))}
           </div>
@@ -522,7 +522,7 @@ function BusinessPage() {
 
         {/* 목표 — Balatro처럼 */}
         <Section title="중독성 있는 게임이 되려면">
-          <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', marginBottom: '20px', lineHeight: '1.8' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '20px', lineHeight: '1.8' }}>
             Balatro가 중독적인 이유는 단순한 규칙 위에서 시너지를 직접 발견하는 경험입니다.
             이 게임이 그 수준에 가려면 "한 판만 더"를 유발하는 메커닉 깊이가 필요합니다.
           </p>
@@ -531,7 +531,7 @@ function BusinessPage() {
             {[
               {
                 phase: 'PHASE 1',
-                color: '#4a2d7a',
+                color: '#9070c0',
                 title: '빌드 시너지 시스템',
                 items: [
                   '아이템 조합 시 예상치 못한 효과 발생 (ex. 독 + 도발 = 적이 스스로 공격)',
@@ -541,7 +541,7 @@ function BusinessPage() {
               },
               {
                 phase: 'PHASE 2',
-                color: '#6b4fa0',
+                color: '#b090d8',
                 title: '동료 & 소셜 시스템',
                 items: [
                   'AI 동료 — 같이 싸우고 성장하는 파티원. 대화·관계도·전투 역할 분담',
@@ -551,7 +551,7 @@ function BusinessPage() {
               },
               {
                 phase: 'PHASE 3',
-                color: '#9878c0',
+                color: '#c8a8e8',
                 title: '세계 기억 & 멀티엔딩',
                 items: [
                   'AI 기억 기능 — 내 선택·행동 누적 기억, 다음 모험의 세계관에 영향',
@@ -585,12 +585,12 @@ function BusinessPage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '8px', color, letterSpacing: '2px' }}>{phase}</span>
-                  <span style={{ fontSize: '10px', color: '#c8a8e8' }}>{title}</span>
+                  <span style={{ fontSize: '14px', color, letterSpacing: '2px' }}>{phase}</span>
+                  <span style={{ fontSize: '13px', color: '#c8a8e8' }}>{title}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   {items.map((item) => (
-                    <div key={item} style={{ display: 'flex', gap: '8px', fontSize: '9px', color: '#6b4fa0', lineHeight: '1.6' }}>
+                    <div key={item} style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#b090d8', lineHeight: '1.6' }}>
                       <span style={{ color, flexShrink: 0 }}>▸</span>
                       <span>{item}</span>
                     </div>
@@ -608,8 +608,8 @@ function BusinessPage() {
               fontFamily: 'monospace',
             }}
           >
-            <p className="font-pixel" style={{ fontSize: '9px', color: '#4a2d7a', marginBottom: '10px' }}>핵심 질문</p>
-            <p className="font-pixel" style={{ fontSize: '10px', color: '#9878c0', lineHeight: '1.9' }}>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '10px' }}>핵심 질문</p>
+            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', lineHeight: '1.9' }}>
               Balatro는 "조커 조합을 내가 발견했다"는 능동적 성취감을 줍니다.<br />
               이 게임이 중독성을 갖기 위해 답해야 할 질문은<br />
               <span style={{ color: '#f0c040' }}>
@@ -635,7 +635,7 @@ function BusinessPage() {
                   background: '#120a1e',
                   border: '2px solid #4a2d7a',
                   padding: '6px 12px',
-                  fontSize: '10px',
+                  fontSize: '13px',
                   color: '#c8a8e8',
                 }}
               >
