@@ -104,56 +104,6 @@ function StatChangeBadge({ label, value, positive }: StatChangeBadgeProps) {
 }
 
 
-// ─── GodOverlay ───────────────────────────────
-const ROOM_LOADING_LINES = [
-  '너에게 주어질 시련을 준비하는 중이다.',
-  '던전이 형태를 갖추는 중이다.',
-  '좀만 기다리거라.',
-  '...거의 다 됐다.',
-];
-
-function GodOverlay({ lines }: { lines: string[] }) {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % lines.length), 2200);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 50,
-        background: 'rgba(10, 6, 18, 0.72)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          background: '#1a0f2e',
-          border: '3px solid #4a2d7a',
-          boxShadow: '0 0 30px rgba(74, 45, 122, 0.4)',
-          padding: '28px 36px',
-          maxWidth: '320px',
-          width: '90%',
-          textAlign: 'center',
-        }}
-      >
-        <p className="font-pixel" style={{ fontSize: '11px', color: '#f0c040', marginBottom: '14px', letterSpacing: '1px' }}>
-          ⚡ 던전의 신 ⚡
-        </p>
-        <p className="font-pixel" style={{ fontSize: '11px', color: '#e8d8b8', lineHeight: 2.2 }}>
-          {lines[idx]}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────
 export default function GameScreen() {
   const {
@@ -274,6 +224,8 @@ export default function GameScreen() {
 
   // depth → PrefetchEntry: 미리 생성해둔 방 프로미스 캐시
   const prefetchCache = useRef<Map<number, PrefetchEntry>>(new Map());
+  // 최근 방 묘사 첫 문장 (반복 방지용, 최대 4개)
+  const recentDescriptions = useRef<string[]>([]);
 
   // ─── 프리페치 ────────────────────────────────
   // 현재 run 스냅샷으로 방 1개를 백그라운드에서 생성 예약
@@ -312,6 +264,7 @@ export default function GameScreen() {
       personaAlignment: run.persona?.alignment,
       personaTraitType: run.persona?.traitType,
       storyFlags: run.storyFlags,
+      recentDescriptions: [...recentDescriptions.current],
     });
 
     prefetchCache.current.set(depth, { roomType, promise });
@@ -378,6 +331,9 @@ export default function GameScreen() {
       const roomData = await entry.promise;
       if (!roomData) throw new Error('방 생성 실패');
       setRoom(roomData);
+      // 최근 묘사 첫 문장 저장 (최대 4개 순환)
+      const firstSentence = roomData.description.split(/[.。]/)[0].trim();
+      recentDescriptions.current = [...recentDescriptions.current.slice(-3), firstSentence];
       setPhase('choosing');
       // 벽 비문용 유령 백그라운드 fetch
       fetchGhosts(depth).then(setWallInscriptions);
@@ -393,6 +349,7 @@ export default function GameScreen() {
     schedulePrefetch(d);
     schedulePrefetch(d + 1);
     schedulePrefetch(d + 2);
+    schedulePrefetch(d + 3);
     startRoom(d);
   }, []); // eslint-disable-line
 
@@ -536,9 +493,10 @@ export default function GameScreen() {
     const next = current + 1;
     currentDepthRef.current = next;
 
-    // 2~3개 앞 방 추가 프리페치
+    // 최대 4개 앞 방 프리페치
     schedulePrefetch(next + 1);
     schedulePrefetch(next + 2);
+    schedulePrefetch(next + 3);
 
     startRoom(next);
   }
@@ -639,6 +597,10 @@ export default function GameScreen() {
           from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
           to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+        @keyframes dotPulse {
+          0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+          40%            { opacity: 1;   transform: scale(1.2); }
+        }
       `}</style>
       {showInventory && (
         <InventoryPanel
@@ -654,7 +616,7 @@ export default function GameScreen() {
           onClose={() => setShowInventory(false)}
         />
       )}
-      {phase === 'loading' && <GodOverlay lines={ROOM_LOADING_LINES} />}
+      {/* GodOverlay는 첫 입장(depth=1)에만 사용, 이후엔 인라인 스켈레톤 */}
       <DungeonBackground seed={run.randomSeed} scale={2} opacity={0.22} />
 
       {/* HUD */}
@@ -1089,6 +1051,27 @@ export default function GameScreen() {
           />
         )}
 
+
+        {/* 방 생성 대기 — 인라인 스켈레톤 (GodOverlay 대신) */}
+        {phase === 'loading' && (
+          <div className="flex flex-col items-center justify-center gap-4 py-12">
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: '10px', height: '10px',
+                    background: '#6b4fa0',
+                    animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+                  }}
+                />
+              ))}
+            </div>
+            <p className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0', letterSpacing: '2px' }}>
+              던전이 형태를 갖추는 중...
+            </p>
+          </div>
+        )}
 
         {/* 오류 */}
         {phase === 'error' && (

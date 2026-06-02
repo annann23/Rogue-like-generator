@@ -527,8 +527,9 @@ export async function generateRoomWithResults(params: {
   personaAlignment?: string;
   personaTraitType?: PersonaTraitType;
   storyFlags?: Record<string, boolean | number | string>;
+  recentDescriptions?: string[];
 }): Promise<RoomWithResults> {
-  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType, personaName, personaPersonality, personaAlignment, personaTraitType, storyFlags } = params;
+  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType, personaName, personaPersonality, personaAlignment, personaTraitType, storyFlags, recentDescriptions } = params;
 
   const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
   const tierDesc = {
@@ -564,6 +565,7 @@ export async function generateRoomWithResults(params: {
   const hpGuide = hpGuideByType[roomType] ?? hpGuideByType['event'];
   const personaSection = personaName ? `페르소나: ${personaName} (${personaPersonality}, ${personaAlignment})` : '';
 
+
   // 활성 스토리 플래그만 추출 (false/0 제외로 토큰 절약)
   const activeFlags = storyFlags
     ? Object.entries(storyFlags).filter(([, v]) => v !== false && v !== 0)
@@ -571,6 +573,10 @@ export async function generateRoomWithResults(params: {
   const flagsSection = activeFlags.length > 0
     ? `\n[활성 스토리 플래그 — 방 묘사와 선택 결과에 자연스럽게 녹여라]\n` +
       activeFlags.map(([k, v]) => `- ${k}(=${v}): ${FLAG_CONTEXT[k] ?? ''}`).join('\n')
+    : '';
+
+  const avoidSection = recentDescriptions && recentDescriptions.length > 0
+    ? `\n[금지] 다음과 같은 배경·분위기를 반복하지 말 것: ${recentDescriptions.map(d => `"${d}"`).join(', ')}`
     : '';
 
   const traitInfo = personaTraitType ? PERSONA_TRAITS[personaTraitType] : null;
@@ -593,7 +599,7 @@ export async function generateRoomWithResults(params: {
 - 설문 효과: ${surveyEffects} | 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
 - 현재 층: ${depth} | 난이도: ${tierDesc}
 - 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
-${personaSection}${flagsSection}${traitSection}
+${personaSection}${flagsSection}${traitSection}${avoidSection}
 
 규칙:
 1. 방 묘사 2~3문장.
