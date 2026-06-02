@@ -25,27 +25,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Card({ icon, title, desc }: { icon: string; title: string; desc: string }) {
-  return (
-    <div
-      className="font-pixel"
-      style={{
-        background: '#120a1e',
-        border: '2px solid #5a3d8a',
-        padding: '18px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '22px' }}>{icon}</span>
-        <span style={{ fontSize: '14px', color: '#e0c8f8' }}>{title}</span>
-      </div>
-      <p style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.8' }}>{desc}</p>
-    </div>
-  );
-}
 
 
 function BusinessPage() {
@@ -238,37 +217,74 @@ function BusinessPage() {
 
         {/* 차별점 */}
         <Section title="핵심 차별점">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
-            <Card
-              icon="🧠"
-              title="AI 생성 콘텐츠"
-              desc="방·적·NPC·대화가 매 회차 Claude API로 새롭게 생성됩니다. 스크립트 없이도 매번 다른 이야기를 경험합니다."
-            />
-            <Card
-              icon="🎭"
-              title="페르소나 시스템"
-              desc="설문 응답이 캐릭터 성향(persona)을 결정하고, 선택지·NPC 반응·전투 대사가 그 성향에 따라 달라집니다."
-            />
-            <Card
-              icon="👥"
-              title="NPC 관계 기억"
-              desc="NPC는 이전 만남을 기억합니다. 재회 시 AI가 과거 관계를 대사에 자연스럽게 녹여 연속성 있는 세계관을 만듭니다."
-            />
-            <Card
-              icon="💬"
-              title="저승 유언 메시지"
-              desc="사망 시 남긴 유언이 다음 회차 다른 플레이어의 게임 속 유령 메시지로 등장합니다. 플레이어 간 간접 연결감을 만듭니다."
-            />
-            <Card
-              icon="💎"
-              title="보석 메타 진행"
-              desc="런 간 달성 조건을 충족하면 보석을 수집합니다. 6개 완성이 최종 목표로, 단기 재미와 장기 목표를 동시에 제공합니다."
-            />
-            <Card
-              icon="🎲"
-              title="무한 재플레이성"
-              desc="AI 생성 콘텐츠 + 로그라이크 구조 + 페르소나 변수의 조합으로 동일한 플레이 경험이 반복되지 않습니다."
-            />
+
+          {/* 포지셔닝 한 줄 */}
+          <div style={{ background: '#0e0820', border: '3px solid #6b4fa0', padding: '20px', marginBottom: '28px', textAlign: 'center' }}>
+            <p className="font-pixel" style={{ fontSize: '14px', color: '#f0c040', lineHeight: '2' }}>
+              "AI를 게임에 넣은 게 아니라,<br />
+              로그라이크의 유일한 약점에 AI를 처방했습니다."
+            </p>
+          </div>
+
+          {/* 경쟁 분석 3개 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+            {[
+              {
+                icon: '①',
+                color: '#80c8ff',
+                title: 'AI Dungeon이 틀린 게 아니라, 문제를 잘못 골랐다',
+                body: 'AI Dungeon의 실패 원인은 AI 품질이 아닙니다. 플레이어에게 빈 캔버스를 줬기 때문입니다. 자유도가 높을수록 "뭘 해야 하지?"라는 인지 부담이 생기고 이탈로 이어집니다. 우리 게임은 로그라이크 구조가 레일을 제공합니다. 플레이어는 처음부터 자기가 뭘 해야 하는지 압니다.',
+              },
+              {
+                icon: '②',
+                color: '#80e080',
+                title: '자유 입력이 아니라 선택지 — 인지 부담 제거',
+                body: 'AI Dungeon은 "뭘 할지 직접 써라"고 요구합니다. 우리 게임은 "이 상황에서 어떻게 반응하겠냐"고 묻습니다. AI가 상황을 만들고 플레이어는 반응합니다. 창작 부담 없이 몰입만 남습니다.',
+              },
+              {
+                icon: '③',
+                color: '#f0c040',
+                title: 'Event[0]이 수작업으로 한 걸, AI로 무한히',
+                body: 'Event[0]은 "내 대화가 결과를 바꿨다"는 느낌으로 호평을 받았습니다. 하지만 수작업 설계라 단 하나의 스토리만 존재합니다. 우리 게임은 NPC 기억과 페르소나 시스템으로 매 런, 모든 유저에게 그 느낌을 동적으로 만듭니다.',
+              },
+            ].map(({ icon, color, title, body }) => (
+              <div key={title} className="font-pixel" style={{ background: '#0a0612', border: '2px solid #2a1a4a', borderLeft: `4px solid ${color}`, padding: '16px 20px', display: 'flex', gap: '16px' }}>
+                <span style={{ fontSize: '18px', color, flexShrink: 0 }}>{icon}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '13px', color }}>{title}</span>
+                  <span style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.8' }}>{body}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 경쟁 지형 표 */}
+          <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '12px', letterSpacing: '2px' }}>경쟁 지형</p>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="font-pixel" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr>
+                  {['', 'AI Dungeon', 'Event[0]', '우리 게임'].map((h, i) => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: i === 3 ? '#f0c040' : '#9070c0', borderBottom: '2px solid #2a1a4a', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ['입력 방식', '자유 텍스트', '자유 텍스트', '선택지 기반'],
+                  ['목표 명확성', '없음', '미리 설계됨', '로그라이크 구조'],
+                  ['감정적 연속성', '낮음', '높음 (단발)', '높음 (무한 생성)'],
+                  ['메타 진행', '없음', '없음', '보석 + 도전과제'],
+                  ['재플레이성', '무한 (방향 없음)', '낮음', '무한 + 구조 있음'],
+                ].map((row) => (
+                  <tr key={row[0]} style={{ borderBottom: '1px solid #1a0f2e' }}>
+                    {row.map((cell, i) => (
+                      <td key={i} style={{ padding: '10px 14px', color: i === 3 ? '#e0d0f8' : i === 0 ? '#c8a8e8' : '#705090', whiteSpace: 'nowrap' }}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Section>
 
