@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useGameState } from '@/hooks/useGameState';
+import { useGameState, type Persona, type SurveyResult } from '@/hooks/useGameState';
 import {
   generateSurveyQuestions,
   interpretSurveyAnswers,
   type SurveyQuestion,
   type SurveyResultItem,
+  type LastWordEffect,
 } from '@/hooks/useClaude';
+import { PERSONA_TRAITS, type PersonaTraitType } from '@/constants/storyFlags';
 import { PixelPanel, PixelButton, PixelInput, TypewriterText } from './UIFrame';
 
 type Phase = 'gem-reveal' | 'greeting' | 'answering' | 'final-words' | 'interpreting' | 'error';
@@ -92,9 +94,9 @@ const GEM_STORIES: Record<string, GemStory> = {
       '',
       '이 미궁을 처음 만들었을 때.',
       '사람들에게 보석을 내려주었을 때.',
-      '그리고 — 스스로 사라지기로 결심했을 때.',
+      '그리고 스스로 사라지기로 결심했을 때.',
       '',
-      '나는 신이었다.',
+      '...나는 신이었다.',
     ],
     demonLine: '...수고했다. 오래 걸렸군.',
   },
@@ -192,6 +194,72 @@ export default function SurveyScreen() {
       setAnswers(new Array(r.questions.length).fill(''));
       setPhase('answering');
     });
+  };
+
+  // 문답 스킵 — 랜덤 스탯 즉시 배분
+  const handleRandomStats = () => {
+    const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+    const statPool: { stat: string; changes: number[] }[] = [
+      { stat: 'hp',               changes: [-5, -3, 3, 5, 8] },
+      { stat: 'atk',              changes: [-1, 1, 2] },
+      { stat: 'def',              changes: [-1, 1, 2] },
+      { stat: 'gold',             changes: [-10, -5, 5, 10, 20] },
+      { stat: 'skill_intelligence', changes: [-1, 1] },
+      { stat: 'skill_negotiation',  changes: [-1, 1] },
+      { stat: 'skill_lockpick',     changes: [-1, 1] },
+      { stat: 'skill_stealth',      changes: [-1, 1] },
+      { stat: 'skill_strength',     changes: [-1, 1] },
+      { stat: 'skill_arcane',       changes: [-1, 1] },
+    ];
+
+    const picked = [...statPool].sort(() => Math.random() - 0.5).slice(0, 5);
+    const flavorTexts = ['운명이 던진 첫 번째 패', '두 번째 패', '세 번째 패', '네 번째 패', '마지막 패'];
+
+    const results: SurveyResult[] = picked.map((s, i) => {
+      const change = pick(s.changes);
+      return {
+        question: '(문답 생략)',
+        answer: '(스킵)',
+        interpretation: '악마가 무작위로 점괘를 뽑았다.',
+        flavorText: flavorTexts[i],
+        statChanges: [{ stat: s.stat, change }],
+        curseOrBlessing: change > 0 ? 'good' : 'bad',
+      };
+    });
+
+    const traitTypes: PersonaTraitType[] = ['reckless', 'cowardly', 'greedy', 'righteous', 'cynical', 'naive', 'vengeful'];
+    const traitType = pick(traitTypes);
+    const traitData = PERSONA_TRAITS[traitType];
+    const alignment = pick(['benevolent', 'neutral', 'malevolent'] as const);
+    const names = ['이름 모를 자', '방랑자', '기억 없는 자', '이방인', '잊혀진 영혼'] as const;
+    const pastLives = ['사냥꾼', '상인', '학자', '기사', '도적', '농부'] as const;
+
+    const persona: Persona = {
+      name: pick(names),
+      pastLife: pick(pastLives),
+      personality: traitData.name,
+      alignment,
+      birthNarrative: '운명에 맡겨진 존재. 악마조차 이 영혼을 읽지 못했다.',
+      innateTraits: [traitData.name],
+      traitType,
+    };
+
+    const lastWordEffect: LastWordEffect = {
+      type: 'none',
+      label: '없음',
+      description: '침묵. 운명이 그 빈자리를 채웠다.',
+    };
+
+    updateRun({
+      surveyResults: results,
+      surveyFinalSummary: '문답을 건너뛰었다. 운명이 그 빈자리를 채웠다.',
+      persona,
+      lastWordEffect,
+      randomSeed: seed,
+      surveyAnswers: [],
+    });
+    setScreen('stat-reveal');
   };
 
   // 질문 바뀔 때 입력창 포커스
@@ -402,6 +470,9 @@ export default function SurveyScreen() {
               <PixelButton variant="primary" size="lg" onClick={handleStartSurvey}>
                 👁️ 계약을 이행한다
               </PixelButton>
+              <PixelButton variant="secondary" size="sm" onClick={handleRandomStats}>
+                🎲 운명에 맡긴다 (랜덤 스탯)
+              </PixelButton>
               <PixelButton variant="ghost" size="sm" onClick={() => setScreen('title')}>
                 ← 도망치다
               </PixelButton>
@@ -479,7 +550,7 @@ export default function SurveyScreen() {
             <div className="flex gap-3 items-stretch">
               <PixelInput
                 ref={inputRef}
-                placeholder="신에게 무슨 말이든..."
+                placeholder="악마에게 무슨 말이든..."
                 value={finalWords}
                 onChange={(e) => setFinalWords(e.target.value)}
                 onKeyDown={handleFinalWordsKeyDown}
@@ -502,12 +573,12 @@ export default function SurveyScreen() {
                 size="sm"
                 onClick={handleSubmitFinalWords}
               >
-                (아무 말도 하지 않는다)
+                아무 말도 하지 않는다
               </PixelButton>
             </div>
 
             <p className="font-pixel text-center" style={{ fontSize: '12px', color: '#9878c0' }}>
-              ⚠️ 신은 변덕스럽다. 아첨도 독이 될 수 있다.
+              ⚠️ 악마는 변덕스럽다. 아첨도 독이 될 수 있다.
             </p>
           </PixelPanel>
         </div>

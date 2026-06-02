@@ -137,7 +137,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
     initializedRef.current = true;
     const playerInput =
       relation.meetCount > 0
-        ? '*이전에 만난 적 있는 상대가 다시 나타났다*'
+        ? `*이전에 만난 적 있는 상대가 다시 나타났다. 재회 인사를 별도 안내 없이 대사 속에 자연스럽게 녹일 것. 참고 분위기: "${npc.reunionLine}"*`
         : '*처음 만났다*';
     void callNPC(playerInput, [], 0, undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,22 +293,6 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
       className="w-full"
     >
       <div className="flex flex-col gap-3">
-        {/* 재회 배너 */}
-        {relation.meetCount > 0 && (
-          <div
-            className="font-pixel px-3 py-2"
-            style={{
-              fontSize: '12px',
-              color: '#f0c040',
-              border: '2px solid #f0c040',
-              background: '#1a1000',
-              lineHeight: '2',
-            }}
-          >
-            {npc.reunionLine}
-          </div>
-        )}
-
         {/* 호감도 변화 표시 */}
         {familiarityDiff !== 0 && (
           <div className="font-pixel text-right" style={{ fontSize: '11px', color: familiarityDiff > 0 ? '#40c040' : '#e04040' }}>

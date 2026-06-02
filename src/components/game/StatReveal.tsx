@@ -201,11 +201,11 @@ export default function StatReveal() {
         {/* 최종 요약 */}
         {showSummary && (
           <div style={{ animation: 'pageIn 0.4s ease' }}>
-            <PixelDivider label="신의 최종 판결" className="my-3" />
+            <PixelDivider label="악마의 최종 판결" className="my-3" />
 
             <PixelPanel variant="brown" className="p-5 my-3">
               <TypewriterText
-                text={run.surveyFinalSummary || '신은 아무 말도 하지 않는다...'}
+                text={run.surveyFinalSummary || '악마는 아무 말도 하지 않는다...'}
                 speed={22}
               />
             </PixelPanel>
