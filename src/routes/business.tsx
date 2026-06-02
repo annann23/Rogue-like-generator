@@ -274,65 +274,97 @@ function BusinessPage() {
 
         {/* 수익 모델 */}
         <Section title="수익화 전략">
-          {/* 한 줄 요약 */}
-          <div style={{ background: '#0e0820', border: '3px solid #6b4fa0', padding: '18px', marginBottom: '24px', textAlign: 'center' }}>
-            <p className="font-pixel" style={{ fontSize: '14px', color: '#f0c040', lineHeight: '2.2' }}>
-              무료 → 기본 AI로 입문&nbsp;&nbsp;|&nbsp;&nbsp;구독 → <span style={{ color: '#e8d0ff' }}>나만의 세계를 끝없이 이어가기</span>
+
+          {/* 핵심 메시지 */}
+          <div style={{ background: '#0e0820', border: '3px solid #6b4fa0', padding: '20px', marginBottom: '28px', textAlign: 'center' }}>
+            <p className="font-pixel" style={{ fontSize: '16px', color: '#f0c040', lineHeight: '2' }}>
+              무료 체험 → 애정 → 과금
             </p>
-            <p className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', marginTop: '6px' }}>
-              AI Dungeon과 동일한 모델 품질 티어 구조 — 에너지 제한 없음, 서사 품질로 차별화
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', marginTop: '8px', lineHeight: '1.8' }}>
+              처음부터 돈 내라가 아니라,<br />
+              "내 캐릭터와 동료, 이 세계를 계속 이어가고 싶으면 선택"
             </p>
           </div>
 
-          {/* 플랜 비교 */}
+          {/* 4단계 퍼널 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '28px' }}>
+            {[
+              {
+                step: '1',
+                color: '#5a8a5a',
+                border: '#1a4a1a',
+                label: '무료 시작',
+                desc: '구독 없이 누구나 플레이. 던전·스토리·동료 상호작용 충분히 제공. 목표: "얘들이랑 계속 놀고 싶다"는 마음 만들기.',
+              },
+              {
+                step: '2',
+                color: '#5a7aaa',
+                border: '#1a3a5a',
+                label: '유대감 형성',
+                desc: '동료가 플레이어를 기억하고 성장. "내가 이 NPC 살려야지" — 캐릭터에 애착이 생기는 순간.',
+              },
+              {
+                step: '3',
+                color: '#8a6aaa',
+                border: '#3a1a5a',
+                label: '자연스러운 과금 유도',
+                desc: '애정이 생긴 시점에 유료 콘텐츠 소개. 동료 슬롯 확장 · 특수 시나리오 · AI 기억 강화 · 모험 저장. 부담 없음.',
+              },
+              {
+                step: '4',
+                color: '#aa8a3a',
+                border: '#5a4a1a',
+                label: '구독 유지',
+                desc: '"더 즐기고 싶은 사람만 결제." 구독은 제한 해제가 아니라 세계를 깊게 이어가는 선택.',
+              },
+            ].map(({ step, color, border, label, desc }) => (
+              <div
+                key={step}
+                className="font-pixel"
+                style={{ background: '#0a0612', border: `2px solid ${border}`, borderLeft: `4px solid ${color}`, padding: '14px 16px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}
+              >
+                <span style={{ fontSize: '18px', color, flexShrink: 0, minWidth: '20px' }}>{step}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <span style={{ fontSize: '13px', color }}>{label}</span>
+                  <span style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.7' }}>{desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 플랜 */}
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', marginBottom: '14px' }}>플랜 구성</p>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'flex-start' }}>
             {[
               {
-                name: 'WANDERER',
-                price: '무료',
+                name: '무료',
+                price: '₩0',
                 priceColor: '#c8a8e8',
                 borderColor: '#3a2460',
                 bg: '#0a0612',
-                points: ['무제한 플레이', 'Claude Haiku (기본 서사)', '페르소나 3종', '사망 시 광고'],
-                locked: ['Claude Sonnet', '전체 페르소나', '유언 열람'],
+                points: ['무제한 플레이', '동료 상호작용 · 기본 서사', '보석 메타 진행', '사망 시 광고'],
               },
               {
-                name: 'ADVENTURER',
+                name: '구독',
                 price: '₩7,900 / 월',
-                tag: '추천',
+                tag: '애정이 생겼다면',
                 priceColor: '#f0c040',
                 borderColor: '#6b4fa0',
                 bg: '#0e0820',
-                points: ['무제한 플레이', 'Claude Sonnet (깊은 서사)', '전체 페르소나 10종+', '광고 없음', '유언 메시지 열람'],
-                locked: ['시즌 스킨', 'Discord 채널'],
+                points: ['동료 슬롯 확장', '특수 시나리오 · 이벤트', 'AI 기억 기능 강화', '모험 저장 · 유언 열람', '광고 없음 · 전체 페르소나'],
               },
-              {
-                name: 'LEGEND',
-                price: '₩15,900 / 월',
-                priceColor: '#e8d0ff',
-                borderColor: '#7a5aaa',
-                bg: '#0a0612',
-                points: ['모든 ADVENTURER 혜택', '시즌 한정 보석 스킨', 'Discord 개발팀 채널'],
-                locked: [],
-              },
-            ].map(({ name, price, tag, priceColor, borderColor, bg, points, locked }) => (
-              <div key={name} className="font-pixel" style={{ flex: '1 1 190px', minWidth: '180px', background: bg, border: `2px solid ${borderColor}`, padding: '18px', position: 'relative' }}>
+            ].map(({ name, price, tag, priceColor, borderColor, bg, points }) => (
+              <div key={name} className="font-pixel" style={{ flex: '1 1 220px', background: bg, border: `2px solid ${borderColor}`, padding: '18px', position: 'relative' }}>
                 {tag && (
-                  <div style={{ position: 'absolute', top: '-1px', right: '12px', background: '#f0c040', color: '#080413', fontSize: '11px', padding: '3px 8px' }}>{tag}</div>
+                  <div style={{ position: 'absolute', top: '-1px', right: '12px', background: '#6b4fa0', color: '#f0c040', fontSize: '11px', padding: '3px 8px' }}>{tag}</div>
                 )}
-                <p style={{ fontSize: '12px', color: '#9070c0', letterSpacing: '2px', marginBottom: '6px' }}>{name}</p>
-                <p style={{ fontSize: '20px', color: priceColor, marginBottom: '14px' }}>{price}</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                <p style={{ fontSize: '13px', color: '#9070c0', letterSpacing: '2px', marginBottom: '6px' }}>{name}</p>
+                <p style={{ fontSize: '22px', color: priceColor, marginBottom: '16px' }}>{price}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {points.map(t => (
                     <div key={t} style={{ display: 'flex', gap: '8px' }}>
                       <span style={{ fontSize: '12px', color: '#80e080', flexShrink: 0 }}>✓</span>
                       <span style={{ fontSize: '12px', color: '#e0d0f8', lineHeight: '1.5' }}>{t}</span>
-                    </div>
-                  ))}
-                  {locked.map(t => (
-                    <div key={t} style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#604880', flexShrink: 0 }}>✗</span>
-                      <span style={{ fontSize: '12px', color: '#705090', lineHeight: '1.5' }}>{t}</span>
                     </div>
                   ))}
                 </div>
@@ -340,13 +372,13 @@ function BusinessPage() {
             ))}
           </div>
 
-          {/* 비용 방어 한 줄 */}
-          <div style={{ background: '#0a0612', border: '2px solid #2a1a4a', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '4px' }}>API 비용 구조</p>
+          {/* API 비용 */}
+          <div style={{ background: '#0a0612', border: '2px solid #2a1a4a', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '4px' }}>비용 구조</p>
             {[
-              '🤖  무료: Haiku 사용 → Sonnet 대비 ~25배 저렴, 대규모 무료 유저 감당 가능',
-              '💰  구독: ₩7,900/월이 Sonnet 비용 충당 + 마진',
-              '🏢  장기: AI 스토리텔링 엔진 B2B 라이선스로 고정 수익 추가 가능',
+              '🤖  무료 유저 → Claude Haiku 사용 (Sonnet 대비 ~25배 저렴)',
+              '💰  구독 유저 → ₩7,900/월로 Sonnet 비용 충당 + 마진',
+              '🏢  장기 → AI 스토리텔링 엔진 B2B 라이선스로 고정 수익 확보',
             ].map(t => (
               <p key={t} className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.7' }}>{t}</p>
             ))}
@@ -355,56 +387,31 @@ function BusinessPage() {
 
         {/* 현실적 진단 */}
         <Section title="현실적 진단">
-          {/* 리스크 3줄 요약 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
             {[
-              { icon: '⚠️', color: '#e89090', title: 'AI 비용 역설', text: '사용량↑ = 비용↑. 무료 유저가 많아질수록 적자 위험. Haiku 전환으로 25배 절감하지만 구독 전환율이 낮으면 여전히 위험.' },
-              { icon: '⚠️', color: '#e89090', title: '배포 채널 없음', text: '앱스토어·Steam 없이 링크 공유에만 의존. 초기 유저 유입이 가장 큰 병목.' },
-              { icon: '⚠️', color: '#e89090', title: '타겟 좁음', text: 'AI 로그라이크 + 한국어 — 교집합이 아직 작다. 게임 완성도가 높아질수록 타겟이 넓어질 수 있음.' },
-            ].map(({ icon, color, title, text }) => (
+              { icon: '⚠️', title: 'AI 비용 역설', text: '사용량↑ = 비용↑. Haiku로 25배 절감하지만, 구독 전환율이 낮으면 여전히 위험.' },
+              { icon: '⚠️', title: '배포 채널 없음', text: '앱스토어·Steam 없이 링크 공유에만 의존. 초기 유저 유입이 가장 큰 병목.' },
+              { icon: '⚠️', title: '타겟 좁음', text: 'AI 로그라이크 + 한국어 — 교집합이 아직 작다. 완성도가 높아질수록 확장 가능.' },
+            ].map(({ icon, title, text }) => (
               <div key={title} className="font-pixel" style={{ background: '#0a0612', border: '2px solid #3a1a1a', padding: '14px 16px', display: 'flex', gap: '12px' }}>
                 <span style={{ fontSize: '18px', flexShrink: 0 }}>{icon}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  <span style={{ fontSize: '13px', color }}>{title}</span>
+                  <span style={{ fontSize: '13px', color: '#e89090' }}>{title}</span>
                   <span style={{ fontSize: '12px', color: '#c09090', lineHeight: '1.7' }}>{text}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* 대안 경로 */}
-          <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', marginBottom: '14px' }}>현실적인 대안 경로</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+          <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', marginBottom: '14px' }}>대안 경로</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
             {[
-              {
-                icon: '🎮',
-                title: 'itch.io 유료 출시',
-                desc: '플레이어 API 키 입력 방식으로 전환하면 비용 문제 해결. ₩2,900~4,900 일회성 판매. 인디 커뮤니티 자연 유입.',
-              },
-              {
-                icon: '💼',
-                title: 'B2B / 포트폴리오',
-                desc: '"AI 스토리텔링 엔진" 데모로 포지셔닝. 투자·채용·라이선스 계약 연결 경로.',
-              },
-              {
-                icon: '📱',
-                title: '모바일 전환',
-                desc: 'Capacitor로 래핑하면 앱스토어 유입 + 광고 CPM 10배 향상 (₩5,000~20,000).',
-              },
+              { icon: '🎮', title: 'itch.io 유료 출시', desc: '플레이어 API 키 방식으로 비용 해결. ₩2,900~4,900 일회성 판매.' },
+              { icon: '💼', title: 'B2B / 포트폴리오', desc: '"AI 스토리텔링 엔진" 데모로 투자·채용·라이선스 연결.' },
+              { icon: '📱', title: '모바일 전환', desc: 'Capacitor 래핑 → 앱스토어 유입 + 광고 CPM 10배 향상.' },
             ].map(({ icon, title, desc }) => (
-              <div
-                key={title}
-                className="font-pixel"
-                style={{
-                  background: '#0a1a0a',
-                  border: '2px solid #1a3a1a',
-                  padding: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ fontSize: '18px' }}>{icon}</span>
+              <div key={title} className="font-pixel" style={{ background: '#0a1a0a', border: '2px solid #1a3a1a', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '20px' }}>{icon}</span>
                 <span style={{ fontSize: '13px', color: '#80e080' }}>{title}</span>
                 <span style={{ fontSize: '12px', color: '#70b870', lineHeight: '1.7' }}>{desc}</span>
               </div>
