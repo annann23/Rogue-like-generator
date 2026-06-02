@@ -201,7 +201,7 @@ export default function DeathScreen() {
 
         {/* 새로 달성한 도전과제 */}
         {newlyUnlocked.length > 0 && (
-          <PixelPanel variant="dark" className="p-4" style={{ border: '2px solid #f0c04060' }}>
+          <div className="p-4" style={{ background: '#0d0820', border: '2px solid #f0c04060' }}>
             <p className="font-pixel mb-3" style={{ fontSize: '11px', color: '#f0c040', letterSpacing: '1px' }}>
               ✨ 도전과제 달성!
             </p>
@@ -221,7 +221,7 @@ export default function DeathScreen() {
                 </div>
               ))}
             </div>
-          </PixelPanel>
+          </div>
         )}
 
         {/* 누적 기록 */}

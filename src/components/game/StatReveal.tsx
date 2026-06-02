@@ -260,7 +260,7 @@ export default function StatReveal() {
                             setEditingName(false);
                           }
                           if (e.key === 'Escape') {
-                            setNameInput(run.persona.name);
+                            setNameInput(run.persona?.name ?? '');
                             setEditingName(false);
                           }
                         }}
