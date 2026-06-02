@@ -16,6 +16,9 @@ import ShopRoom from './ShopRoom';
 import InventoryPanel from './InventoryPanel';
 import { ITEMS } from '@/constants/items';
 import { ACHIEVEMENTS } from '@/constants/achievements';
+import { FIXED_RELICS } from '@/constants/relics';
+import { getActiveSynergies, getNewlyActivatedSynergies } from '@/constants/relicSynergies';
+import type { RelicSynergy } from '@/constants/relicSynergies';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'ghost' | 'ghost-combat' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
@@ -183,6 +186,8 @@ export default function GameScreen() {
     incrementNegotiations,
     incrementCombatWins,
     batchUnlockAchievements,
+    updateRun,
+    markSynergyApplied,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -214,6 +219,8 @@ export default function GameScreen() {
       incrementNegotiations: s.incrementNegotiations,
       incrementCombatWins: s.incrementCombatWins,
       batchUnlockAchievements: s.batchUnlockAchievements,
+      updateRun: s.updateRun,
+      markSynergyApplied: s.markSynergyApplied,
     }))
   );
 
@@ -236,6 +243,7 @@ export default function GameScreen() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run.hp]);
+  const [activatedSynergy, setActivatedSynergy] = useState<RelicSynergy | null>(null);
   const [lastWords, setLastWords] = useState('');
   const [pendingDeathCause, setPendingDeathCause] = useState<string | null>(null);
   const [moderating, setModerating] = useState(false);
@@ -413,6 +421,7 @@ export default function GameScreen() {
         const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
         batchUnlockAchievements(toUnlock, reward);
       }
+      handleSynergyCheck(run.relics, [...run.relics, { name: choice.newRelic.name, effect: choice.newRelic.effect, isCursed: choice.newRelic.isCursed, icon: '🗿' }]);
     }
 
     const willDie = choice.isDead || run.hp + choice.hpChange <= 0;
@@ -530,6 +539,28 @@ export default function GameScreen() {
     startRoom(next);
   }
 
+  // ─── 시너지 체크 ─────────────────────────────
+  function handleSynergyCheck(prevRelics: typeof run.relics, nextRelics: typeof run.relics) {
+    const newSynergies = getNewlyActivatedSynergies(prevRelics, nextRelics);
+    for (const syn of newSynergies) {
+      if (run.appliedSynergies.includes(syn.id)) continue;
+      markSynergyApplied(syn.id);
+      if (syn.statBonus) {
+        if (syn.statBonus.hp)    applyHpChange(syn.statBonus.hp);
+        if (syn.statBonus.gold)  applyGoldChange(syn.statBonus.gold);
+        if (syn.statBonus.atk || syn.statBonus.def || syn.statBonus.maxHp) {
+          updateRun({
+            ...(syn.statBonus.atk    ? { atk: run.atk + syn.statBonus.atk }       : {}),
+            ...(syn.statBonus.def    ? { def: run.def + syn.statBonus.def }       : {}),
+            ...(syn.statBonus.maxHp  ? { maxHp: run.maxHp + syn.statBonus.maxHp } : {}),
+          });
+        }
+      }
+      setActivatedSynergy(syn);
+      setTimeout(() => setActivatedSynergy(null), 3500);
+    }
+  }
+
   // ─── 마지막 말 저장 후 사망 ─────────────────────
   async function handleSaveLastWords() {
     const trimmed = lastWords.trim();
@@ -598,6 +629,12 @@ export default function GameScreen() {
 
   return (
     <div className="flex flex-col w-full" style={{ background: '#0a0612', position: 'relative', height: '100dvh' }}>
+      <style>{`
+        @keyframes synergyIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
       {showInventory && (
         <InventoryPanel
           items={run.items}
@@ -651,6 +688,36 @@ export default function GameScreen() {
       {/* 콘텐츠 영역 */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
 
+        {/* 시너지 활성화 알림 */}
+        {activatedSynergy && (
+          <div
+            style={{
+              position: 'fixed',
+              top: '80px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 100,
+              background: '#1a0f2e',
+              border: '3px solid #f0c040',
+              boxShadow: '0 0 30px #f0c04060',
+              padding: '14px 20px',
+              maxWidth: '320px',
+              width: '90%',
+              animation: 'synergyIn 0.4s ease',
+            }}
+          >
+            <p className="font-pixel text-center" style={{ fontSize: '10px', color: '#f0c040', marginBottom: '6px', letterSpacing: '1px' }}>
+              ✨ 시너지 발동! ✨
+            </p>
+            <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#e8d8b8', marginBottom: '4px' }}>
+              {activatedSynergy.icon} {activatedSynergy.name}
+            </p>
+            <p className="font-pixel text-center" style={{ fontSize: '10px', color: '#9878c0', lineHeight: 1.8 }}>
+              {activatedSynergy.displayEffect}
+            </p>
+          </div>
+        )}
+
         {/* 방 타입 배지 + 스프라이트 씬 + 층 표시 */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -700,6 +767,32 @@ export default function GameScreen() {
             {currentDepth} 층
           </span>
         </div>
+
+        {/* 활성 시너지 배지 */}
+        {(() => {
+          const synergies = getActiveSynergies(run.relics);
+          if (synergies.length === 0) return null;
+          return (
+            <div className="flex flex-wrap gap-2">
+              {synergies.map(syn => (
+                <span
+                  key={syn.id}
+                  className="font-pixel"
+                  style={{
+                    fontSize: '9px',
+                    color: '#f0c040',
+                    background: '#1a1000',
+                    border: '2px solid #f0c04060',
+                    padding: '3px 8px',
+                  }}
+                  title={syn.displayEffect}
+                >
+                  {syn.icon} {syn.name}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* 상점 방 */}
         {phase === 'shop' && (
@@ -751,6 +844,7 @@ export default function GameScreen() {
               if (relic) {
                 addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '⚔️' });
                 if (relic.isCursed) discoverRelic(relic.name);
+                handleSynergyCheck(run.relics, [...run.relics, { name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '⚔️' }]);
               }
               if (isEliteOrBoss) addEliteKill();
               // 전투 승리 보상: 5% 확률로 지도 조각
@@ -764,6 +858,17 @@ export default function GameScreen() {
                 if (toUnlock.length > 0) {
                   const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
                   batchUnlockAchievements(toUnlock, reward);
+                }
+              }
+              // FIXED_RELIC 드롭 (엘리트/보스: 35%, 일반: 8%)
+              const relicDropRate = isEliteOrBoss ? 0.35 : 0.08;
+              if (!relic && Math.random() < relicDropRate) {
+                const dropped = FIXED_RELICS[Math.floor(Math.random() * FIXED_RELICS.length)];
+                const alreadyHas = run.relics.some(r => r.name === dropped.name);
+                if (!alreadyHas) {
+                  addRelic({ name: dropped.name, effect: dropped.effect, isCursed: false, icon: dropped.icon });
+                  discoverRelic(dropped.name);
+                  handleSynergyCheck(run.relics, [...run.relics, dropped]);
                 }
               }
               // 20% 확률로 소비 아이템 드롭
@@ -915,6 +1020,7 @@ export default function GameScreen() {
               if (relic) {
                 addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '👻' });
                 if (relic.isCursed) discoverRelic(relic.name);
+                handleSynergyCheck(run.relics, [...run.relics, { ...relic, icon: '👻' }]);
               }
               addGhostBattleWin();
               if (Math.random() < 0.05) addMapFragment();
