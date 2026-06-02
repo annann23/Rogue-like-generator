@@ -15,6 +15,7 @@ import CombatRoom from './CombatRoom';
 import ShopRoom from './ShopRoom';
 import InventoryPanel from './InventoryPanel';
 import { ITEMS } from '@/constants/items';
+import { ACHIEVEMENTS } from '@/constants/achievements';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'ghost' | 'ghost-combat' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
@@ -177,6 +178,11 @@ export default function GameScreen() {
     unequipItem,
     setStoryFlag,
     incrementStoryFlag: _incrementStoryFlag,
+    discoverEnemy,
+    discoverRelic,
+    incrementNegotiations,
+    incrementCombatWins,
+    batchUnlockAchievements,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -203,6 +209,11 @@ export default function GameScreen() {
       unequipItem: s.unequipItem,
       setStoryFlag: s.setStoryFlag,
       incrementStoryFlag: s.incrementStoryFlag, // future use
+      discoverEnemy: s.discoverEnemy,
+      discoverRelic: s.discoverRelic,
+      incrementNegotiations: s.incrementNegotiations,
+      incrementCombatWins: s.incrementCombatWins,
+      batchUnlockAchievements: s.batchUnlockAchievements,
     }))
   );
 
@@ -214,6 +225,17 @@ export default function GameScreen() {
   const [currentRoomType, setCurrentRoomType] = useState<RoomType>('combat');
   const [wallInscriptions, setWallInscriptions] = useState<Ghost[]>([]);
   const [ghostEncounter, setGhostEncounter] = useState<Ghost | null>(null);
+
+  // 런 중 도전과제 체크 (HP 10 이하 생존)
+  const closeCallTriggered = useRef(false);
+  useEffect(() => {
+    if (!closeCallTriggered.current && run.hp > 0 && run.hp <= 10 && !meta.achievements['close_call']) {
+      closeCallTriggered.current = true;
+      const ach = ACHIEVEMENTS.find(a => a.id === 'close_call')!;
+      batchUnlockAchievements(['close_call'], ach.reward);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run.hp]);
   const [lastWords, setLastWords] = useState('');
   const [pendingDeathCause, setPendingDeathCause] = useState<string | null>(null);
   const [moderating, setModerating] = useState(false);
@@ -379,6 +401,18 @@ export default function GameScreen() {
 
     if (choice.newRelic) {
       addRelic({ name: choice.newRelic.name, effect: choice.newRelic.effect, isCursed: choice.newRelic.isCursed, icon: '🗿' });
+      if (choice.newRelic.isCursed) discoverRelic(choice.newRelic.name);
+
+      // 렐릭 수집 도전과제
+      const relicsAfter = run.relics.length + 1;
+      const cursedAfter = run.relics.filter(r => r.isCursed).length + (choice.newRelic.isCursed ? 1 : 0);
+      const toUnlock: string[] = [];
+      if (relicsAfter >= 3 && !meta.achievements['relic_hoarder']) toUnlock.push('relic_hoarder');
+      if (cursedAfter >= 2 && !meta.achievements['cursed_heart']) toUnlock.push('cursed_heart');
+      if (toUnlock.length > 0) {
+        const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+        batchUnlockAchievements(toUnlock, reward);
+      }
     }
 
     const willDie = choice.isDead || run.hp + choice.hpChange <= 0;
@@ -419,6 +453,10 @@ export default function GameScreen() {
 
     if (currentRoomType === 'event' && Math.random() < 0.05) {
       addMapFragment();
+      if (run.mapFragments + 1 >= 3 && !meta.achievements['map_complete']) {
+        const ach = ACHIEVEMENTS.find(a => a.id === 'map_complete')!;
+        batchUnlockAchievements(['map_complete'], ach.reward);
+      }
     }
 
     const nextD = currentDepthRef.current + 1;
@@ -444,6 +482,16 @@ export default function GameScreen() {
       const rel = npcRelations[npc.id] ?? { familiarity: 0, meetCount: 0 };
       const newFamiliarity = Math.max(0, Math.min(100, rel.familiarity + familiarityDelta));
       updateNPCRelation(npc.id, newFamiliarity, rel.meetCount + 1);
+
+      // NPC 도전과제
+      const toUnlock: string[] = [];
+      if (newFamiliarity >= 60 && !meta.achievements['diplomat']) toUnlock.push('diplomat');
+      const uniqueNPCsMet = new Set([...Object.keys(npcRelations), npc.id]).size;
+      if (uniqueNPCsMet >= 3 && !meta.achievements['networker']) toUnlock.push('networker');
+      if (toUnlock.length > 0) {
+        const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+        batchUnlockAchievements(toUnlock, reward);
+      }
     }
     // 다음 방 프리페치
     const nextD = currentDepthRef.current + 1;
@@ -504,6 +552,7 @@ export default function GameScreen() {
         last_words: trimmed,
         death_cause: pendingDeathCause,
         character_class: run.characterClass ?? 'warrior',
+        persona_name: run.persona?.name ?? null,
         depth: currentDepthRef.current,
       });
     } catch {
@@ -512,6 +561,7 @@ export default function GameScreen() {
         last_words: trimmed,
         death_cause: pendingDeathCause,
         character_class: run.characterClass ?? 'warrior',
+        persona_name: run.persona?.name ?? null,
         depth: currentDepthRef.current,
       });
     }
@@ -700,10 +750,22 @@ export default function GameScreen() {
               applyGoldChange(goldReward);
               if (relic) {
                 addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '⚔️' });
+                if (relic.isCursed) discoverRelic(relic.name);
               }
               if (isEliteOrBoss) addEliteKill();
               // 전투 승리 보상: 5% 확률로 지도 조각
               if (Math.random() < 0.05) addMapFragment();
+              // 전투 도전과제
+              incrementCombatWins();
+              {
+                const toUnlock: string[] = [];
+                if (meta.totalCombatWins === 0 && !meta.achievements['first_kill']) toUnlock.push('first_kill');
+                if (isEliteOrBoss && !meta.achievements['elite_slayer']) toUnlock.push('elite_slayer');
+                if (toUnlock.length > 0) {
+                  const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+                  batchUnlockAchievements(toUnlock, reward);
+                }
+              }
               // 20% 확률로 소비 아이템 드롭
               if (Math.random() < 0.2) {
                 const dropPool = ['potion_small', 'potion_medium', 'scroll_atk', 'scroll_def'];
@@ -726,9 +788,21 @@ export default function GameScreen() {
             }}
             fleeGuaranteed={run.lastWordEffect?.type === 'flee_guaranteed'}
             onConsumeFleeEffect={consumeLastWordEffect}
-            onEnemyInitialized={(tier) => {
+            onEnemyInitialized={(tier, enemyId) => {
+              discoverEnemy(enemyId);
               if (tier === 'boss') setBgmTrack('encounter-boss.mp3');
               else setBgmTrack('encounter-enemy.mp3');
+              // 도감 도전과제
+              const discoveredAfter = meta.discoveredEnemies.includes(enemyId)
+                ? meta.discoveredEnemies.length
+                : meta.discoveredEnemies.length + 1;
+              const toUnlock: string[] = [];
+              if (discoveredAfter >= 5 && !meta.achievements['bestiary_half']) toUnlock.push('bestiary_half');
+              if (discoveredAfter >= 10 && !meta.achievements['bestiary_all']) toUnlock.push('bestiary_all');
+              if (toUnlock.length > 0) {
+                const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+                batchUnlockAchievements(toUnlock, reward);
+              }
             }}
             onFled={() => {
               const nextD = currentDepthRef.current + 1;
@@ -738,6 +812,11 @@ export default function GameScreen() {
               setPhase('result');
             }}
             onNegotiated={() => {
+              incrementNegotiations();
+              if (meta.totalNegotiations + 1 >= 3 && !meta.achievements['pacifist']) {
+                const ach = ACHIEVEMENTS.find(a => a.id === 'pacifist')!;
+                batchUnlockAchievements(['pacifist'], ach.reward);
+              }
               const nextD = currentDepthRef.current + 1;
               schedulePrefetch(nextD);
               schedulePrefetch(nextD + 1);
@@ -794,7 +873,7 @@ export default function GameScreen() {
                     &quot;{ghostEncounter.last_words}&quot;
                   </div>
                   <p className="font-pixel" style={{ fontSize: '11px', color: '#5a4a7a' }}>
-                    — {ghostEncounter.character_class}, {ghostEncounter.depth}층에서 숨진 자
+                    — {ghostEncounter.persona_name ?? ghostEncounter.character_class}, {ghostEncounter.depth}층에서 숨진 자
                   </p>
                 </>
               ) : (
@@ -833,9 +912,22 @@ export default function GameScreen() {
             forceEnemyId="ghost"
             onVictory={(goldReward, relic) => {
               applyGoldChange(goldReward);
-              if (relic) addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '👻' });
+              if (relic) {
+                addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '👻' });
+                if (relic.isCursed) discoverRelic(relic.name);
+              }
               addGhostBattleWin();
               if (Math.random() < 0.05) addMapFragment();
+              // 유령 도전과제
+              {
+                const toUnlock: string[] = [];
+                if (!meta.achievements['ghost_hunter']) toUnlock.push('ghost_hunter');
+                if (meta.totalGhostWins + run.ghostBattleWins + 1 >= 3 && !meta.achievements['ghost_veteran']) toUnlock.push('ghost_veteran');
+                if (toUnlock.length > 0) {
+                  const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+                  batchUnlockAchievements(toUnlock, reward);
+                }
+              }
               const nextD = currentDepthRef.current + 1;
               schedulePrefetch(nextD);
               schedulePrefetch(nextD + 1);
@@ -864,7 +956,10 @@ export default function GameScreen() {
               setResult({ result: '유령과 말로 통했다. 영혼이 조용히 사라진다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
               setPhase('result');
             }}
-            onEnemyInitialized={() => setBgmTrack('encounter-enemy.mp3')}
+            onEnemyInitialized={(_tier, enemyId) => {
+              discoverEnemy(enemyId);
+              setBgmTrack('encounter-enemy.mp3');
+            }}
           />
         )}
 
@@ -914,7 +1009,7 @@ export default function GameScreen() {
               >
                 &quot;{g.last_words}&quot;
                 <span style={{ fontSize: '10px', color: '#4a3a6a', marginLeft: '6px' }}>
-                  — {g.character_class}, {g.depth}층
+                  — {g.persona_name ?? g.character_class}, {g.depth}층
                 </span>
               </p>
             ))}

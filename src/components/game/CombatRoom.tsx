@@ -38,7 +38,7 @@ interface CombatRoomProps {
   onHpChange: (delta: number) => void;
   fleeGuaranteed?: boolean;
   onConsumeFleeEffect?: () => void;
-  onEnemyInitialized?: (tier: EnemyTier) => void;
+  onEnemyInitialized?: (tier: EnemyTier, enemyId: string) => void;
   forceEnemyId?: string;
 }
 
@@ -147,7 +147,7 @@ export default function CombatRoom({
         rewardGold: res.rewardGold,
       }));
 
-      onEnemyInitialized?.(res.enemy.tier);
+      onEnemyInitialized?.(res.enemy.tier, res.enemy.id);
       setCombatLog([{ turn: 0, text: res.openingNarrative }]);
     } catch (err) {
       setInitError(err instanceof Error ? err.message : '전투 초기화 실패');

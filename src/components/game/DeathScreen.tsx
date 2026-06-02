@@ -1,14 +1,52 @@
+import { useEffect, useRef, useState } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { PixelPanel, PixelButton, PixelDivider } from './UIFrame';
 import { CLASS_SPRITES } from '@/constants/spriteMap';
 import { SKILLS } from '@/constants/skills';
 import DungeonBackground from './DungeonBackground';
 import Sprite from './Sprite';
+import { ACHIEVEMENTS } from '@/constants/achievements';
 
 export default function DeathScreen() {
-  const { screen, run, meta, setScreen } = useGameState();
+  const { screen, run, meta, npcRelations, setScreen, batchUnlockAchievements } = useGameState();
   const isClear = screen === 'clear';
   const earnedPoints = isClear ? 30 : run.depth * 2;
+  const [newlyUnlocked, setNewlyUnlocked] = useState<typeof ACHIEVEMENTS>([]);
+  const checked = useRef(false);
+
+  useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
+
+    const toUnlock: string[] = [];
+
+    const check = (id: string, cond: boolean) => {
+      if (cond && !meta.achievements[id]) toUnlock.push(id);
+    };
+
+    check('first_step',   meta.totalRuns >= 1);
+    check('floor_5',      run.depth >= 5);
+    check('floor_10',     run.depth >= 10);
+    check('first_clear',  isClear);
+    check('triple_clear', meta.totalClears + (isClear ? 1 : 0) >= 3);
+    check('veteran',      meta.totalRuns >= 10);
+    check('lucky_cursed', isClear && run.relics.some(r => r.isCursed));
+    check('map_complete', run.mapFragments >= 3);
+    check('elite_slayer', run.eliteKills >= 1);
+    check('ghost_hunter', run.ghostBattleWins >= 1);
+    check('ghost_veteran', meta.totalGhostWins + run.ghostBattleWins >= 3);
+    const maxFamiliarity = Math.max(0, ...Object.values(npcRelations).map(r => r.familiarity));
+    check('diplomat',    maxFamiliarity >= 60);
+    check('networker',   Object.keys(npcRelations).length >= 3);
+    check('pacifist',    meta.totalNegotiations >= 3);
+
+    if (toUnlock.length > 0) {
+      const reward = toUnlock.reduce((s, id) => s + (ACHIEVEMENTS.find(a => a.id === id)?.reward ?? 0), 0);
+      batchUnlockAchievements(toUnlock, reward);
+      setNewlyUnlocked(ACHIEVEMENTS.filter(a => toUnlock.includes(a.id)));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 스킬 중 1 이상인 것만
   const grownSkills = SKILLS.filter(
@@ -160,6 +198,31 @@ export default function DeathScreen() {
             </p>
           </div>
         </PixelPanel>
+
+        {/* 새로 달성한 도전과제 */}
+        {newlyUnlocked.length > 0 && (
+          <PixelPanel variant="dark" className="p-4" style={{ border: '2px solid #f0c04060' }}>
+            <p className="font-pixel mb-3" style={{ fontSize: '11px', color: '#f0c040', letterSpacing: '1px' }}>
+              ✨ 도전과제 달성!
+            </p>
+            <div className="flex flex-col gap-2">
+              {newlyUnlocked.map(ach => (
+                <div key={ach.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: '14px' }}>{ach.icon}</span>
+                    <div>
+                      <p className="font-pixel" style={{ fontSize: '10px', color: '#e8d8b8' }}>{ach.name}</p>
+                      <p className="font-pixel" style={{ fontSize: '9px', color: '#6b4fa0', lineHeight: 1.8 }}>{ach.description}</p>
+                    </div>
+                  </div>
+                  <span className="font-pixel" style={{ fontSize: '10px', color: '#f0c040', flexShrink: 0 }}>
+                    +{ach.reward} pt
+                  </span>
+                </div>
+              ))}
+            </div>
+          </PixelPanel>
+        )}
 
         {/* 누적 기록 */}
         <PixelPanel variant="dark" className="p-4">

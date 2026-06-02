@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGameState, type SurveyResult } from '@/hooks/useGameState';
-import { CHARACTER_CLASSES, type ClassStats } from '@/constants/classes';
+import { CHARACTER_CLASSES, CLASS_UNLOCK_COSTS, type ClassStats } from '@/constants/classes';
 import { PixelButton, PixelDivider } from './UIFrame';
 import Sprite from './Sprite';
 import { CLASS_SPRITES } from '@/constants/spriteMap';
@@ -67,31 +67,51 @@ function ClassCard({
   cls,
   bonuses,
   selected,
+  locked,
+  unlockCost,
   onClick,
 }: {
   cls: ClassStats;
   bonuses: Record<string, number>;
   selected: boolean;
+  locked: boolean;
+  unlockCost: number | null;
   onClick: () => void;
 }) {
-  const borderColor = selected ? '#f0c040' : '#4a2d7a';
-  const bgColor = selected ? '#2a1a08' : '#0d0820';
+  const borderColor = locked ? '#2a1a4a' : selected ? '#f0c040' : '#4a2d7a';
+  const bgColor = locked ? '#08040f' : selected ? '#2a1a08' : '#0d0820';
 
   return (
     <button
-      onClick={onClick}
+      onClick={locked ? undefined : onClick}
       className="w-full text-left"
       style={{
         background: bgColor,
         border: `3px solid ${borderColor}`,
-        boxShadow: selected
-          ? '0 0 20px #f0c04050, 0 4px 0 #7a3c00'
-          : '0 4px 0 #0a0414',
+        boxShadow: selected ? '0 0 20px #f0c04050, 0 4px 0 #7a3c00' : '0 4px 0 #0a0414',
         padding: '20px',
-        cursor: 'pointer',
+        cursor: locked ? 'not-allowed' : 'pointer',
         transition: 'border-color 0.15s, box-shadow 0.15s',
+        opacity: locked ? 0.6 : 1,
+        position: 'relative',
       }}
     >
+      {locked && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            background: '#1a0f2e',
+            border: '2px solid #4a2d7a',
+            padding: '4px 8px',
+          }}
+        >
+          <p className="font-pixel" style={{ fontSize: '9px', color: '#6b4fa0' }}>
+            🔒 {unlockCost} pt 필요
+          </p>
+        </div>
+      )}
       {/* 헤더 — 고정 높이로 카드 간 정렬 통일 */}
       <div style={{ minHeight: '90px' }} className="mb-4">
         <div className="flex items-center gap-3 mb-2">
@@ -149,13 +169,18 @@ function ClassCard({
 }
 
 export default function CharacterSelect() {
-  const { run, startNewRun, setScreen } = useGameState();
+  const { run, meta, startNewRun, setScreen } = useGameState();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   const bonuses = calcSurveyBonuses(run.surveyResults);
   const hasBonuses = Object.values(bonuses).some((v) => v !== 0);
   const selectedClass = CHARACTER_CLASSES.find((c) => c.id === selectedId);
+
+  const isLocked = (cls: ClassStats) => {
+    const cost = CLASS_UNLOCK_COSTS[cls.id];
+    return cost !== null && !meta.unlockedClasses.includes(cls.id);
+  };
 
   const handleConfirm = () => {
     if (!selectedClass || confirming) return;
@@ -182,16 +207,28 @@ export default function CharacterSelect() {
 
         {/* 클래스 카드 3개 */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {CHARACTER_CLASSES.map((cls) => (
-            <ClassCard
-              key={cls.id}
-              cls={cls}
-              bonuses={bonuses}
-              selected={selectedId === cls.id}
-              onClick={() => setSelectedId(cls.id)}
-            />
-          ))}
+          {CHARACTER_CLASSES.map((cls) => {
+            const locked = isLocked(cls);
+            return (
+              <ClassCard
+                key={cls.id}
+                cls={cls}
+                bonuses={bonuses}
+                selected={selectedId === cls.id}
+                locked={locked}
+                unlockCost={CLASS_UNLOCK_COSTS[cls.id]}
+                onClick={() => !locked && setSelectedId(cls.id)}
+              />
+            );
+          })}
         </div>
+
+        {/* 잠금 안내 */}
+        {CHARACTER_CLASSES.some(cls => isLocked(cls)) && (
+          <p className="font-pixel text-center" style={{ fontSize: '9px', color: '#4a3070', lineHeight: 2 }}>
+            🔒 잠긴 클래스는 유산 계승 화면에서 해금할 수 있습니다 (보유: {meta.legacyPoints} pt)
+          </p>
+        )}
 
         {/* 확인 버튼 (클래스 선택 후 fade-in) */}
         <div
