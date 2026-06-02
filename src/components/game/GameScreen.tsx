@@ -4,6 +4,7 @@ import { useGameState, type RoomType, type RunState, type MetaState } from '@/ho
 import { generateRoomWithResults, generateGhostBattle, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, PixelInput, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
+import { PERSONA_TRAITS } from '@/constants/storyFlags';
 import NPCRoom from './NPCRoom';
 import { NPC_TEMPLATES, type NPCTemplate, type NPCRelations } from '@/constants/npcs';
 import Sprite from './Sprite';
@@ -189,6 +190,8 @@ export default function GameScreen() {
     useItem,
     equipItem,
     unequipItem,
+    setStoryFlag,
+    incrementStoryFlag: _incrementStoryFlag,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -213,6 +216,8 @@ export default function GameScreen() {
       useItem: s.useItem,
       equipItem: s.equipItem,
       unequipItem: s.unequipItem,
+      setStoryFlag: s.setStoryFlag,
+      incrementStoryFlag: s.incrementStoryFlag, // future use
     }))
   );
 
@@ -288,6 +293,8 @@ export default function GameScreen() {
       personaName: run.persona?.name,
       personaPersonality: run.persona?.personality,
       personaAlignment: run.persona?.alignment,
+      personaTraitType: run.persona?.traitType,
+      storyFlags: run.storyFlags,
     });
 
     prefetchCache.current.set(depth, { roomType, promise });
@@ -415,6 +422,18 @@ export default function GameScreen() {
       return;
     }
 
+    // 스토리 플래그 세팅
+    if (choice.storyFlagSet) {
+      const { key, value } = choice.storyFlagSet;
+      setStoryFlag(key, value);
+    }
+
+    // 페르소나 반응 보너스/페널티 (HP ±8)
+    let personaHpBonus = 0;
+    if (choice.personaReaction === 'bonus') personaHpBonus = 8;
+    if (choice.personaReaction === 'penalty') personaHpBonus = -8;
+    if (personaHpBonus !== 0) applyHpChange(personaHpBonus);
+
     if (currentRoomType === 'event' && Math.random() < 0.05) {
       addMapFragment();
     }
@@ -423,7 +442,15 @@ export default function GameScreen() {
     schedulePrefetch(nextD);
     schedulePrefetch(nextD + 1);
 
-    setResult({ result: choice.result, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
+    // 페르소나 반응 배지를 result에 추가
+    const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
+    const personaBadge = traitInfo && choice.personaReaction !== 'neutral'
+      ? `\n\n${choice.personaReaction === 'bonus'
+          ? `${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — HP +${personaHpBonus}`
+          : `${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택 — HP ${personaHpBonus}`}`
+      : '';
+
+    setResult({ result: choice.result + personaBadge, hpChange: choice.hpChange + personaHpBonus, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
     setPhase('result');
   }
 

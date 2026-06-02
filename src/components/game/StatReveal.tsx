@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGameState, type SurveyResult } from '@/hooks/useGameState';
 import { PixelPanel, PixelButton, PixelDivider, TypewriterText } from './UIFrame';
+import { PERSONA_TRAITS } from '@/constants/storyFlags';
 
 const STAT_LABELS: Record<string, string> = {
   hp: '❤️ HP', atk: '⚔️ ATK', attack: '⚔️ ATK',
@@ -269,6 +270,14 @@ export default function StatReveal() {
                         {alignmentLabel(run.persona.alignment)}
                       </span>
                     </div>
+                    {run.persona.traitType && PERSONA_TRAITS[run.persona.traitType] && (
+                      <div className="flex justify-between items-center">
+                        <span className="font-pixel" style={{ fontSize: '10px', color: '#6b4fa0' }}>성격 유형</span>
+                        <span className="font-pixel" style={{ fontSize: '11px', color: '#f0c040' }}>
+                          {PERSONA_TRAITS[run.persona.traitType].icon} {PERSONA_TRAITS[run.persona.traitType].name}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </PixelPanel>
 

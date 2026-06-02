@@ -1,5 +1,6 @@
 import { env } from "@/env";
 import { pickSurveyQuestions } from "@/constants/surveyQuestions";
+import { PERSONA_TRAITS, FLAG_CONTEXT, type PersonaTraitType } from "@/constants/storyFlags";
 
 const MODEL = "claude-sonnet-4-6";
 const API_URL = "https://api.anthropic.com/v1/messages";
@@ -111,6 +112,7 @@ export interface PersonaData {
   alignment: 'benevolent' | 'neutral' | 'malevolent';
   birthNarrative: string;
   innateTraits: string[];
+  traitType: PersonaTraitType;
 }
 
 export interface LastWordEffect {
@@ -167,6 +169,8 @@ export interface ChoiceWithResult extends RoomChoice {
   newRelic: RelicItem | null;
   isDead: boolean;
   deathCause: string | null;
+  storyFlagSet: { key: string; value: boolean | number | string } | null;
+  personaReaction: 'bonus' | 'penalty' | 'neutral';
 }
 
 export interface RoomWithResults {
@@ -259,6 +263,14 @@ export async function interpretSurveyAnswers(
 - alignment: good 합계 기준
 - birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 신이 선고하는 어조
 - innateTraits: 타고난 특성 2~3개 (예: "악몽에서 힘을 얻는다", "금속의 냄새를 맡을 수 있다")
+- traitType: 아래 7가지 중 답변 내용과 personality에 가장 어울리는 하나를 선택
+  * reckless: 충동적, 무모, 두려움 없음
+  * cowardly: 소심, 겁, 조심스러움 과도함
+  * greedy: 욕심, 물욕, 이익 우선
+  * righteous: 정의, 도덕, 희생적
+  * cynical: 냉소, 의심, 현실주의
+  * naive: 순진, 천진, 믿음 강함
+  * vengeful: 복수심, 원한, 집착
 
 답변 목록:
 ${answersText}${finalWordsSection}
@@ -284,7 +296,8 @@ JSON으로만 응답:
     "personality": "성격 묘사",
     "alignment": "neutral",
     "birthNarrative": "탄생 선고 (80자 이내)",
-    "innateTraits": ["특성1 (20자 이내)", "특성2"]
+    "innateTraits": ["특성1 (20자 이내)", "특성2"],
+    "traitType": "reckless"
   },
   "lastWordEffect": {
     "type": "death_immune",
@@ -405,8 +418,10 @@ export async function generateRoomWithResults(params: {
   personaName?: string;
   personaPersonality?: string;
   personaAlignment?: string;
+  personaTraitType?: PersonaTraitType;
+  storyFlags?: Record<string, boolean | number | string>;
 }): Promise<RoomWithResults> {
-  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType, personaName, personaPersonality, personaAlignment } = params;
+  const { characterClass, hp, maxHp, atk, def, gold, skills, surveyEffects, relics, depth, roomType, personaName, personaPersonality, personaAlignment, personaTraitType, storyFlags } = params;
 
   const tier = depth <= 3 ? 'early' : depth <= 6 ? 'mid' : 'late';
   const tierDesc = {
@@ -442,6 +457,23 @@ export async function generateRoomWithResults(params: {
   const hpGuide = hpGuideByType[roomType] ?? hpGuideByType['event'];
   const personaSection = personaName ? `페르소나: ${personaName} (${personaPersonality}, ${personaAlignment})` : '';
 
+  // 활성 스토리 플래그만 추출 (false/0 제외로 토큰 절약)
+  const activeFlags = storyFlags
+    ? Object.entries(storyFlags).filter(([, v]) => v !== false && v !== 0)
+    : [];
+  const flagsSection = activeFlags.length > 0
+    ? `\n[활성 스토리 플래그 — 방 묘사와 선택 결과에 자연스럽게 녹여라]\n` +
+      activeFlags.map(([k, v]) => `- ${k}(=${v}): ${FLAG_CONTEXT[k] ?? ''}`).join('\n')
+    : '';
+
+  const traitInfo = personaTraitType ? PERSONA_TRAITS[personaTraitType] : null;
+  const traitSection = traitInfo
+    ? `\n[페르소나 성격: ${traitInfo.icon} ${traitInfo.name}]\n` +
+      `- "${traitInfo.bonusKeywords.join('/', )}" 류 선택 → personaReaction="bonus", result에 이 성격답게 잘 풀리는 묘사 포함\n` +
+      `- "${traitInfo.penaltyKeywords.join('/')}" 류 선택 → personaReaction="penalty", result에 성격과 어긋나 망설이거나 실패하는 묘사 포함\n` +
+      `- 나머지 → personaReaction="neutral"`
+    : '';
+
   const text = await claudeFetch(
     [
       {
@@ -454,7 +486,7 @@ export async function generateRoomWithResults(params: {
 - 설문 효과: ${surveyEffects} | 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
 - 현재 층: ${depth} | 난이도: ${tierDesc}
 - 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
-${personaSection}
+${personaSection}${flagsSection}${traitSection}
 
 규칙:
 1. 방 묘사 2~3문장.
@@ -465,6 +497,7 @@ ${personaSection}
 6. 피해/보상 기준 (반드시 준수): ${hpGuide}
 7. 렐릭(newRelic)은 event/shop에서 20% 확률로만.
 8. skillChange는 해당 스킬이 실제로 사용된 선택지에서만.
+9. storyFlagSet: 선택이 스토리에 중요한 흔적을 남긴다면 {"key":"플래그명","value":true} 설정. 단순한 선택은 null.
 ${KO_STYLE}
 
 JSON으로만 응답:
@@ -482,13 +515,15 @@ JSON으로만 응답:
       "skillChange": null,
       "newRelic": null,
       "isDead": false,
-      "deathCause": null
+      "deathCause": null,
+      "storyFlagSet": null,
+      "personaReaction": "neutral"
     }
   ]
 }`,
       },
     ],
-    1024,
+    1500,
   );
 
   return parseJSON<RoomWithResults>(text);

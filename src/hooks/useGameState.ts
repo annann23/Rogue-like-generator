@@ -6,6 +6,7 @@ import type { Relic } from '@/constants/relics';
 import type { NPCRelations } from '@/constants/npcs';
 import type { LastWordEffect } from '@/hooks/useClaude';
 import type { Item, EquipmentSlots } from '@/constants/items';
+import type { PersonaTraitType } from '@/constants/storyFlags';
 
 export interface Persona {
   name: string;
@@ -14,6 +15,7 @@ export interface Persona {
   alignment: 'benevolent' | 'neutral' | 'malevolent';
   birthNarrative: string;
   innateTraits: string[];
+  traitType?: PersonaTraitType;
 }
 
 export type GameScreen =
@@ -84,6 +86,7 @@ export interface RunState {
   lastWordEffect: LastWordEffect | null;
   items: Item[];
   equipment: EquipmentSlots;
+  storyFlags: Record<string, boolean | number | string>;
 }
 
 export interface MetaState {
@@ -125,6 +128,8 @@ interface GameStore {
   useItem: (itemIndex: number) => void;
   equipItem: (itemIndex: number) => void;
   unequipItem: (slot: 'weapon' | 'armor') => void;
+  setStoryFlag: (key: string, value: boolean | number | string) => void;
+  incrementStoryFlag: (key: string, by?: number) => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -154,6 +159,7 @@ const DEFAULT_RUN: RunState = {
   lastWordEffect: null,
   items: [],
   equipment: { weapon: null, armor: null },
+  storyFlags: {},
 };
 
 const DEFAULT_META: MetaState = {
@@ -433,6 +439,19 @@ export const useGameState = create<GameStore>()(
               items: [...state.run.items, item],
               equipment: { ...state.run.equipment, [slot]: null },
             },
+          };
+        }),
+
+      setStoryFlag: (key, value) =>
+        set((state) => ({
+          run: { ...state.run, storyFlags: { ...state.run.storyFlags, [key]: value } },
+        })),
+
+      incrementStoryFlag: (key, by = 1) =>
+        set((state) => {
+          const current = (state.run.storyFlags[key] as number) ?? 0;
+          return {
+            run: { ...state.run, storyFlags: { ...state.run.storyFlags, [key]: current + by } },
           };
         }),
     }),
