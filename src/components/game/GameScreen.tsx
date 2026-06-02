@@ -453,8 +453,8 @@ export default function GameScreen() {
       const cause = choice.deathCause ?? '알 수 없는 이유';
       killPlayer(cause);
       setPendingDeathCause(cause);
-      setLastWords('');
-      setPhase('dying');
+      setResult({ result: choice.result, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: true, deathCause: cause });
+      setPhase('result');
       return;
     }
 
@@ -1372,8 +1372,19 @@ export default function GameScreen() {
             )}
 
             <div className="flex justify-end mt-2">
-              <PixelButton variant="secondary" size="lg" onClick={handleNextRoom}>
-                다음 방으로 ▶
+              <PixelButton
+                variant="secondary"
+                size="lg"
+                onClick={() => {
+                  if (result.isDead) {
+                    setLastWords('');
+                    setPhase('dying');
+                  } else {
+                    handleNextRoom();
+                  }
+                }}
+              >
+                {result.isDead ? '계속...' : '다음 방으로 ▶'}
               </PixelButton>
             </div>
           </>
