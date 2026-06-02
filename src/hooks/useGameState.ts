@@ -318,7 +318,7 @@ export const useGameState = create<GameStore>()(
 
       killPlayer: (cause) =>
         set((state) => ({
-          run: { ...state.run, isAlive: false, deathCause: cause },
+          run: { ...state.run, isAlive: false, deathCause: cause, relics: [] },
           meta: {
             ...state.meta,
             totalRuns: state.meta.totalRuns + 1,

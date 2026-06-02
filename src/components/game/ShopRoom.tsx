@@ -13,12 +13,12 @@ interface ShopRoomProps {
 }
 
 function getRelicShopStock(depth: number, ownedRelicNames: string[]): { relic: Relic; price: number }[] {
+  if (Math.random() >= 1 / 3) return [];
   const available = FIXED_RELICS.filter(r => !ownedRelicNames.includes(r.name));
   if (available.length === 0) return [];
   const shuffled = [...available].sort(() => Math.random() - 0.5);
-  const count = Math.min(2, shuffled.length);
   const basePrice = Math.min(80, 40 + depth * 3);
-  return shuffled.slice(0, count).map(relic => ({ relic, price: basePrice }));
+  return [{ relic: shuffled[0], price: basePrice }];
 }
 
 export default function ShopRoom({ depth, gold, ownedRelicNames, onBuy, onBuyRelic, onLeave }: ShopRoomProps) {
