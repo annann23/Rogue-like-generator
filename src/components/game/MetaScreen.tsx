@@ -5,6 +5,7 @@ import { CHARACTER_CLASSES, CLASS_UNLOCK_COSTS } from '@/constants/classes';
 import { ACHIEVEMENTS, CATEGORY_LABELS, TOTAL_ENEMIES, type AchievementCategory } from '@/constants/achievements';
 import { ENEMY_TEMPLATES } from '@/constants/enemies';
 import { CURSED_RELICS } from '@/constants/relics';
+import { RELIC_SYNERGIES } from '@/constants/relicSynergies';
 import { PixelPanel, PixelButton, PixelDivider } from './UIFrame';
 
 type Tab = 'upgrades' | 'achievements' | 'codex';
@@ -210,6 +211,53 @@ function AchievementsTab() {
   );
 }
 
+// ─── 시너지 조합식 표시 ────────────────────────
+function SynergyRecipe({ syn, discovered }: { syn: typeof RELIC_SYNERGIES[number]; discovered: boolean }) {
+  if (discovered) {
+    const ingredients = syn.requiredRelicNames
+      ? syn.requiredRelicNames.join(' + ')
+      : `저주 유물 ${syn.minCursedCount}개 이상`;
+    return (
+      <div
+        className="p-3"
+        style={{ background: '#0d0a1e', border: '2px solid #6030a060' }}
+      >
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span style={{ fontSize: '16px' }}>{syn.icon}</span>
+          <span className="font-pixel" style={{ fontSize: '10px', color: '#e8d8b8' }}>{syn.name}</span>
+        </div>
+        <p className="font-pixel mb-1" style={{ fontSize: '9px', color: '#9878c0', lineHeight: 1.8 }}>
+          {ingredients}
+        </p>
+        <p className="font-pixel" style={{ fontSize: '9px', color: '#40c060', lineHeight: 1.8 }}>
+          {syn.displayEffect}
+        </p>
+      </div>
+    );
+  }
+
+  const slotCount = syn.requiredRelicNames?.length ?? syn.minCursedCount ?? 2;
+  const slots = Array.from({ length: slotCount }, (_, i) => (
+    <span key={i} className="font-pixel" style={{ fontSize: '10px', color: '#2a1a4a' }}>??</span>
+  ));
+  const joined = slots.reduce<React.ReactNode[]>((acc, el, i) => {
+    if (i > 0) acc.push(<span key={`sep-${i}`} className="font-pixel" style={{ fontSize: '10px', color: '#2a1a4a' }}> + </span>);
+    acc.push(el);
+    return acc;
+  }, []);
+
+  return (
+    <div
+      className="p-3 flex items-center gap-2 flex-wrap"
+      style={{ background: '#080412', border: '2px solid #1a0f2e' }}
+    >
+      {joined}
+      <span className="font-pixel" style={{ fontSize: '10px', color: '#2a1a4a' }}> = </span>
+      <span className="font-pixel" style={{ fontSize: '10px', color: '#2a1a4a' }}>??</span>
+    </div>
+  );
+}
+
 // ─── 도감 탭 ───────────────────────────────────
 function CodexTab() {
   const { meta } = useGameState();
@@ -306,6 +354,27 @@ function CodexTab() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      <PixelDivider />
+
+      {/* 시너지 도감 */}
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <p className="font-pixel" style={{ fontSize: '11px', color: '#c060f0' }}>✨ 유물 조합</p>
+          <p className="font-pixel" style={{ fontSize: '10px', color: '#9878c0' }}>
+            {meta.discoveredSynergies.length} / {RELIC_SYNERGIES.length}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {RELIC_SYNERGIES.map(syn => (
+            <SynergyRecipe
+              key={syn.id}
+              syn={syn}
+              discovered={meta.discoveredSynergies.includes(syn.id)}
+            />
+          ))}
         </div>
       </div>
     </div>

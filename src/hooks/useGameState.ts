@@ -100,6 +100,7 @@ export interface MetaState {
   unlockedClasses: string[];
   discoveredEnemies: string[];
   discoveredRelics: string[];
+  discoveredSynergies: string[];
   totalGhostWins: number;
   totalNegotiations: number;
   totalCombatWins: number;
@@ -125,6 +126,7 @@ interface GameStore {
   killPlayer: (cause: string) => void;
   clearRun: () => void;
   updateNPCRelation: (npcId: string, familiarity: number, meetCount: number) => void;
+  markNPCRelicGiven: (npcId: string) => void;
   addLegacyPoints: (points: number) => void;
   purchaseUpgrade: (upgradeId: string, cost: number) => void;
   resetRun: () => void;
@@ -144,6 +146,7 @@ interface GameStore {
   unlockClass: (id: string, cost: number) => void;
   discoverEnemy: (id: string) => void;
   discoverRelic: (name: string) => void;
+  discoverSynergy: (id: string) => void;
   incrementNegotiations: () => void;
   incrementCombatWins: () => void;
 }
@@ -189,6 +192,7 @@ const DEFAULT_META: MetaState = {
   unlockedClasses: ['warrior'],
   discoveredEnemies: [],
   discoveredRelics: [],
+  discoveredSynergies: [],
   totalGhostWins: 0,
   totalNegotiations: 0,
   totalCombatWins: 0,
@@ -341,6 +345,14 @@ export const useGameState = create<GameStore>()(
           npcRelations: {
             ...state.npcRelations,
             [npcId]: { ...state.npcRelations[npcId], familiarity, meetCount },
+          },
+        })),
+
+      markNPCRelicGiven: (npcId) =>
+        set((state) => ({
+          npcRelations: {
+            ...state.npcRelations,
+            [npcId]: { ...state.npcRelations[npcId], relicGiven: true },
           },
         })),
 
@@ -538,6 +550,17 @@ export const useGameState = create<GameStore>()(
             meta: {
               ...state.meta,
               discoveredRelics: [...state.meta.discoveredRelics, name],
+            },
+          };
+        }),
+
+      discoverSynergy: (id) =>
+        set((state) => {
+          if (state.meta.discoveredSynergies.includes(id)) return state;
+          return {
+            meta: {
+              ...state.meta,
+              discoveredSynergies: [...state.meta.discoveredSynergies, id],
             },
           };
         }),

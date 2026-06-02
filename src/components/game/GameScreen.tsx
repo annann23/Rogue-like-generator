@@ -188,6 +188,8 @@ export default function GameScreen() {
     batchUnlockAchievements,
     updateRun,
     markSynergyApplied,
+    markNPCRelicGiven,
+    discoverSynergy,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -221,6 +223,8 @@ export default function GameScreen() {
       batchUnlockAchievements: s.batchUnlockAchievements,
       updateRun: s.updateRun,
       markSynergyApplied: s.markSynergyApplied,
+      markNPCRelicGiven: s.markNPCRelicGiven,
+      discoverSynergy: s.discoverSynergy,
     }))
   );
 
@@ -545,6 +549,7 @@ export default function GameScreen() {
     for (const syn of newSynergies) {
       if (run.appliedSynergies.includes(syn.id)) continue;
       markSynergyApplied(syn.id);
+      discoverSynergy(syn.id);
       if (syn.statBonus) {
         if (syn.statBonus.hp)    applyHpChange(syn.statBonus.hp);
         if (syn.statBonus.gold)  applyGoldChange(syn.statBonus.gold);
@@ -799,9 +804,16 @@ export default function GameScreen() {
           <ShopRoom
             depth={currentDepth}
             gold={run.gold}
+            ownedRelicNames={run.relics.map(r => r.name)}
             onBuy={(item) => {
               applyGoldChange(-item.value);
               addItem(item);
+            }}
+            onBuyRelic={(relic, price) => {
+              applyGoldChange(-price);
+              addRelic(relic);
+              discoverRelic(relic.name);
+              handleSynergyCheck(run.relics, [...run.relics, relic]);
             }}
             onLeave={() => {
               const nextD = currentDepthRef.current + 1;
@@ -822,6 +834,13 @@ export default function GameScreen() {
             gold={run.gold}
             onGoldSpend={(amount) => applyGoldChange(-amount)}
             onDone={handleNPCDone}
+            onRelicGiven={(relic) => {
+              const npc = selectedNpcRef.current;
+              if (npc) markNPCRelicGiven(npc.id);
+              addRelic(relic);
+              discoverRelic(relic.name);
+              handleSynergyCheck(run.relics, [...run.relics, relic]);
+            }}
             personaAlignment={run.persona?.alignment}
           />
         )}
