@@ -8,26 +8,18 @@ import {
 } from '@/hooks/useClaude';
 import { PixelPanel, PixelButton, PixelInput, TypewriterText } from './UIFrame';
 
-type Phase = 'greeting' | 'loading' | 'answering' | 'final-words' | 'interpreting' | 'error';
-
-const LOADING_LINES = [
-  '음...',
-  '이 영혼에게 맞는 질문이 뭐가 있더라.',
-  '오래된 기억을 좀 뒤지는 중이야.',
-  '아직 생각 중이야. 기다려.',
-  '...질문지를 꺼내는 중이야.',
-  '금방 됐어. 기다려.',
-];
+type Phase = 'greeting' | 'answering' | 'final-words' | 'interpreting' | 'error';
 
 const INTERPRETING_LINES = [
   '흠...',
   '이 대답은... 흥미롭군.',
-  '거짓말인지 진심인지 따져보는 중이야.',
-  '영혼의 무게를 측정 중이야.',
-  '판결을 내리는 중이야. 기다려.',
+  '거짓말인지 진심인지 따져보는 중이다.',
+  '영혼의 무게를 측정 중...',
+  '판결을 내리는 중이다. 기다리거라.',
+  '이 성격을 한스푼 넣고..',
   '이게 맞는 저주인지... 생각 중.',
-  '내 기분에 따라 결과가 달라지기도 해.',
-  '거의 다 됐어.',
+  '내 기분에 따라 결과가 달라지기도 하지. 크하하하.',
+  '거의 다 되었다.',
 ];
 
 // 총 플레이 횟수에 따른 던전의 신 인삿말
@@ -225,32 +217,6 @@ export default function SurveyScreen() {
               (클릭하면 넘어갑니다)
             </p>
           )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── 로딩 ──
-  if (phase === 'loading') {
-    return (
-      <div className="flex items-center justify-center w-full h-full dungeon-bg p-4">
-        <div className="w-full max-w-lg">
-          <PixelPanel variant="brown" className="p-6 flex flex-col gap-5">
-            <p className="font-pixel text-center" style={{ fontSize: '16px', color: '#f0c040', textShadow: '2px 2px 0 #7a3c00' }}>
-              {greeting.title}
-            </p>
-            <div
-              className="p-4"
-              style={{
-                background: '#120a1e',
-                border: '2px solid #6b4fa040',
-                borderLeft: '4px solid #f0c040',
-                minHeight: '72px',
-              }}
-            >
-              <GodMonologue lines={LOADING_LINES} />
-            </div>
-          </PixelPanel>
         </div>
       </div>
     );

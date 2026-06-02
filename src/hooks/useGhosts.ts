@@ -5,6 +5,7 @@ export interface Ghost {
   last_words: string;
   death_cause: string | null;
   character_class: string;
+  persona_name: string | null;
   depth: number;
   created_at: string;
 }
@@ -29,6 +30,7 @@ export async function saveGhost(ghost: {
   last_words: string;
   death_cause: string | null;
   character_class: string;
+  persona_name?: string | null;
   depth: number;
 }): Promise<void> {
   await supabase.from('ghosts').insert(ghost);

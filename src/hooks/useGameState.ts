@@ -95,6 +95,13 @@ export interface MetaState {
   totalRuns: number;
   totalClears: number;
   bestDepth: number;
+  achievements: Record<string, boolean>;
+  unlockedClasses: string[];
+  discoveredEnemies: string[];
+  discoveredRelics: string[];
+  totalGhostWins: number;
+  totalNegotiations: number;
+  totalCombatWins: number;
 }
 
 interface GameStore {
@@ -130,6 +137,13 @@ interface GameStore {
   unequipItem: (slot: 'weapon' | 'armor') => void;
   setStoryFlag: (key: string, value: boolean | number | string) => void;
   incrementStoryFlag: (key: string, by?: number) => void;
+  setPersonaName: (name: string) => void;
+  batchUnlockAchievements: (ids: string[], totalReward: number) => void;
+  unlockClass: (id: string, cost: number) => void;
+  discoverEnemy: (id: string) => void;
+  discoverRelic: (name: string) => void;
+  incrementNegotiations: () => void;
+  incrementCombatWins: () => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -168,6 +182,13 @@ const DEFAULT_META: MetaState = {
   totalRuns: 0,
   totalClears: 0,
   bestDepth: 0,
+  achievements: {},
+  unlockedClasses: ['warrior'],
+  discoveredEnemies: [],
+  discoveredRelics: [],
+  totalGhostWins: 0,
+  totalNegotiations: 0,
+  totalCombatWins: 0,
 };
 
 export const useGameState = create<GameStore>()(
@@ -296,6 +317,7 @@ export const useGameState = create<GameStore>()(
             totalRuns: state.meta.totalRuns + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
             legacyPoints: state.meta.legacyPoints + 10 + state.run.depth * 3,
+            totalGhostWins: state.meta.totalGhostWins + state.run.ghostBattleWins,
           },
         })),
 
@@ -307,6 +329,7 @@ export const useGameState = create<GameStore>()(
             totalClears: state.meta.totalClears + 1,
             bestDepth: Math.max(state.meta.bestDepth, state.run.depth),
             legacyPoints: state.meta.legacyPoints + 80,
+            totalGhostWins: state.meta.totalGhostWins + state.run.ghostBattleWins,
           },
         })),
 
@@ -454,6 +477,72 @@ export const useGameState = create<GameStore>()(
             run: { ...state.run, storyFlags: { ...state.run.storyFlags, [key]: current + by } },
           };
         }),
+
+      setPersonaName: (name) =>
+        set((state) => {
+          if (!state.run.persona) return state;
+          return {
+            run: { ...state.run, persona: { ...state.run.persona, name } },
+          };
+        }),
+
+      batchUnlockAchievements: (ids, totalReward) =>
+        set((state) => {
+          const newAchievements = { ...state.meta.achievements };
+          for (const id of ids) newAchievements[id] = true;
+          return {
+            meta: {
+              ...state.meta,
+              achievements: newAchievements,
+              legacyPoints: state.meta.legacyPoints + totalReward,
+            },
+          };
+        }),
+
+      unlockClass: (id, cost) =>
+        set((state) => {
+          if (state.meta.unlockedClasses.includes(id)) return state;
+          if (state.meta.legacyPoints < cost) return state;
+          return {
+            meta: {
+              ...state.meta,
+              legacyPoints: state.meta.legacyPoints - cost,
+              unlockedClasses: [...state.meta.unlockedClasses, id],
+            },
+          };
+        }),
+
+      discoverEnemy: (id) =>
+        set((state) => {
+          if (state.meta.discoveredEnemies.includes(id)) return state;
+          return {
+            meta: {
+              ...state.meta,
+              discoveredEnemies: [...state.meta.discoveredEnemies, id],
+            },
+          };
+        }),
+
+      discoverRelic: (name) =>
+        set((state) => {
+          if (state.meta.discoveredRelics.includes(name)) return state;
+          return {
+            meta: {
+              ...state.meta,
+              discoveredRelics: [...state.meta.discoveredRelics, name],
+            },
+          };
+        }),
+
+      incrementNegotiations: () =>
+        set((state) => ({
+          meta: { ...state.meta, totalNegotiations: state.meta.totalNegotiations + 1 },
+        })),
+
+      incrementCombatWins: () =>
+        set((state) => ({
+          meta: { ...state.meta, totalCombatWins: state.meta.totalCombatWins + 1 },
+        })),
     }),
     {
       name: 'dungeon-rpg-state',

@@ -103,7 +103,7 @@ function calcTotalChanges(results: SurveyResult[]) {
 }
 
 export default function StatReveal() {
-  const { run, setScreen } = useGameState();
+  const { run, setScreen, setPersonaName } = useGameState();
   const results = run.surveyResults;
 
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -111,6 +111,8 @@ export default function StatReveal() {
   const [showSummary, setShowSummary] = useState(false);
   const [showPersona, setShowPersona] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -233,17 +235,89 @@ export default function StatReveal() {
                   <p className="font-pixel" style={{ fontSize: '11px', color: '#6b4fa0', marginBottom: '8px', letterSpacing: '2px' }}>
                     이 영혼은...
                   </p>
-                  <p
-                    className="font-pixel"
-                    style={{
-                      fontSize: '24px',
-                      color: alignmentColor(run.persona.alignment),
-                      textShadow: `0 0 20px ${alignmentColor(run.persona.alignment)}80`,
-                      letterSpacing: '4px',
-                    }}
-                  >
-                    {run.persona.name}
-                  </p>
+                  {editingName ? (
+                    <div className="flex items-center justify-center gap-2 my-2">
+                      <input
+                        className="font-pixel"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value.slice(0, 20))}
+                        maxLength={20}
+                        autoFocus
+                        style={{
+                          fontFamily: "'Press Start 2P', monospace",
+                          fontSize: '16px',
+                          background: '#120a1e',
+                          color: alignmentColor(run.persona.alignment),
+                          border: `2px solid ${alignmentColor(run.persona.alignment)}`,
+                          padding: '8px 12px',
+                          outline: 'none',
+                          textAlign: 'center',
+                          width: '180px',
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && nameInput.trim()) {
+                            setPersonaName(nameInput.trim());
+                            setEditingName(false);
+                          }
+                          if (e.key === 'Escape') {
+                            setNameInput(run.persona.name);
+                            setEditingName(false);
+                          }
+                        }}
+                      />
+                      <button
+                        className="font-pixel"
+                        onClick={() => {
+                          if (nameInput.trim()) setPersonaName(nameInput.trim());
+                          setEditingName(false);
+                        }}
+                        style={{
+                          fontFamily: "'Press Start 2P', monospace",
+                          fontSize: '11px',
+                          background: '#1a3a1a',
+                          color: '#40c060',
+                          border: '2px solid #40c060',
+                          padding: '8px 10px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <p
+                        className="font-pixel"
+                        style={{
+                          fontSize: '24px',
+                          color: alignmentColor(run.persona.alignment),
+                          textShadow: `0 0 20px ${alignmentColor(run.persona.alignment)}80`,
+                          letterSpacing: '4px',
+                        }}
+                      >
+                        {run.persona.name}
+                      </p>
+                      <button
+                        className="font-pixel"
+                        onClick={() => { setNameInput(run.persona!.name); setEditingName(true); }}
+                        title="이름 수정"
+                        style={{
+                          fontFamily: "'Press Start 2P', monospace",
+                          fontSize: '10px',
+                          background: 'transparent',
+                          color: '#4a3070',
+                          border: '2px solid #4a3070',
+                          padding: '4px 6px',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#9878c0'; (e.currentTarget as HTMLElement).style.borderColor = '#9878c0'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#4a3070'; (e.currentTarget as HTMLElement).style.borderColor = '#4a3070'; }}
+                      >
+                        ✎
+                      </button>
+                    </div>
+                  )}
                   <p className="font-pixel mt-2" style={{ fontSize: '11px', color: '#9878c0' }}>
                     으로 환생할 것이다
                   </p>
