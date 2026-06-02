@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import {
   generateSurveyQuestions,
@@ -8,7 +8,97 @@ import {
 } from '@/hooks/useClaude';
 import { PixelPanel, PixelButton, PixelInput, TypewriterText } from './UIFrame';
 
-type Phase = 'greeting' | 'answering' | 'final-words' | 'interpreting' | 'error';
+type Phase = 'gem-reveal' | 'greeting' | 'answering' | 'final-words' | 'interpreting' | 'error';
+
+// ─── 보석별 기억 파편 스토리 ────────────────────────
+interface GemStory {
+  title: string;
+  lines: string[];
+  demonLine: string;
+}
+
+const GEM_STORIES: Record<string, GemStory> = {
+  flame: {
+    title: '🔴 불꽃의 보석',
+    lines: [
+      '뜨거운 것이 손에 닿는 느낌.',
+      '',
+      '싸우고, 지키고, 또 싸웠던 기억.',
+      '누군가를 위해서였는지,',
+      '이제는 잘 모르겠다.',
+      '',
+      '다만 — 이 빛이 낯설지 않다.',
+    ],
+    demonLine: '...흥미롭군. 계속해봐.',
+  },
+  water: {
+    title: '💧 물결의 보석',
+    lines: [
+      '죽음을 건너온 자만이 닿을 수 있는 빛.',
+      '',
+      '이상하다.',
+      '죽는 것이, 처음부터 그렇게 낯설지 않았다.',
+      '',
+      '마치 — 원래부터 알고 있었던 것처럼.',
+    ],
+    demonLine: '죽음이 익숙한 건... 계약 때문만은 아닐 거야.',
+  },
+  light: {
+    title: '✨ 빛의 보석',
+    lines: [
+      '따뜻한 기억.',
+      '',
+      '많은 사람들이 곁에 있었다.',
+      '이름은 기억나지 않지만,',
+      '그 온기만은 손끝에 남아있다.',
+      '',
+      '그들이 나를 따랐던 것인지,',
+      '내가 그들 곁에 있었던 것인지.',
+    ],
+    demonLine: '그들이 네 곁에 모이는 건... 우연이 아니야.',
+  },
+  dark: {
+    title: '🌑 어둠의 보석',
+    lines: [
+      '말 한마디로 무언가를 바꾼 기억.',
+      '칼보다 깊이 닿는 것이 있다는 걸',
+      '오래전부터 알고 있었다.',
+      '',
+      '이 지혜가 어디서 왔는지 —',
+      '슬슬 물어봐야 할 것 같다.',
+    ],
+    demonLine: '기억이 돌아오고 있어. 천천히, 하지만 확실하게.',
+  },
+  earth: {
+    title: '🟤 대지의 보석',
+    lines: [
+      '바닥까지 내려가봤다.',
+      '',
+      '이 미궁이 — 낯설지 않다.',
+      '복도의 굽이, 돌의 결,',
+      '어딘가에서 본 것 같은 구조.',
+      '',
+      '아니면 —',
+      '내가 알고 있는 게 맞는 건지도.',
+    ],
+    demonLine: '이 미궁이 낯설지 않은 이유. 슬슬 느끼지 않나.',
+  },
+  soul: {
+    title: '💜 영혼의 보석',
+    lines: [
+      '마지막 조각.',
+      '',
+      '모든 것이 돌아온다.',
+      '',
+      '이 미궁을 처음 만들었을 때.',
+      '사람들에게 보석을 내려주었을 때.',
+      '그리고 — 스스로 사라지기로 결심했을 때.',
+      '',
+      '나는 신이었다.',
+    ],
+    demonLine: '...수고했다. 오래 걸렸군.',
+  },
+};
 
 const INTERPRETING_LINES = [
   '흠...',
@@ -55,9 +145,19 @@ function getGreeting(totalRuns: number): { title: string; message: string } {
 }
 
 export default function SurveyScreen() {
-  const { setScreen, updateRun, meta } = useGameState();
+  const { setScreen, updateRun, meta, markGemStorySeen } = useGameState();
 
-  const [phase, setPhase] = useState<Phase>('greeting');
+  // 아직 못 본 보석 스토리 목록 (수집 순서대로)
+  const GEM_ORDER = ['flame', 'water', 'light', 'dark', 'earth', 'soul'];
+  const unseenGems = GEM_ORDER.filter(
+    (id) => meta.collectedGems.includes(id) && !meta.gemStoriesSeen.includes(id),
+  );
+
+  const [phase, setPhase] = useState<Phase>(unseenGems.length > 0 ? 'gem-reveal' : 'greeting');
+  const [gemQueue] = useState<string[]>(unseenGems);
+  const [currentGemIdx, setCurrentGemIdx] = useState(0);
+  const [gemDemonTyped, setGemDemonTyped] = useState(false);
+
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -72,6 +172,17 @@ export default function SurveyScreen() {
   const isComposingRef = useRef(false);
 
   const greeting = getGreeting(meta.totalRuns);
+
+  const handleNextGem = useCallback(() => {
+    const gemId = gemQueue[currentGemIdx];
+    markGemStorySeen(gemId);
+    if (currentGemIdx < gemQueue.length - 1) {
+      setCurrentGemIdx((i) => i + 1);
+      setGemDemonTyped(false);
+    } else {
+      setPhase('greeting');
+    }
+  }, [gemQueue, currentGemIdx, markGemStorySeen]);
 
   // 인사말 확인 후 질문 시작 (로컬 풀에서 즉시 선택, API 없음)
   const handleStartSurvey = () => {
@@ -158,6 +269,95 @@ export default function SurveyScreen() {
       handleSubmitFinalWords();
     }
   };
+
+  // ── 보석 기억 파편 ──
+  if (phase === 'gem-reveal') {
+    const gemId = gemQueue[currentGemIdx];
+    const story = GEM_STORIES[gemId];
+    if (!story) {
+      setPhase('greeting');
+      return null;
+    }
+    return (
+      <div
+        className="w-full h-full dungeon-bg flex items-center justify-center"
+        style={{ padding: '24px', cursor: 'pointer' }}
+        onClick={gemDemonTyped ? handleNextGem : undefined}
+      >
+        <div style={{ maxWidth: '480px', width: '100%' }}>
+          {/* 보석 이름 */}
+          <p
+            className="font-pixel text-center mb-8"
+            style={{ fontSize: '13px', color: '#9878c0', letterSpacing: '4px' }}
+          >
+            ✦ {story.title} ✦
+          </p>
+
+          {/* 기억 본문 */}
+          <div style={{ minHeight: '200px', marginBottom: '32px' }}>
+            {story.lines.map((line, i) => (
+              <p
+                key={i}
+                className="font-pixel"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '3',
+                  textAlign: 'center',
+                  color: line === '' ? undefined : '#c8b0e8',
+                  minHeight: line === '' ? '20px' : undefined,
+                }}
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+
+          {/* 악마의 한 마디 */}
+          <div
+            style={{
+              borderLeft: '3px solid #6b4fa0',
+              paddingLeft: '16px',
+              marginBottom: '32px',
+            }}
+          >
+            <TypewriterText
+              text={story.demonLine}
+              speed={35}
+              onComplete={() => setGemDemonTyped(true)}
+            />
+          </div>
+
+          {/* 계속 */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              opacity: gemDemonTyped ? 1 : 0,
+              transition: 'opacity 0.5s ease',
+            }}
+          >
+            <p
+              className="font-pixel"
+              style={{
+                fontSize: '12px',
+                color: '#9878c0',
+                letterSpacing: '2px',
+                animation: gemDemonTyped ? 'pulse 1.8s ease-in-out infinite' : 'none',
+              }}
+            >
+              클릭하여 계속 ▶
+            </p>
+          </div>
+        </div>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   // ── 인삿말 ──
   if (phase === 'greeting') {

@@ -107,6 +107,7 @@ export interface MetaState {
   totalCombatWins: number;
   prologueShown: boolean;
   collectedGems: string[];
+  gemStoriesSeen: string[];
 }
 
 interface GameStore {
@@ -153,6 +154,7 @@ interface GameStore {
   incrementNegotiations: () => void;
   incrementCombatWins: () => void;
   collectGem: (gemId: string) => void;
+  markGemStorySeen: (gemId: string) => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -202,6 +204,7 @@ const DEFAULT_META: MetaState = {
   totalCombatWins: 0,
   prologueShown: false,
   collectedGems: [],
+  gemStoriesSeen: [],
 };
 
 export const useGameState = create<GameStore>()(
@@ -585,6 +588,12 @@ export const useGameState = create<GameStore>()(
         set((state) => {
           if (state.meta.collectedGems.includes(gemId)) return state;
           return { meta: { ...state.meta, collectedGems: [...state.meta.collectedGems, gemId] } };
+        }),
+
+      markGemStorySeen: (gemId) =>
+        set((state) => {
+          if (state.meta.gemStoriesSeen.includes(gemId)) return state;
+          return { meta: { ...state.meta, gemStoriesSeen: [...state.meta.gemStoriesSeen, gemId] } };
         }),
     }),
     {
