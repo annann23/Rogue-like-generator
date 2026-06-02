@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { type NPCTemplate, type GiftItem, GIFT_ITEMS, getFamiliarityStage } from '@/constants/npcs';
 import { generateNPCDialogue } from '@/hooks/useClaude';
+import type { Relic } from '@/constants/relics';
 import {
   PixelDialogFrame,
   PixelInput,
@@ -14,10 +15,11 @@ import { NPC_SPRITES } from '@/constants/spriteMap';
 // ─── Types ────────────────────────────────────
 interface NPCRoomProps {
   npc: NPCTemplate;
-  relation: { familiarity: number; meetCount: number };
+  relation: { familiarity: number; meetCount: number; relicGiven?: boolean };
   gold: number;
   onGoldSpend: (amount: number) => void;
   onDone: (familiarityDelta: number) => void;
+  onRelicGiven?: (relic: Relic) => void;
   personaAlignment?: string;
 }
 
@@ -106,7 +108,7 @@ function GiftPanel({
 }
 
 // ─── Component ────────────────────────────────
-export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, personaAlignment }: NPCRoomProps) {
+export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRelicGiven, personaAlignment }: NPCRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -114,6 +116,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, pers
   const [turnsUsed, setTurnsUsed] = useState(0);
   const [showGiftPanel, setShowGiftPanel] = useState(false);
   const [currentGold, setCurrentGold] = useState(gold);
+  const [relicGivenThisSession, setRelicGivenThisSession] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -138,6 +141,32 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, pers
     void callNPC(playerInput, [], 0, undefined);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function tryTriggerRelicGift(
+    currentFam: number,
+    triggeredByKeyword: boolean,
+    triggeredByFavoriteGift: boolean,
+  ) {
+    if (relicGivenThisSession || relation.relicGiven) return;
+    if (currentFam < 60) return;
+    if (!triggeredByKeyword && !triggeredByFavoriteGift) return;
+    if (!onRelicGiven) return;
+
+    setRelicGivenThisSession(true);
+    const relic = npc.rewardRelic;
+    const reason = triggeredByFavoriteGift
+      ? `좋아하는 선물을 받았으니`
+      : `"${npc.rewardKeyword}"... 그 말이 마음을 울렸다`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'npc',
+        text: `${reason}. 이걸 받아두게. [${relic.icon} ${relic.name}]`,
+        isGift: true,
+      },
+    ]);
+    onRelicGiven(relic);
+  }
 
   async function callNPC(
     playerInput: string,
@@ -199,6 +228,10 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, pers
     setTurnsUsed((prev) => prev + 1);
 
     await callNPC(trimmed, newMessages, totalFamiliarityDelta, undefined);
+
+    const famAfter = relation.familiarity + totalFamiliarityDelta;
+    const hasKeyword = trimmed.includes(npc.rewardKeyword);
+    tryTriggerRelicGift(famAfter, hasKeyword, false);
   }
 
   async function handleGiftSelect(gift: GiftItem) {
@@ -224,6 +257,10 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, pers
       totalFamiliarityDelta,
       { name: gift.name, tag: gift.tag },
     );
+
+    const famAfter = relation.familiarity + totalFamiliarityDelta;
+    const isFavorite = gift.tag === npc.favoriteItemTag;
+    tryTriggerRelicGift(famAfter, false, isFavorite);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
