@@ -1,4 +1,4 @@
-import { pickEnemyTemplate, scaleStats, pickIntent } from '@/constants/enemies';
+import { ENEMY_TEMPLATES, pickEnemyTemplate, scaleStats, pickIntent } from '@/constants/enemies';
 import type { InitCombatResponse, TurnResultResponse } from '@/hooks/useClaude';
 
 function pick<T>(arr: T[]): T {
@@ -7,8 +7,10 @@ function pick<T>(arr: T[]): T {
 
 // ─── 적 초기화 ────────────────────────────────
 
-export function localInitCombat(depth: number): InitCombatResponse {
-  const template = pickEnemyTemplate(depth);
+export function localInitCombat(depth: number, forceEnemyId?: string): InitCombatResponse {
+  const template = forceEnemyId
+    ? (ENEMY_TEMPLATES.find((e) => e.id === forceEnemyId) ?? pickEnemyTemplate(depth))
+    : pickEnemyTemplate(depth);
   const scaled   = scaleStats(template, depth);
   const intent   = pickIntent(template.trait);
 

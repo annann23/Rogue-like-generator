@@ -39,6 +39,7 @@ interface CombatRoomProps {
   fleeGuaranteed?: boolean;
   onConsumeFleeEffect?: () => void;
   onEnemyInitialized?: (tier: EnemyTier) => void;
+  forceEnemyId?: string;
 }
 
 // ─── 로딩 점 애니메이션 ────────────────────────
@@ -95,6 +96,7 @@ export default function CombatRoom({
   fleeGuaranteed = false,
   onConsumeFleeEffect,
   onEnemyInitialized,
+  forceEnemyId,
 }: CombatRoomProps) {
   const [state, setState] = useState<CombatState>({
     enemy: null,
@@ -132,7 +134,7 @@ export default function CombatRoom({
 
   function initializeCombat() {
     try {
-      const res = localInitCombat(depth);
+      const res = localInitCombat(depth, forceEnemyId);
 
       setState((prev) => ({
         ...prev,

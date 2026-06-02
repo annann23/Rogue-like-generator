@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameState, type RoomType, type RunState, type MetaState } from '@/hooks/useGameState';
-import { generateRoomWithResultsSafe, generateGhostBattle, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
+import { generateRoomWithResultsSafe, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, PixelInput, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
 import { PERSONA_TRAITS } from '@/constants/storyFlags';
@@ -17,7 +17,7 @@ import InventoryPanel from './InventoryPanel';
 import { ITEMS } from '@/constants/items';
 
 // ─── Types ────────────────────────────────────
-type GamePhase = 'loading' | 'npc' | 'ghost' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
+type GamePhase = 'loading' | 'npc' | 'ghost' | 'ghost-combat' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
 
 interface PrefetchEntry {
   roomType: RoomType;
@@ -99,21 +99,6 @@ function StatChangeBadge({ label, value, positive }: StatChangeBadgeProps) {
   );
 }
 
-// ─── LoadingDots ──────────────────────────────
-function LoadingDots() {
-  const [dots, setDots] = useState('');
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDots((d) => (d.length >= 3 ? '' : d + '.'));
-    }, 400);
-    return () => clearInterval(timer);
-  }, []);
-  return (
-    <span className="font-pixel" style={{ fontSize: '14px', color: '#9878c0' }}>
-      {dots}
-    </span>
-  );
-}
 
 // ─── GodOverlay ───────────────────────────────
 const ROOM_LOADING_LINES = [
@@ -229,8 +214,6 @@ export default function GameScreen() {
   const [currentRoomType, setCurrentRoomType] = useState<RoomType>('combat');
   const [wallInscriptions, setWallInscriptions] = useState<Ghost[]>([]);
   const [ghostEncounter, setGhostEncounter] = useState<Ghost | null>(null);
-  const [ghostBattling, setGhostBattling] = useState(false);
-  const [ghostBattleResult, setGhostBattleResult] = useState<GhostBattleResponse | null>(null);
   const [lastWords, setLastWords] = useState('');
   const [pendingDeathCause, setPendingDeathCause] = useState<string | null>(null);
   const [moderating, setModerating] = useState(false);
@@ -243,7 +226,7 @@ export default function GameScreen() {
     } else if (phase === 'combat') {
       // 적 초기화 전까지는 dungeon-normal 유지, 초기화 후 onEnemyInitialized에서 교체
       setBgmTrack('dungeon-normal.mp3');
-    } else if (phase === 'ghost') {
+    } else if (phase === 'ghost' || phase === 'ghost-combat') {
       setBgmTrack('encounter-enemy.mp3');
     } else {
       setBgmTrack('dungeon-normal.mp3');
@@ -471,51 +454,10 @@ export default function GameScreen() {
     setPhase('result');
   }
 
-  // ─── 유령과 전투 ──────────────────────────────
-  async function handleGhostFight() {
-    if (!ghostEncounter || ghostBattling) return;
-    setGhostBattling(true);
-    setGhostBattleResult(null);
-
-    try {
-      const res = await generateGhostBattle({
-        characterClass: run.characterClass ?? 'warrior',
-        hp: run.hp,
-        maxHp: run.maxHp,
-        atk: run.atk,
-        arcane: (run.skills as unknown as Record<string, number>).arcane ?? 0,
-        ghostLastWords: ghostEncounter.last_words,
-      });
-
-      setGhostBattleResult(res);
-
-      if (!res.won) {
-        const cause = res.deathCause ?? '유령에게 영혼을 빼앗겼다';
-        killPlayer(cause);
-        setPendingDeathCause(cause);
-        setLastWords('');
-        setPhase('dying');
-      } else {
-        addGhostBattleWin();
-        if (res.reward) {
-          addRelic({
-            name: res.reward.name,
-            effect: res.reward.effect,
-            isCursed: false,
-            icon: res.reward.isPassive ? '✨' : '⚔️',
-          });
-        }
-      }
-    } catch {
-      setGhostBattleResult({
-        won: false,
-        narrative: '유령의 기운에 압도되어 쓰러졌다.',
-        deathCause: '유령에게 영혼을 빼앗겼다',
-        reward: null,
-      });
-    } finally {
-      setGhostBattling(false);
-    }
+  // ─── 유령과 전투 (수동 전투 시스템으로 진입) ──
+  function handleGhostFight() {
+    setPhase('ghost-combat');
+    setBgmTrack('encounter-enemy.mp3');
   }
 
   // ─── 유령 조우 종료 ───────────────────────────
@@ -826,113 +768,104 @@ export default function GameScreen() {
           </PixelPanel>
         )}
 
-        {/* 유령 조우 */}
+        {/* 유령 조우 — 등장 및 선택 */}
         {phase === 'ghost' && (
           <PixelPanel variant="dark" className="p-5">
             <div className="flex flex-col items-center gap-4">
-              <Sprite
-                spriteKey="ghost"
-                scale={4}
-                animation={ghostBattling ? 'combat' : 'float'}
-              />
+              <Sprite spriteKey="ghost" scale={4} animation="float" />
 
-              {/* 유령 등장 / 마지막 말 */}
-              {!ghostBattleResult && (
-                ghostEncounter ? (
-                  <>
-                    <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#9878c0', lineHeight: 2 }}>
-                      어둠 속에서 희미한 형체가 나타났다.
-                    </p>
-                    <div
-                      className="font-pixel px-4 py-3 w-full"
-                      style={{
-                        background: 'rgba(8,4,19,0.8)',
-                        border: '2px solid #4a2d7a',
-                        fontSize: '13px',
-                        color: '#b8a8d8',
-                        lineHeight: 2,
-                        fontStyle: 'italic',
-                        textAlign: 'center',
-                      }}
-                    >
-                      &quot;{ghostEncounter.last_words}&quot;
-                    </div>
-                    <p className="font-pixel" style={{ fontSize: '11px', color: '#5a4a7a' }}>
-                      — {ghostEncounter.character_class}, {ghostEncounter.depth}층에서 숨진 자
-                    </p>
-                  </>
-                ) : (
-                  <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#6b4fa0', lineHeight: 2 }}>
-                    희미한 기운이 느껴졌지만,<br />아무 말도 남기지 않은 영혼이었다.
-                  </p>
-                )
-              )}
-
-              {/* 전투 결과 서사 */}
-              {ghostBattleResult && !ghostBattleResult.won && (
-                <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#e04040', lineHeight: 2 }}>
-                  <TypewriterText text={ghostBattleResult.narrative} speed={20} />
-                </p>
-              )}
-              {ghostBattleResult?.won && (
+              {ghostEncounter ? (
                 <>
-                  <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#40c060', lineHeight: 2 }}>
-                    <TypewriterText text={ghostBattleResult.narrative} speed={20} />
+                  <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#9878c0', lineHeight: 2 }}>
+                    어둠 속에서 희미한 형체가 나타났다.
                   </p>
-                  {ghostBattleResult.reward && (
-                    <div
-                      className="font-pixel px-4 py-3 w-full"
-                      style={{
-                        background: 'rgba(0,20,10,0.8)',
-                        border: '2px solid #40c060',
-                        fontSize: '12px',
-                        color: '#80e0a0',
-                        lineHeight: 2,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {ghostBattleResult.reward.isPassive ? '✨' : '⚔️'} {ghostBattleResult.reward.name} 획득!
-                      <br />
-                      <span style={{ fontSize: '11px', color: '#609870' }}>{ghostBattleResult.reward.effect}</span>
-                    </div>
-                  )}
+                  <div
+                    className="font-pixel px-4 py-3 w-full"
+                    style={{
+                      background: 'rgba(8,4,19,0.8)',
+                      border: '2px solid #4a2d7a',
+                      fontSize: '13px',
+                      color: '#b8a8d8',
+                      lineHeight: 2,
+                      fontStyle: 'italic',
+                      textAlign: 'center',
+                    }}
+                  >
+                    &quot;{ghostEncounter.last_words}&quot;
+                  </div>
+                  <p className="font-pixel" style={{ fontSize: '11px', color: '#5a4a7a' }}>
+                    — {ghostEncounter.character_class}, {ghostEncounter.depth}층에서 숨진 자
+                  </p>
                 </>
-              )}
-
-              {/* 전투 중 */}
-              {ghostBattling && (
-                <div className="flex items-center gap-2">
-                  <p className="font-pixel" style={{ fontSize: '13px', color: '#9878c0' }}>유령과 사투 중</p>
-                  <LoadingDots />
-                </div>
+              ) : (
+                <p className="font-pixel text-center" style={{ fontSize: '13px', color: '#6b4fa0', lineHeight: 2 }}>
+                  희미한 기운이 느껴졌지만,<br />아무 말도 남기지 않은 영혼이었다.
+                </p>
               )}
 
               <PixelDivider className="w-full" />
 
-              {/* 버튼 영역 */}
-              {!ghostBattling && !ghostBattleResult && (
-                <div className="flex gap-3 w-full justify-center">
-                  <PixelButton variant="secondary" size="sm" onClick={handleGhostDismiss}>
-                    지나친다
-                  </PixelButton>
-                  {ghostEncounter && (run.skills as unknown as Record<string, number>).arcane >= 2 && (
-                    <PixelButton
-                      variant="danger"
-                      size="sm"
-                      onClick={() => void handleGhostFight()}
-                    >
-                      ✨ 싸운다 (마법감지 {(run.skills as unknown as Record<string, number>).arcane})
-                    </PixelButton>
-                  )}
-                </div>
-              )}
-              {!ghostBattling && ghostBattleResult?.won && (
+              <div className="flex gap-3 w-full justify-center">
                 <PixelButton variant="secondary" size="sm" onClick={handleGhostDismiss}>
                   지나친다
                 </PixelButton>
-              )}
+                <PixelButton variant="danger" size="sm" onClick={handleGhostFight}>
+                  ✨ 싸운다
+                </PixelButton>
+              </div>
             </div>
           </PixelPanel>
+        )}
+
+        {/* 유령 전투 — 수동 전투 시스템 */}
+        {phase === 'ghost-combat' && (
+          <CombatRoom
+            key={`ghost-${currentDepth}`}
+            depth={currentDepth}
+            characterClass={run.characterClass ?? 'warrior'}
+            hp={run.hp}
+            maxHp={run.maxHp}
+            atk={run.atk}
+            def={run.def}
+            gold={run.gold}
+            skills={run.skills as unknown as Record<string, number>}
+            relics={run.relics.map((r) => r.name)}
+            forceEnemyId="ghost"
+            onVictory={(goldReward, relic) => {
+              applyGoldChange(goldReward);
+              if (relic) addRelic({ name: relic.name, effect: relic.effect, isCursed: relic.isCursed, icon: '👻' });
+              addGhostBattleWin();
+              if (Math.random() < 0.05) addMapFragment();
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '유령을 물리쳤다. 차가운 기운이 사라진다.', hpChange: goldReward, goldChange: goldReward, skillChange: null, newRelic: relic, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+            onHpChange={(delta) => applyHpChange(delta)}
+            onDefeat={(cause) => {
+              killPlayer(cause);
+              setPendingDeathCause(cause);
+              setLastWords('');
+              setPhase('dying');
+            }}
+            onFled={() => {
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '유령을 피해 가까스로 도망쳤다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+            onNegotiated={() => {
+              addGhostBattleWin();
+              const nextD = currentDepthRef.current + 1;
+              schedulePrefetch(nextD);
+              schedulePrefetch(nextD + 1);
+              setResult({ result: '유령과 말로 통했다. 영혼이 조용히 사라진다.', hpChange: 0, goldChange: 0, skillChange: null, newRelic: null, isDead: false, deathCause: null });
+              setPhase('result');
+            }}
+            onEnemyInitialized={() => setBgmTrack('encounter-enemy.mp3')}
+          />
         )}
 
 
