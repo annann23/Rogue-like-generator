@@ -20,6 +20,7 @@ import { FIXED_RELICS } from '@/constants/relics';
 import { getActiveSynergies, getNewlyActivatedSynergies } from '@/constants/relicSynergies';
 import type { RelicSynergy } from '@/constants/relicSynergies';
 import { GEM_DEFS, checkNewGems } from '@/constants/gems';
+import { pickHintEvent, adaptHintEventToRoom } from '@/constants/hintEvents';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'ghost' | 'ghost-combat' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
@@ -71,8 +72,8 @@ function pickRoomType(depth: number): RoomType {
 
   const pool: RoomType[] =
     depth <= 3
-      ? ['combat', 'combat', 'event', 'event', 'event', 'npc', 'shop', 'rest']
-      : ['combat', 'combat', 'event', 'event', 'event', 'event', 'npc', 'shop', 'rest'];
+      ? ['combat', 'combat', 'event', 'event', 'event', 'event', 'event', 'npc', 'shop', 'rest']
+      : ['combat', 'combat', 'event', 'event', 'event', 'event', 'event', 'event', 'npc', 'shop', 'rest'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -142,6 +143,7 @@ export default function GameScreen() {
     markNPCRelicGiven,
     discoverSynergy,
     collectGem,
+    markHintEventSeen,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -178,6 +180,7 @@ export default function GameScreen() {
       markNPCRelicGiven: s.markNPCRelicGiven,
       discoverSynergy: s.discoverSynergy,
       collectGem: s.collectGem,
+      markHintEventSeen: s.markHintEventSeen,
     }))
   );
 
@@ -350,6 +353,20 @@ export default function GameScreen() {
     if (roomType === 'combat') {
       setPhase('combat');
       return;
+    }
+
+    // 힌트 이벤트: depth 3 이상, event 방, 40% 확률
+    if (roomType === 'event' && depth >= 3 && Math.random() < 0.4) {
+      const seenIds = meta.seenHintEvents ?? [];
+      const hintEvent = pickHintEvent(seenIds, depth);
+      if (hintEvent) {
+        markHintEventSeen(hintEvent.id);
+        const hintRoom = adaptHintEventToRoom(hintEvent, run.skills as unknown as Record<string, number>);
+        setRoom(hintRoom);
+        setPhase('choosing');
+        fetchGhosts(depth).then(setWallInscriptions);
+        return;
+      }
     }
 
     try {

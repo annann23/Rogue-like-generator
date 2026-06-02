@@ -108,6 +108,7 @@ export interface MetaState {
   prologueShown: boolean;
   collectedGems: string[];
   gemStoriesSeen: string[];
+  seenHintEvents: string[];
 }
 
 interface GameStore {
@@ -155,6 +156,7 @@ interface GameStore {
   incrementCombatWins: () => void;
   collectGem: (gemId: string) => void;
   markGemStorySeen: (gemId: string) => void;
+  markHintEventSeen: (id: string) => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -205,6 +207,7 @@ const DEFAULT_META: MetaState = {
   prologueShown: false,
   collectedGems: [],
   gemStoriesSeen: [],
+  seenHintEvents: [],
 };
 
 export const useGameState = create<GameStore>()(
@@ -594,6 +597,12 @@ export const useGameState = create<GameStore>()(
         set((state) => {
           if (state.meta.gemStoriesSeen.includes(gemId)) return state;
           return { meta: { ...state.meta, gemStoriesSeen: [...state.meta.gemStoriesSeen, gemId] } };
+        }),
+
+      markHintEventSeen: (id) =>
+        set((state) => {
+          if ((state.meta.seenHintEvents ?? []).includes(id)) return state;
+          return { meta: { ...state.meta, seenHintEvents: [...(state.meta.seenHintEvents ?? []), id] } };
         }),
     }),
     {

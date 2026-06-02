@@ -657,56 +657,7 @@ JSON으로만 응답:
 }
 
 // 재시도 + 폴백을 포함한 public 래퍼
-const FALLBACK_ROOM: RoomWithResults = {
-  description: '안개가 자욱한 통로가 나타났다. 무언가 이상한 기운이 감돈다.',
-  choices: [
-    {
-      text: '조심스럽게 앞으로 나아간다',
-      icon: '👣',
-      classOnly: null,
-      requiredSkill: null,
-      result: '조심스럽게 발걸음을 옮겼다. 특별한 일은 일어나지 않았다.',
-      hpChange: 0,
-      goldChange: 0,
-      skillChange: null,
-      newRelic: null,
-      isDead: false,
-      deathCause: null,
-      storyFlagSet: null,
-      personaReaction: 'neutral',
-    },
-    {
-      text: '잠시 숨을 고르며 대기한다',
-      icon: '🧘',
-      classOnly: null,
-      requiredSkill: null,
-      result: '잠시 휴식을 취했다. 피로가 조금 풀렸다.',
-      hpChange: 10,
-      goldChange: 0,
-      skillChange: null,
-      newRelic: null,
-      isDead: false,
-      deathCause: null,
-      storyFlagSet: null,
-      personaReaction: 'neutral',
-    },
-    {
-      text: '주변을 살피며 단서를 찾는다',
-      icon: '🔍',
-      classOnly: null,
-      requiredSkill: null,
-      result: '주변을 살폈지만 별다른 것을 찾지 못했다.',
-      hpChange: 0,
-      goldChange: 5,
-      skillChange: null,
-      newRelic: null,
-      isDead: false,
-      deathCause: null,
-      storyFlagSet: null,
-      personaReaction: 'neutral',
-    },
-  ],
-};
+import { FALLBACK_ROOMS } from '@/constants/hintEvents';
 
 export async function generateRoomWithResultsSafe(
   params: Parameters<typeof generateRoomWithResults>[0],
@@ -714,7 +665,7 @@ export async function generateRoomWithResultsSafe(
   try {
     return await withRetry(() => generateRoomWithResults(params), 2, 800);
   } catch {
-    return FALLBACK_ROOM;
+    return FALLBACK_ROOMS[Math.floor(Math.random() * FALLBACK_ROOMS.length)];
   }
 }
 
@@ -843,25 +794,30 @@ export async function generateNPCDialogue(params: {
     ? `[친밀도 낮음: ${familiarity}/100]
 - 태도: 무뚝뚝하거나 형식적으로 친절한 척하되 속내는 드러내지 않음. 경계심을 유지할 것.
 - 자신의 취향/과거/개인 이야기는 절대 꺼내지 말 것.
-- 선물 힌트도 주지 말 것. 선물을 받아도 무덤덤하게 받을 것.`
+- 선물 힌트도 주지 말 것. 선물을 받아도 무덤덤하게 받을 것.
+- 자신이 정령/반신/불멸의 존재임을 절대 드러내지 말 것. 평범한 인간처럼 행동할 것.`
     : familiarity < 50
     ? `[친밀도 중간: ${familiarity}/100]
 - 태도: 조금씩 경계가 풀리기 시작. 가끔 진심이 살짝 비침.
 - 자신이 좋아하는 것에 대한 힌트를 대사 속에 아주 자연스럽게 한 줄 흘려도 됨 (태그명 직접 언급 금지).
-- 개인 이야기는 아직 꺼내지 않음.`
+- 개인 이야기는 아직 꺼내지 않음.
+- 자신이 정령/반신/불멸의 존재임을 드러내지 말 것. 인간처럼 행동하되, 가끔 말실수처럼 조금 이상한 표현이 나와도 됨.`
     : familiarity < 70
     ? `[친밀도 높음: ${familiarity}/100]
 - 태도: 어느 정도 신뢰가 생겼음. 솔직한 면모가 드러남.
 - 좋아하는 것에 대한 힌트를 자연스럽게 줄 것.
-- 자신의 과거나 사연 중 가벼운 것을 슬쩍 언급해도 됨. (예: 과거 직업, 옛 기억 한 조각)`
+- 자신의 과거나 사연 중 가벼운 것을 슬쩍 언급해도 됨. (예: 과거 직업, 옛 기억 한 조각)
+- 자신이 평범한 존재가 아닐 수 있다는 것을 아주 희미하게 암시해도 됨. (예: "나는... 오래 살았지." 정도) 하지만 직접적으로 정령/반신/불멸이라고 말하지는 말 것.`
     : familiarity < 90
     ? `[친밀도 매우 높음: ${familiarity}/100]
 - 태도: 진정한 우호 관계. 솔직하고 따뜻함.
 - 좋아하는 것에 대해 적극적으로 이야기할 수 있음.
-- 자신의 더 깊은 사연이나 비밀스러운 과거를 털어놓을 것. (예: 왜 던전에 있는지, 숨긴 상처)`
+- 자신의 더 깊은 사연이나 비밀스러운 과거를 털어놓을 것. (예: 왜 던전에 있는지, 숨긴 상처)
+- 자신이 초자연적 존재라는 것을 완곡하게 인정할 수 있음. 단, 구체적인 종류(정령/반신 등)는 아직 말하지 말 것.`
     : `[친밀도 최대: ${familiarity}/100]
 - 태도: 완전한 신뢰. 가장 친한 존재.
-- 자신의 가장 깊은 비밀, 진짜 정체, 숨겨온 소망을 털어놓을 것.
+- 자신의 가장 깊은 비밀, 진짜 정체(정령/반신/불멸의 존재), 숨겨온 소망을 자연스럽게 털어놓을 것.
+- 신이 사라진 이후 이 던전에 머물게 된 이유를 솔직히 말할 수 있음.
 - 선물에 대해 진심으로 반응하고 자신의 취향을 솔직히 밝혀도 됨.`;
 
   const text = await claudeFetch(
