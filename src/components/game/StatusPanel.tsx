@@ -88,7 +88,7 @@ export default function StatusPanel({
                         {collected ? `✓ ${gem.name}` : gem.name}
                       </span>
                       <span style={{ fontSize: '9px', color: '#4a3070' }}>
-                        {gem.conditionLabel}
+                        {collected ? gem.conditionLabel : '???'}
                       </span>
                     </div>
                   </div>
@@ -154,13 +154,15 @@ export default function StatusPanel({
                               opacity: unlocked ? 1 : 0.5,
                             }}
                           >
-                            <span style={{ fontSize: '14px', minWidth: '18px' }}>{ach.icon}</span>
+                            <span style={{ fontSize: '14px', minWidth: '18px' }}>
+                              {unlocked ? ach.icon : '❓'}
+                            </span>
                             <div className="flex flex-col gap-1 flex-1">
                               <span style={{ fontSize: '10px', color: unlocked ? '#80e080' : '#4a3070' }}>
-                                {unlocked ? `✓ ${ach.name}` : ach.name}
+                                {unlocked ? `✓ ${ach.name}` : '???'}
                               </span>
                               <span style={{ fontSize: '9px', color: '#3a2550' }}>
-                                {ach.description}
+                                {unlocked ? ach.description : '???'}
                               </span>
                             </div>
                             {unlocked && (
