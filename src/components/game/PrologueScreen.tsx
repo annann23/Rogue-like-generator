@@ -1,102 +1,187 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 
-const MURAL_LINES = [
-  '던전 입구. 먼지 쌓인 벽에 낡은 비문이 새겨져 있다.',
-  '',
-  '"이 곳에는 사람의 탈을 쓴 자들이 있다."',
-  '"정령이라 불리는 존재들 — 그들은 인간 틈에 섞여,"',
-  '"스스로를 좀처럼 드러내지 않는다."',
-  '',
-  '"그러나 그들은 영혼을 알아본다."',
-  '"몇 번을 죽고 다시 태어나도,"',
-  '"같은 영혼이 돌아오면 — 그들은 안다."',
-  '',
-  '"누군가의 기록에 이런 말이 있었다:"',
-  '"그들과 깊은 신뢰를 쌓으면, 그들은"',
-  '"무언가 귀한 것을 내어준다고..."',
-  '',
-  '— 비문은 여기서 끊겨있다.',
+// ─── 프롤로그 패널 정의 ───────────────────────
+interface Panel {
+  label: string;       // 상단 소제목
+  lines: string[];     // 본문 줄
+  color?: string;      // 본문 색상
+}
+
+const PANELS: Panel[] = [
+  {
+    label: '태초에',
+    lines: [
+      '변덕스럽고 심술궂은 신이 이 지하 미궁을 만들었다.',
+      '',
+      '신은 선포했다.',
+      '',
+      '"나는 진정으로 가치 있는 영혼을 찾고 있다."',
+      '"수천, 수만의 영혼 중 단 하나."',
+      '"그 영혼만이 이 미궁을 빠져나갈 수 있다."',
+    ],
+  },
+  {
+    label: '심판의 저주',
+    lines: [
+      '신의 눈에 든 영혼은 도망칠 수 없다.',
+      '',
+      '죽어도 다시 이 땅에서 깨어난다.',
+      '새로운 몸으로, 희미한 기억만을 안고.',
+      '',
+      '그것이 이 미궁의 규칙이다.',
+      '신이 만든 저주이자, 신이 내린 기회다.',
+    ],
+    color: '#c8a0e0',
+  },
+  {
+    label: '아직 열리지 않은 문',
+    lines: [
+      '던전의 가장 깊은 곳에 문이 있다고 한다.',
+      '',
+      '신이 인정한 영혼만이',
+      '그 문의 빗장을 열 수 있다.',
+      '',
+      '수백 개의 영혼이 이 길을 걸었다.',
+      '그 문을 연 자는 아직... 없다.',
+    ],
+    color: '#f0c040',
+  },
+  {
+    label: '그리고 오늘',
+    lines: [
+      '오늘, 또 하나의 영혼이 눈을 뜬다.',
+      '',
+      '당신은 이미 이 길을 수없이 걸었는지 모른다.',
+      '기억은 없어도, 영혼은 기억한다.',
+      '',
+      '이번에는 — 나갈 수 있을까.',
+    ],
+    color: '#e8d8b8',
+  },
 ];
 
+// ─── Component ────────────────────────────────
 export default function PrologueScreen() {
   const setScreen = useGameState((s) => s.setScreen);
+
+  const [panelIdx, setPanelIdx] = useState(0);
   const [visibleLines, setVisibleLines] = useState(0);
-  const [done, setDone] = useState(false);
+  const [panelDone, setPanelDone] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
+  const panel = PANELS[panelIdx];
+  const isLastPanel = panelIdx === PANELS.length - 1;
+
+  // 줄 단위 reveal
+  useEffect(() => {
+    setPanelDone(false);
+    setVisibleLines(0);
+  }, [panelIdx]);
 
   useEffect(() => {
-    if (visibleLines >= MURAL_LINES.length) {
-      setTimeout(() => setDone(true), 400);
+    if (visibleLines >= panel.lines.length) {
+      setTimeout(() => setPanelDone(true), 300);
       return;
     }
-    const delay = MURAL_LINES[visibleLines] === '' ? 180 : 420;
-    const id = setTimeout(() => setVisibleLines((v) => v + 1), delay);
+    const isBlank = panel.lines[visibleLines] === '';
+    const id = setTimeout(
+      () => setVisibleLines((v) => v + 1),
+      isBlank ? 160 : 480,
+    );
     return () => clearTimeout(id);
-  }, [visibleLines]);
+  }, [visibleLines, panel.lines]);
 
-  function handleContinue() {
-    useGameState.setState((state) => ({
-      meta: { ...state.meta, prologueShown: true },
-    }));
-    setScreen('game');
-  }
+  const handleNext = useCallback(() => {
+    if (!panelDone) {
+      // 스킵: 모든 줄 즉시 표시
+      setVisibleLines(panel.lines.length);
+      setPanelDone(true);
+      return;
+    }
+    if (isLastPanel) {
+      setExiting(true);
+      setTimeout(() => {
+        useGameState.setState((state) => ({
+          meta: { ...state.meta, prologueShown: true },
+        }));
+        setScreen('game');
+      }, 600);
+    } else {
+      setPanelIdx((i) => i + 1);
+    }
+  }, [panelDone, isLastPanel, panel.lines.length, setScreen]);
+
+  // 키보드 스페이스/엔터
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'Enter') handleNext();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleNext]);
 
   return (
     <div
-      className="w-full h-full flex items-center justify-center dungeon-bg"
-      style={{ padding: '24px' }}
+      className="w-full h-full dungeon-bg flex items-center justify-center"
+      style={{
+        padding: '24px',
+        opacity: exiting ? 0 : 1,
+        transition: 'opacity 0.6s ease',
+      }}
+      onClick={handleNext}
     >
       <div
         style={{
-          maxWidth: '520px',
+          maxWidth: '540px',
           width: '100%',
-          background: '#0a0618',
-          border: '3px solid #3a2560',
-          boxShadow: '0 0 40px rgba(74,45,122,0.3), inset 0 0 30px rgba(0,0,0,0.6)',
-          padding: '32px 28px',
           position: 'relative',
+          userSelect: 'none',
         }}
       >
-        {/* 상단 장식 */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '-2px', left: '20px', right: '20px',
-            height: '3px',
-            background: 'linear-gradient(90deg, transparent, #6b4fa0, transparent)',
-          }}
-        />
+        {/* 패널 번호 도트 */}
+        <div className="flex justify-center gap-2 mb-6">
+          {PANELS.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: '6px',
+                height: '6px',
+                background: i <= panelIdx ? '#6b4fa0' : '#1a0f2e',
+                border: '2px solid #3a2560',
+                transition: 'background 0.3s',
+              }}
+            />
+          ))}
+        </div>
 
-        {/* 제목 */}
+        {/* 소제목 */}
         <p
-          className="font-pixel text-center mb-6"
-          style={{ fontSize: '11px', color: '#6b4fa0', letterSpacing: '3px' }}
+          className="font-pixel text-center mb-8"
+          style={{
+            fontSize: '10px',
+            color: '#6b4fa0',
+            letterSpacing: '4px',
+          }}
         >
-          ✦ 던전 입구의 비문 ✦
+          ✦ {panel.label} ✦
         </p>
 
-        {/* 비문 내용 */}
-        <div
-          style={{
-            minHeight: '320px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0px',
-          }}
-        >
-          {MURAL_LINES.slice(0, visibleLines).map((line, idx) => (
+        {/* 본문 */}
+        <div style={{ minHeight: '260px' }}>
+          {panel.lines.slice(0, visibleLines).map((line, idx) => (
             <p
-              key={idx}
+              key={`${panelIdx}-${idx}`}
               className="font-pixel"
               style={{
-                fontSize: '11px',
-                lineHeight: '2.4',
-                color: line.startsWith('"') ? '#c8b0e8'
-                  : line.startsWith('—') ? '#6b4fa0'
-                  : line === '' ? undefined
+                fontSize: '12px',
+                lineHeight: '2.6',
+                textAlign: 'center',
+                color: line === '' ? undefined
+                  : line.startsWith('"') ? (panel.color ?? '#c8b0e8')
                   : '#9878c0',
+                minHeight: line === '' ? '16px' : undefined,
                 fontStyle: line.startsWith('"') ? 'italic' : 'normal',
-                minHeight: line === '' ? '12px' : undefined,
               }}
             >
               {line}
@@ -104,51 +189,55 @@ export default function PrologueScreen() {
           ))}
         </div>
 
-        {/* 계속 버튼 */}
+        {/* 하단 버튼 */}
         <div
           style={{
-            marginTop: '24px',
+            marginTop: '32px',
             display: 'flex',
             justifyContent: 'center',
-            opacity: done ? 1 : 0,
-            transition: 'opacity 0.6s ease',
-            pointerEvents: done ? 'auto' : 'none',
+            opacity: panelDone ? 1 : 0,
+            transition: 'opacity 0.5s ease',
           }}
         >
-          <button
-            className="font-pixel"
-            onClick={handleContinue}
-            style={{
-              fontSize: '12px',
-              color: '#f0c040',
-              background: '#1a0f2e',
-              border: '3px solid #f0c040',
-              padding: '12px 28px',
-              cursor: 'pointer',
-              letterSpacing: '2px',
-              boxShadow: '0 4px 0 #7a3c00',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = '#2a1a08';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = '#1a0f2e';
-            }}
-          >
-            던전에 입장한다 →
-          </button>
+          {isLastPanel ? (
+            <button
+              className="font-pixel"
+              style={{
+                fontSize: '12px',
+                color: '#f0c040',
+                background: '#1a0f2e',
+                border: '3px solid #f0c040',
+                padding: '12px 32px',
+                cursor: 'pointer',
+                letterSpacing: '2px',
+                boxShadow: '0 4px 0 #7a3c00',
+                pointerEvents: panelDone ? 'auto' : 'none',
+              }}
+            >
+              던전에 입장한다
+            </button>
+          ) : (
+            <p
+              className="font-pixel"
+              style={{
+                fontSize: '10px',
+                color: '#4a3070',
+                letterSpacing: '2px',
+                animation: 'pulse 1.8s ease-in-out infinite',
+              }}
+            >
+              클릭하여 계속
+            </p>
+          )}
         </div>
-
-        {/* 하단 장식 */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-2px', left: '20px', right: '20px',
-            height: '3px',
-            background: 'linear-gradient(90deg, transparent, #6b4fa0, transparent)',
-          }}
-        />
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
