@@ -661,7 +661,7 @@ JSON으로만 응답:
     // skillChange가 {skill, change} 형식으로 올 경우 {type, amount}로 정규화
     let skillChange: ChoiceWithResult['skillChange'] = null;
     if (c.skillChange) {
-      const raw = c.skillChange as Record<string, unknown>;
+      const raw = c.skillChange as unknown as Record<string, unknown>;
       const rawType = (raw.type ?? raw.skill ?? '') as string;
       const rawAmount = (raw.amount ?? raw.change ?? 0) as number;
       skillChange = { type: normalizeSkillType(rawType), amount: rawAmount };
