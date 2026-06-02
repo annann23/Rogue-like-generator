@@ -143,8 +143,8 @@ export default function StatReveal() {
   const changedStats = Object.entries(totalChanges).filter(([, v]) => v !== 0);
 
   return (
-    <div ref={scrollRef} className="w-full h-full dungeon-bg p-4 overflow-y-auto">
-      <div className="w-full max-w-lg flex flex-col gap-5 py-4">
+    <div ref={scrollRef} className="w-full h-full dungeon-bg overflow-y-auto">
+      <div className={`min-h-full max-w-lg mx-auto w-full p-4 flex flex-col gap-5${!showSummary ? ' justify-center' : ' py-6'}`}>
 
         <div className="text-center">
           <p className="font-pixel" style={{ fontSize: '16px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}>
