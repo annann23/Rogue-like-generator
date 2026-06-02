@@ -353,16 +353,13 @@ interface ChoiceButtonProps {
   disabled?: boolean;
   personaReaction?: 'bonus' | 'penalty' | 'neutral';
   personaTraitLabel?: string; // e.g. "🗡️ 무모함"
-  lethalPenalty?: boolean;    // 패널티로 사망하는 선택지
 }
 
-export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false, personaReaction, personaTraitLabel, lethalPenalty = false }: ChoiceButtonProps) {
+export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false, personaReaction, personaTraitLabel }: ChoiceButtonProps) {
   // 클래스 전용 조건: 숨기지 않고 잠금 표시
   const isClassLocked = classOnly != null && classOnly !== playerClass;
-  const isLocked = locked || isClassLocked || lethalPenalty;
-  const reason = lethalPenalty
-    ? '페르소나 패널티로 사망 — 선택 불가'
-    : isClassLocked ? `${classOnly} 전용` : lockReason;
+  const isLocked = locked || isClassLocked;
+  const reason = isClassLocked ? `${classOnly} 전용` : lockReason;
 
   const showPersonaBadge = personaReaction && personaReaction !== 'neutral' && personaTraitLabel;
 
@@ -412,7 +409,7 @@ export function PixelChoiceButton({ text, icon, locked = false, lockReason, clas
             color: personaReaction === 'bonus' ? '#60c080' : '#e06060',
           }}
         >
-          {personaTraitLabel} {personaReaction === 'bonus' ? '— 성격 적합 +8 HP' : '— 성격 부적합 -8 HP'}
+          {personaTraitLabel} {personaReaction === 'bonus' ? '— 성격 적합 ATK +2' : '— 성격 부적합 ATK -1'}
         </div>
       )}
     </div>

@@ -461,21 +461,13 @@ export default function GameScreen() {
       setStoryFlag(key, value);
     }
 
-    // 페르소나 반응 보너스/페널티 (HP ±8)
-    let personaHpBonus = 0;
-    if (choice.personaReaction === 'bonus') personaHpBonus = 8;
-    if (choice.personaReaction === 'penalty') personaHpBonus = -8;
-    if (personaHpBonus !== 0) applyHpChange(personaHpBonus);
-
-    // 패널티로 HP가 0 이하가 됐다면 사망 처리
-    if (personaHpBonus < 0 && run.hp + choice.hpChange + personaHpBonus <= 0) {
-      const cause = '페르소나와 어긋난 선택의 대가';
-      isDeadRef.current = true;
-      killPlayer(cause);
-      setPendingDeathCause(cause);
-      setLastWords('');
-      setPhase('dying');
-      return;
+    // 페르소나 반응 보너스/페널티 (ATK ±)
+    const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
+    let personaAtkBonus = 0;
+    if (traitInfo && choice.personaReaction !== 'neutral') {
+      personaAtkBonus = choice.personaReaction === 'bonus' ? 2 : -1;
+      const newAtk = Math.max(1, run.atk + personaAtkBonus);
+      updateRun({ atk: newAtk });
     }
 
     if (currentRoomType === 'event' && Math.random() < 0.05) {
@@ -491,14 +483,13 @@ export default function GameScreen() {
     schedulePrefetch(nextD + 1);
 
     // 페르소나 반응 배지를 result에 추가
-    const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
     const personaBadge = traitInfo && choice.personaReaction !== 'neutral'
       ? `\n\n${choice.personaReaction === 'bonus'
-          ? `${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — HP +${personaHpBonus}`
-          : `${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택 — HP ${personaHpBonus}`}`
+          ? `${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ATK +${personaAtkBonus}`
+          : `${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택 — ATK ${personaAtkBonus}`}`
       : '';
 
-    setResult({ result: choice.result + personaBadge, hpChange: choice.hpChange + personaHpBonus, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
+    setResult({ result: choice.result + personaBadge, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
     setPhase('result');
   }
 
@@ -1198,9 +1189,6 @@ export default function GameScreen() {
                 const { locked, lockReason } = isChoiceLocked(choice);
                 const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
                 const hasPersonaReaction = traitInfo && choice.personaReaction !== 'neutral';
-                const lethalPenalty = hasPersonaReaction
-                  && choice.personaReaction === 'penalty'
-                  && run.hp + choice.hpChange - 8 <= 0;
                 return (
                   <PixelChoiceButton
                     key={idx}
@@ -1213,7 +1201,6 @@ export default function GameScreen() {
                     onClick={() => handleChoiceClick(choice)}
                     personaReaction={hasPersonaReaction ? choice.personaReaction : undefined}
                     personaTraitLabel={traitInfo ? `${traitInfo.icon} ${traitInfo.name}` : undefined}
-                    lethalPenalty={lethalPenalty ?? false}
                   />
                 );
               })}
