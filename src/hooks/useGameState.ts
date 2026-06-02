@@ -87,6 +87,7 @@ export interface RunState {
   items: Item[];
   equipment: EquipmentSlots;
   storyFlags: Record<string, boolean | number | string>;
+  appliedSynergies: string[];
 }
 
 export interface MetaState {
@@ -138,6 +139,7 @@ interface GameStore {
   setStoryFlag: (key: string, value: boolean | number | string) => void;
   incrementStoryFlag: (key: string, by?: number) => void;
   setPersonaName: (name: string) => void;
+  markSynergyApplied: (id: string) => void;
   batchUnlockAchievements: (ids: string[], totalReward: number) => void;
   unlockClass: (id: string, cost: number) => void;
   discoverEnemy: (id: string) => void;
@@ -174,6 +176,7 @@ const DEFAULT_RUN: RunState = {
   items: [],
   equipment: { weapon: null, armor: null },
   storyFlags: {},
+  appliedSynergies: [],
 };
 
 const DEFAULT_META: MetaState = {
@@ -485,6 +488,11 @@ export const useGameState = create<GameStore>()(
             run: { ...state.run, persona: { ...state.run.persona, name } },
           };
         }),
+
+      markSynergyApplied: (id) =>
+        set((state) => ({
+          run: { ...state.run, appliedSynergies: [...state.run.appliedSynergies, id] },
+        })),
 
       batchUnlockAchievements: (ids, totalReward) =>
         set((state) => {
