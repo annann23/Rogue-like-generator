@@ -56,6 +56,21 @@ export default function TitleScreen() {
         >
           Claude API · Kenney CC0 Assets
         </p>
+
+        <div className="text-center">
+          <button
+            className="font-pixel"
+            style={{ fontSize: '9px', color: '#3d2860', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', textDecoration: 'underline' }}
+            onClick={() => {
+              if (confirm('모든 저장 데이터를 초기화할까요?')) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+          >
+            데이터 초기화
+          </button>
+        </div>
       </div>
     </div>
   );
