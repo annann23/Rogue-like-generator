@@ -70,8 +70,8 @@ function pickRoomType(depth: number): RoomType {
 
   const pool: RoomType[] =
     depth <= 3
-      ? ['combat', 'combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest', 'rest']
-      : ['combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest'];
+      ? ['combat', 'combat', 'event', 'event', 'event', 'npc', 'shop', 'rest']
+      : ['combat', 'combat', 'event', 'event', 'event', 'event', 'npc', 'shop', 'rest'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
