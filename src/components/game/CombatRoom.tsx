@@ -267,7 +267,7 @@ export default function CombatRoom({
       onConsumeFleeEffect?.();
       setCombatLog((prev) => [
         ...prev,
-        { turn: state.currentTurn + 1, text: '⚡ 신의 가호로 완벽하게 도망쳤다! (도망 보장 소모)' },
+        { turn: state.currentTurn + 1, text: '⚡ 계약의 힘으로 완벽하게 도망쳤다! (도망 보장 소모)' },
       ]);
       setState((prev) => ({ ...prev, phase: 'fled' }));
       setTimeout(() => onFled(), 1000);

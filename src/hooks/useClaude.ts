@@ -312,19 +312,19 @@ export async function interpretSurveyAnswers(
 
   const finalWordsSection = finalWords
     ? `\n마지막으로 한 말: "${finalWords}"
-→ 이 말을 듣고 신이 다음 생에 특별한 효과를 부여한다.
-→ 효과는 신의 현재 기분(기분 코드)과 말의 내용/어조에 따라 결정됨.
-→ finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게).
+→ 이 말을 듣고 악마가 다음 생에 특별한 효과를 부여한다.
+→ 효과는 악마의 현재 기분(기분 코드)과 말의 내용/어조에 따라 결정됨.
+→ finalSummary에서 이 마지막 말에 대한 악마의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게).
 → lastWordEffect를 아래 규칙으로 결정:
-   - 진심 어린 말, 용감한 말, 신을 경외하는 말 + 기분 좋은 날 → death_immune (즉사 1회 면제)
+   - 진심 어린 말, 용감한 말, 악마를 경외하는 말 + 기분 좋은 날 → death_immune (즉사 1회 면제)
    - 물질적 욕심을 드러내는 말, 상인 같은 말 → gold_bonus (+50 골드)
    - 고통/상처를 드러내는 말, 애처로운 말 → hp_restore (HP 전체 회복 1회)
    - 도망치고 싶다는 말, 겁쟁이 같은 말 → flee_guaranteed (전투 도망 1회 보장)
    - 지식/능력을 뽐내는 말, 오만한 말 → skill_up (랜덤 스킬 +1)
    - 기분 나쁜 날 or 의미 없는 말 or 욕설 → none (효과 없음)`
-    : `→ lastWordEffect는 { "type": "none", "label": "없음", "description": "신은 아무 말도 듣지 못했다" }로 설정.`;
+    : `→ lastWordEffect는 { "type": "none", "label": "없음", "description": "악마는 아무 말도 듣지 못했다" }로 설정.`;
 
-  // seed로 이번 런의 신의 기분 패턴 결정 (프론트에서 확정해서 전달)
+  // seed로 이번 런의 악마의 기분 패턴 결정 (프론트에서 확정해서 전달)
   const seedNum = parseInt(randomSeed, 36) || 0;
   const moodPatterns = [
     { label: '불쾌한 날',  good: 0, mixed: 2, bad: 3 },
@@ -368,7 +368,7 @@ export async function interpretSurveyAnswers(
 - pastLife: 전생의 직업/역할 한 줄 (예: "전장을 누비던 기사", "시장의 사기꾼")
 - personality: 성격 2~3 단어 (예: "냉소적이고 계산적인", "순수하고 충동적인")
 - alignment: good 합계 기준
-- birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 신이 선고하는 어조
+- birthNarrative: "너는 [name]으로 태어날 것이다. [성격 묘사]. [운명 암시]" 형식, 악마가 선고하는 어조
 - innateTraits: 타고난 특성 2~3개 (예: "악몽에서 힘을 얻는다", "금속의 냄새를 맡을 수 있다")
 - traitType: 아래 7가지 중 답변 내용과 personality에 가장 어울리는 하나를 선택
   * reckless: 충동적, 무모, 두려움 없음
@@ -391,12 +391,12 @@ JSON으로만 응답:
       "question": "질문",
       "answer": "답변",
       "interpretation": "환생 맥락의 해석 (40자 이내)",
-      "flavorText": "신의 독백 (30자 이내)",
+      "flavorText": "악마의 독백 (30자 이내)",
       "statChanges": [{ "stat": "hp", "change": -7 }],
       "curseOrBlessing": "mixed"
     }
   ],
-  "finalSummary": "신의 최종 환생 선고문 (60자 이내)",
+  "finalSummary": "악마의 최종 환생 선고문 (60자 이내)",
   "persona": {
     "name": "이름",
     "pastLife": "전생 한 줄",
