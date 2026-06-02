@@ -611,6 +611,7 @@ ${personaSection}${flagsSection}${traitSection}${avoidSection}
 7. 렐릭(newRelic)은 event/shop에서 20% 확률로만.
 8. skillChange는 해당 스킬이 실제로 사용된 선택지에서만.
 9. storyFlagSet: 선택이 스토리에 중요한 흔적을 남긴다면 {"key":"플래그명","value":true} 설정. 단순한 선택은 null.
+10. 글자 수 제한 (토큰 절약, 반드시 준수): description 100자 이내, 각 result 80자 이내, 각 text 40자 이내.
 ${KO_STYLE}
 
 JSON으로만 응답:
@@ -636,7 +637,7 @@ JSON으로만 응답:
 }`,
       },
     ],
-    1200,
+    2000,
     MODEL_HAIKU,
   );
 
