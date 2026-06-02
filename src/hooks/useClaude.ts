@@ -139,6 +139,48 @@ function patchTruncatedJSON(s: string): string {
   return result;
 }
 
+// ─── 스킬 타입 정규화 ─────────────────────────
+// Claude가 arcane_detection, magic, lock_pick 등 변형 문자열을 반환하는 경우 대응
+const VALID_SKILL_TYPES = ['intelligence', 'negotiation', 'lockpick', 'stealth', 'strength', 'arcane'] as const;
+type ValidSkillType = typeof VALID_SKILL_TYPES[number];
+
+const SKILL_ALIASES: Record<string, ValidSkillType> = {
+  // intelligence
+  intel: 'intelligence', int: 'intelligence', intellect: 'intelligence',
+  knowledge: 'intelligence', wisdom: 'intelligence',
+  // negotiation
+  negotiate: 'negotiation', persuasion: 'negotiation', persuade: 'negotiation',
+  charisma: 'negotiation', diplomacy: 'negotiation', charm: 'negotiation',
+  // lockpick
+  lock: 'lockpick', lock_pick: 'lockpick', lockpicking: 'lockpicking' as ValidSkillType,
+  pick: 'lockpick', thievery: 'lockpick', dexterity: 'lockpick',
+  // stealth
+  hide: 'stealth', sneak: 'stealth', agility: 'stealth',
+  evasion: 'stealth', shadow: 'stealth',
+  // strength
+  str: 'strength', power: 'strength', force: 'strength',
+  might: 'strength', brute: 'strength', physical: 'strength',
+  // arcane
+  arcane_detection: 'arcane', arcane_sense: 'arcane', arcane_knowledge: 'arcane',
+  magic: 'arcane', magical: 'arcane', mana: 'arcane',
+  magic_detection: 'arcane', detect_magic: 'arcane', mysticism: 'arcane',
+  occult: 'arcane', esoteric: 'arcane', enchantment: 'arcane',
+};
+
+function normalizeSkillType(raw: string): ValidSkillType {
+  const lower = raw.toLowerCase().trim();
+  // 정확히 일치하는 경우
+  if ((VALID_SKILL_TYPES as readonly string[]).includes(lower)) return lower as ValidSkillType;
+  // 별칭 매핑
+  if (lower in SKILL_ALIASES) return SKILL_ALIASES[lower];
+  // 부분 문자열 매칭 (예: "arcane_detection" → "arcane")
+  for (const valid of VALID_SKILL_TYPES) {
+    if (lower.includes(valid)) return valid;
+  }
+  // 기본값
+  return 'intelligence';
+}
+
 // 모든 한국어 생성 프롬프트에 공통 삽입
 const KO_STYLE = `문체 규칙: 한국어 문장에서 부연 설명을 이을 때 '-' 기호(대시)를 절대 사용하지 말 것. 쉼표(,), 마침표(.), 또는 별도 문장으로 풀어 쓸 것.`;
 
@@ -589,7 +631,20 @@ JSON으로만 응답:
     2000,
   );
 
-  return parseJSON<RoomWithResults>(text);
+  const parsed = parseJSON<RoomWithResults>(text);
+
+  // Claude가 반환한 스킬 타입 정규화 (arcane_detection → arcane 등)
+  parsed.choices = parsed.choices.map((c) => ({
+    ...c,
+    requiredSkill: c.requiredSkill
+      ? { ...c.requiredSkill, type: normalizeSkillType(c.requiredSkill.type) }
+      : null,
+    skillChange: c.skillChange
+      ? { ...c.skillChange, type: normalizeSkillType(c.skillChange.type) }
+      : null,
+  }));
+
+  return parsed;
 }
 
 // 재시도 + 폴백을 포함한 public 래퍼
