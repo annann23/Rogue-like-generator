@@ -11,20 +11,19 @@ export interface Enemy {
   def: number;
   trait: EnemyTrait;
   tier: EnemyTier;
-  rageGauge: number;
-  currentIntent: EnemyIntent;
   statusEffects: EnemyStatus[];
 }
 
-export type EnemyIntentType = 'attack' | 'defend' | 'buff' | 'special' | 'unknown';
-
-export interface EnemyIntent {
-  type: EnemyIntentType;
-  description: string;
-  isRevealed: boolean;
-}
-
 export type EnemyStatusType = 'weakened' | 'enraged' | 'cowered' | 'confused';
+
+export type PlayerBuffType = 'emboldened' | 'counterready' | 'analyzed';
+
+export interface PlayerBuff {
+  type: PlayerBuffType;
+  label: string;
+  icon: string;
+  turnsRemaining: number; // -1 이면 무제한, 0이면 소모 후 삭제
+}
 
 export interface EnemyStatus {
   type: EnemyStatusType;
@@ -57,8 +56,6 @@ export interface CombatTurnRecord {
   narrative: string;
   hpChange: number;
   enemyHpChange: number;
-  enemyRageChange: number;
-  newEnemyIntent: EnemyIntent;
   specialEffect?: 'flee_success' | 'flee_fail' | 'negotiate_success' | 'bluff_success' | 'bluff_fail';
   statusApplied?: EnemyStatus;
 }
@@ -85,4 +82,5 @@ export interface CombatState {
   rewardRelic: { name: string; effect: string; isCursed: boolean } | null;
   fleeAttempted: boolean;
   negotiateAttempted: boolean;
+  playerBuffs: PlayerBuff[];
 }

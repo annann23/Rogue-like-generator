@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { localInitCombat, localResolveTurn } from '@/lib/combatEngine';
+import type { LocalInitResult, LocalTurnResult } from '@/lib/combatEngine';
 import {
   PixelPanel,
   PixelButton,
@@ -13,6 +14,7 @@ import type {
   CombatState,
   PlayerAction,
   PlayerActionType,
+  PlayerBuff,
   EnemyTier,
 } from '@/types/combat';
 
@@ -110,7 +112,10 @@ export default function CombatRoom({
     rewardRelic: null,
     fleeAttempted: false,
     negotiateAttempted: false,
+    playerBuffs: [],
   });
+
+  const [playerBuffs, setPlayerBuffs] = useState<PlayerBuff[]>([]);
 
   // 전투 로그 (문자열 배열)
   const [combatLog, setCombatLog] = useState<{ turn: number; text: string }[]>([]);
@@ -134,7 +139,7 @@ export default function CombatRoom({
 
   function initializeCombat() {
     try {
-      const res = localInitCombat(depth, forceEnemyId);
+      const res: LocalInitResult = localInitCombat(depth, forceEnemyId);
 
       setState((prev) => ({
         ...prev,
@@ -175,13 +180,13 @@ export default function CombatRoom({
         type: 'taunt',
         label: '도발',
         icon: '😤',
-        description: '적의 분노를 자극한다',
+        description: '적을 격노시키고 반격 준비 버프를 얻는다 (다음 공격 2배)',
       },
       {
         type: 'bluff',
         label: '허세',
         icon: '🎭',
-        description: '적을 겁줘 기세를 꺾는다',
+        description: '허세로 적을 위축시키고 공격력을 높인다',
       },
     ];
 
@@ -191,7 +196,7 @@ export default function CombatRoom({
       type: 'read',
       label: '정보 읽기',
       icon: '🧠',
-      description: '적의 다음 의도를 간파한다',
+      description: '적 약점 파악 (다음 공격 강화, 지능 3+: 적 약화)',
       requiredSkill: { type: 'intelligence', level: 2 },
       disabled: !hasRead,
       disableReason: hasRead ? undefined : '지능 Lv.2 필요',
@@ -286,7 +291,7 @@ export default function CombatRoom({
     const isLastTurn = nextTurn >= state.maxTurns;
 
     try {
-      const res = localResolveTurn({
+      const res: LocalTurnResult = localResolveTurn({
         playerAction: action.type,
         enemy: {
           name: state.enemy.name,
@@ -296,8 +301,6 @@ export default function CombatRoom({
           def: state.enemy.def,
           trait: state.enemy.trait,
           tier: state.enemy.tier,
-          rageGauge: state.enemy.rageGauge,
-          currentIntent: state.enemy.currentIntent,
           statusEffects: state.enemy.statusEffects,
         },
         playerStats: {
@@ -307,6 +310,7 @@ export default function CombatRoom({
           def,
           skills,
         },
+        playerBuffs,
         turn: nextTurn,
         maxTurns: state.maxTurns,
         isLastTurn,
@@ -317,15 +321,6 @@ export default function CombatRoom({
 
       // HP 업데이트 (최소 0)
       updatedEnemy.hp = Math.max(0, updatedEnemy.hp + res.enemyHpChange);
-
-      // 분노 게이지 클램핑
-      updatedEnemy.rageGauge = Math.max(
-        0,
-        Math.min(100, updatedEnemy.rageGauge + res.enemyRageChange),
-      );
-
-      // 의도 업데이트
-      updatedEnemy.currentIntent = res.newEnemyIntent;
 
       // 상태이상 업데이트: turnsRemaining 감소, 0이면 제거, 새 상태 추가
       let updatedEffects = updatedEnemy.statusEffects
@@ -348,8 +343,6 @@ export default function CombatRoom({
         narrative: res.narrative,
         hpChange: res.hpChange,
         enemyHpChange: res.enemyHpChange,
-        enemyRageChange: res.enemyRageChange,
-        newEnemyIntent: res.newEnemyIntent,
         specialEffect: res.specialEffect ?? undefined,
         statusApplied: res.statusApplied ?? undefined,
       };
@@ -368,6 +361,19 @@ export default function CombatRoom({
       if (res.hpChange !== 0) {
         onHpChange(res.hpChange);
       }
+
+      // 플레이어 버프 업데이트
+      setPlayerBuffs(prev => {
+        let updated = prev
+          .filter(b => !res.consumePlayerBuffTypes.includes(b.type))
+          .map(b => ({ ...b, turnsRemaining: b.turnsRemaining - 1 }))
+          .filter(b => b.turnsRemaining > 0);
+        if (res.playerBuffApplied) {
+          updated = updated.filter(b => b.type !== res.playerBuffApplied!.type);
+          updated.push(res.playerBuffApplied);
+        }
+        return updated;
+      });
 
       // ─── 결과 판정 ─────────────────────────────
       // 협상 성공
@@ -543,38 +549,9 @@ export default function CombatRoom({
             className="mb-2"
           />
 
-          {/* 분노 게이지 */}
-          <PixelBar
-            value={state.enemy.rageGauge}
-            max={100}
-            variant="rage"
-            label="분노"
-            className="mb-3"
-          />
-
-          {/* 현재 의도 */}
-          <div
-            className="font-pixel px-3 py-2 mb-3"
-            style={{
-              fontSize: '12px',
-              background: '#120a1e',
-              border: '2px solid #4a2d7a',
-              lineHeight: '1.8',
-            }}
-          >
-            <span style={{ color: '#9878c0' }}>의도: </span>
-            {state.enemy.currentIntent.isRevealed ? (
-              <span style={{ color: '#f0c040' }}>
-                {state.enemy.currentIntent.description}
-              </span>
-            ) : (
-              <span style={{ color: '#9878c0' }}>??? (알 수 없다)</span>
-            )}
-          </div>
-
           {/* 상태이상 뱃지 */}
           {state.enemy.statusEffects.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mb-2">
               {state.enemy.statusEffects.map((effect, idx) => (
                 <span
                   key={idx}
@@ -582,6 +559,20 @@ export default function CombatRoom({
                   style={{ fontSize: '11px', ...getStatusBadgeStyle(effect.type) }}
                 >
                   {getStatusLabel(effect.type)} ({effect.turnsRemaining}턴)
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* 플레이어 버프 */}
+          {playerBuffs.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {playerBuffs.map((buff) => (
+                <span key={buff.type} className="font-pixel px-2 py-1" style={{
+                  fontSize: '11px',
+                  background: '#0e1a0e', border: '2px solid #40c080', color: '#60c0a0'
+                }}>
+                  {buff.icon} {buff.label} {buff.turnsRemaining > 0 ? `(${buff.turnsRemaining}턴)` : '(즉시 소모)'}
                 </span>
               ))}
             </div>

@@ -301,7 +301,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
               background: '#1a1000',
             }}
           >
-            ..어디서 본 얼굴이군
+            ..처음 보는데, 왜 낯설지가 않지..?
           </div>
         )}
 
