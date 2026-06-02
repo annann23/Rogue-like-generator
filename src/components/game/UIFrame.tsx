@@ -353,9 +353,10 @@ interface ChoiceButtonProps {
   disabled?: boolean;
   personaReaction?: 'bonus' | 'penalty' | 'neutral';
   personaTraitLabel?: string; // e.g. "🗡️ 무모함"
+  personaSkillLabel?: string; // e.g. "자물쇠" — bonus 시 훈련되는 스킬
 }
 
-export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false, personaReaction, personaTraitLabel }: ChoiceButtonProps) {
+export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false, personaReaction, personaTraitLabel, personaSkillLabel }: ChoiceButtonProps) {
   // 클래스 전용 조건: 숨기지 않고 잠금 표시
   const isClassLocked = classOnly != null && classOnly !== playerClass;
   const isLocked = locked || isClassLocked;
@@ -409,7 +410,10 @@ export function PixelChoiceButton({ text, icon, locked = false, lockReason, clas
             color: personaReaction === 'bonus' ? '#60c080' : '#e06060',
           }}
         >
-          {personaTraitLabel} {personaReaction === 'bonus' ? '— 성격 적합 ATK +2' : '— 성격 부적합 ATK -1'}
+          {personaTraitLabel} {personaReaction === 'bonus'
+            ? `— 성격 적합${personaSkillLabel ? ` · ${personaSkillLabel} 숙련 +1` : ''}`
+            : '— 성격 부적합'
+          }
         </div>
       )}
     </div>

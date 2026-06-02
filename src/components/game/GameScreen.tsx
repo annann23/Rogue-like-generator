@@ -194,6 +194,7 @@ export default function GameScreen() {
   const [ghostEncounter, setGhostEncounter] = useState<Ghost | null>(null);
 
   const [newGemIds, setNewGemIds] = useState<string[]>([]);
+  const [skillLevelUpMsg, setSkillLevelUpMsg] = useState<string | null>(null);
 
   function handleGemCheck(overrides: {
     totalCombatWins?: number;
@@ -461,13 +462,36 @@ export default function GameScreen() {
       setStoryFlag(key, value);
     }
 
-    // 페르소나 반응 보너스/페널티 (ATK ±)
+    // 페르소나 반응: 이벤트 방에서 성격에 맞는 선택 시 스킬 숙련도 +1 (3회 누적 → 레벨 업)
     const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
-    let personaAtkBonus = 0;
+    const trainedSkill = choice.skillChange?.type ?? choice.requiredSkill?.type ?? null;
+    let personaBadgeText = '';
+
     if (traitInfo && choice.personaReaction !== 'neutral') {
-      personaAtkBonus = choice.personaReaction === 'bonus' ? 2 : -1;
-      const newAtk = Math.max(1, run.atk + personaAtkBonus);
-      updateRun({ atk: newAtk });
+      if (choice.personaReaction === 'bonus' && trainedSkill && currentRoomType === 'event') {
+        // 레벨업 여부를 호출 전에 미리 감지
+        const currentCount = run.skillUseCounts[trainedSkill as SkillType] ?? 0;
+        const willLevelUp = (currentCount + 1) % 3 === 0;
+        incrementSkillUse(trainedSkill as SkillType);
+
+        const skillKo: Record<string, string> = {
+          intelligence: '지능', negotiation: '협상', lockpick: '자물쇠',
+          stealth: '은신', strength: '완력', arcane: '마법감지',
+        };
+        const skillLabel = skillKo[trainedSkill] ?? trainedSkill;
+
+        if (willLevelUp) {
+          const newLevel = Math.min(5, (run.skills[trainedSkill as SkillType] ?? 0) + 1);
+          setSkillLevelUpMsg(`${skillLabel} Lv.${newLevel} 달성!`);
+          setTimeout(() => setSkillLevelUpMsg(null), 3000);
+          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 +1 → Lv.${newLevel} 달성!`;
+        } else {
+          const nextCount = (currentCount + 1) % 3;
+          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 +1 (${nextCount === 0 ? 3 : nextCount}/3)`;
+        }
+      } else if (choice.personaReaction === 'penalty') {
+        personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택`;
+      }
     }
 
     if (currentRoomType === 'event' && Math.random() < 0.05) {
@@ -482,14 +506,7 @@ export default function GameScreen() {
     schedulePrefetch(nextD);
     schedulePrefetch(nextD + 1);
 
-    // 페르소나 반응 배지를 result에 추가
-    const personaBadge = traitInfo && choice.personaReaction !== 'neutral'
-      ? `\n\n${choice.personaReaction === 'bonus'
-          ? `${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ATK +${personaAtkBonus}`
-          : `${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택 — ATK ${personaAtkBonus}`}`
-      : '';
-
-    setResult({ result: choice.result + personaBadge, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
+    setResult({ result: choice.result + personaBadgeText, hpChange: choice.hpChange, goldChange: choice.goldChange, skillChange: choice.skillChange, newRelic: choice.newRelic, isDead: false, deathCause: null });
     setPhase('result');
   }
 
@@ -651,7 +668,38 @@ export default function GameScreen() {
           0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
           40%            { opacity: 1;   transform: scale(1.2); }
         }
+        @keyframes skillLvUp {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          15%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+          75%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
       `}</style>
+
+      {/* 스킬 레벨업 알림 */}
+      {skillLevelUpMsg && (
+        <div
+          className="font-pixel"
+          style={{
+            position: 'fixed',
+            bottom: '120px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            background: '#0e1f0e',
+            border: '2px solid #40a060',
+            color: '#60e080',
+            padding: '10px 20px',
+            fontSize: '12px',
+            letterSpacing: '1px',
+            whiteSpace: 'nowrap',
+            animation: 'skillLvUp 3s ease forwards',
+            pointerEvents: 'none',
+          }}
+        >
+          ✦ {skillLevelUpMsg}
+        </div>
+      )}
       {showInventory && (
         <InventoryPanel
           items={run.items}
@@ -1189,6 +1237,12 @@ export default function GameScreen() {
                 const { locked, lockReason } = isChoiceLocked(choice);
                 const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
                 const hasPersonaReaction = traitInfo && choice.personaReaction !== 'neutral';
+                const skillKo: Record<string, string> = {
+                  intelligence: '지능', negotiation: '협상', lockpick: '자물쇠',
+                  stealth: '은신', strength: '완력', arcane: '마법감지',
+                };
+                const trainedSkill = choice.skillChange?.type ?? choice.requiredSkill?.type ?? null;
+                const skillLabel = trainedSkill ? (skillKo[trainedSkill] ?? trainedSkill) : null;
                 return (
                   <PixelChoiceButton
                     key={idx}
@@ -1201,6 +1255,7 @@ export default function GameScreen() {
                     onClick={() => handleChoiceClick(choice)}
                     personaReaction={hasPersonaReaction ? choice.personaReaction : undefined}
                     personaTraitLabel={traitInfo ? `${traitInfo.icon} ${traitInfo.name}` : undefined}
+                    personaSkillLabel={hasPersonaReaction && choice.personaReaction === 'bonus' && skillLabel && currentRoomType === 'event' ? skillLabel : undefined}
                   />
                 );
               })}
