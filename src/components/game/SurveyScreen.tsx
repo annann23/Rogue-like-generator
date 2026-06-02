@@ -201,16 +201,16 @@ export default function SurveyScreen() {
     const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
     const statPool: { stat: string; changes: number[] }[] = [
-      { stat: 'hp',               changes: [-5, -3, 3, 5, 8] },
-      { stat: 'atk',              changes: [-1, 1, 2] },
-      { stat: 'def',              changes: [-1, 1, 2] },
-      { stat: 'gold',             changes: [-10, -5, 5, 10, 20] },
-      { stat: 'skill_intelligence', changes: [-1, 1] },
-      { stat: 'skill_negotiation',  changes: [-1, 1] },
-      { stat: 'skill_lockpick',     changes: [-1, 1] },
-      { stat: 'skill_stealth',      changes: [-1, 1] },
-      { stat: 'skill_strength',     changes: [-1, 1] },
-      { stat: 'skill_arcane',       changes: [-1, 1] },
+      { stat: 'hp',            changes: [-5, -3, 3, 5, 8] },
+      { stat: 'atk',           changes: [-1, 1, 2] },
+      { stat: 'def',           changes: [-1, 1, 2] },
+      { stat: 'gold',          changes: [-10, -5, 5, 10, 20] },
+      { stat: 'intelligence',  changes: [-1, 1] },
+      { stat: 'negotiation',   changes: [-1, 1] },
+      { stat: 'lockpick',      changes: [-1, 1] },
+      { stat: 'stealth',       changes: [-1, 1] },
+      { stat: 'strength',      changes: [-1, 1] },
+      { stat: 'arcane',        changes: [-1, 1] },
     ];
 
     const picked = [...statPool].sort(() => Math.random() - 0.5).slice(0, 5);
