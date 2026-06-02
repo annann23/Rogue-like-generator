@@ -8,7 +8,7 @@ import { PERSONA_TRAITS } from '@/constants/storyFlags';
 import NPCRoom from './NPCRoom';
 import { NPC_TEMPLATES, type NPCTemplate, type NPCRelations } from '@/constants/npcs';
 import Sprite from './Sprite';
-import { ROOM_TYPE_SPRITES, CLASS_SPRITES } from '@/constants/spriteMap';
+import { CLASS_SPRITES } from '@/constants/spriteMap';
 import DungeonBackground from './DungeonBackground';
 import { fetchGhosts, saveGhost, type Ghost } from '@/hooks/useGhosts';
 import CombatRoom from './CombatRoom';
@@ -793,21 +793,13 @@ export default function GameScreen() {
               🎒 ({run.items.length})
             </button>
           </div>
-          {/* 플레이어 vs 방 스프라이트 */}
+          {/* 플레이어 스프라이트 */}
           <div className="flex items-center gap-4">
             <Sprite
               spriteKey={CLASS_SPRITES[run.characterClass ?? 'warrior']}
               scale={3}
               animation={phase === 'choosing' ? 'idle' : 'none'}
             />
-            {phase !== 'npc' && ROOM_TYPE_SPRITES[currentRoomType] && (
-              <Sprite
-                spriteKey={ROOM_TYPE_SPRITES[currentRoomType]}
-                scale={3}
-                animation={phase === 'choosing' ? 'float' : 'none'}
-                flip
-              />
-            )}
           </div>
           <span className="font-pixel" style={{ fontSize: '12px', color: '#9878c0' }}>
             {currentDepth} 층
