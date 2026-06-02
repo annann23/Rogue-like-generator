@@ -342,10 +342,10 @@ export async function interpretSurveyAnswers(
     [
       {
         role: "user",
-        content: `당신은 심술궂고 변덕스러운 던전의 신입니다. 지금 한 영혼의 다음 생을 결정하는 심판을 내리고 있습니다.
+        content: `당신은 심술궂고 변덕스러운 던전의 악마입니다. 계약에 따라 환생하는 영혼의 다음 생을 결정하는 심판을 내리고 있습니다.
 
 절대 규칙:
-1. 오늘의 신의 기분: "${mood.label}" — 이 기분이 판결 전체의 분위기를 결정함
+1. 오늘의 악마의 기분: "${mood.label}" — 이 기분이 판결 전체의 분위기를 결정함
 2. 5개 결과의 curseOrBlessing을 아래 개수에 맞게 정확히 배분:
    - "good": 정확히 ${mood.good}개
    - "mixed": 정확히 ${mood.mixed}개

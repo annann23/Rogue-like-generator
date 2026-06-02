@@ -23,7 +23,7 @@ export default function TitleScreen() {
                 던전 RPG
               </h2>
               <p className="font-pixel mt-3" style={{ fontSize: '12px', color: '#9878c0' }}>
-                ─ 던전의 신이 기다린다 ─
+                ─ 던전의 악마가 기다린다 ─
               </p>
             </div>
 

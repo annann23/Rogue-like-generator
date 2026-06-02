@@ -148,7 +148,7 @@ export default function StatReveal() {
 
         <div className="text-center">
           <p className="font-pixel" style={{ fontSize: '16px', color: '#e04040', textShadow: '2px 2px 0 #7a0000' }}>
-            💀 던전의 신이 판결한다 💀
+            💀 던전의 악마가 판결한다 💀
           </p>
           {!showSummary && (
             <p className="font-pixel mt-2" style={{ fontSize: '12px', color: '#6b4fa0' }}>

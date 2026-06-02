@@ -22,31 +22,31 @@ const INTERPRETING_LINES = [
   '거의 다 되었다.',
 ];
 
-// 총 플레이 횟수에 따른 던전의 신 인삿말
+// 총 플레이 횟수에 따른 던전의 악마 인삿말
 function getGreeting(totalRuns: number): { title: string; message: string } {
   if (totalRuns === 0) {
     return {
-      title: '⚡ 새로운 영혼이여 ⚡',
+      title: '👁️ 계약이 시작된다 👁️',
       message:
-        '처음 보는 얼굴이로군.\n\n' +
-        '환생하려면 내 질문 다섯 가지에 답해야 하네.\n' +
-        '겉으론 평범해 보이는 질문들이지만... 답에 따라\n' +
-        '좋은 출발이 될 수도, 끔찍한 저주가 될 수도 있지.\n\n' +
+        '처음 보는 영혼이로군.\n\n' +
+        '계약의 조건을 상기시켜 주지.\n' +
+        '내 질문 다섯 가지에 답하면, 다시 육신을 빌려주겠다.\n' +
+        '답에 따라 어떤 몸으로 깨어날지가 결정된다.\n\n' +
         '정직하게 답하거나, 거짓말을 하거나.\n' +
-        '결과는 어차피 내 마음대로니까.',
+        '해석은 어차피 내 마음대로니까.',
     };
   }
   const variants = [
-    { title: '💀 또 왔군 💀', message: '또 왔군...\n이번엔 더 잘할 것 같나? 어디 보자.' },
-    { title: '😒 ...다시', message: '이번 삶은 내가 너무 과했나?\n뭐, 어쨌든. 다시 해보지.' },
+    { title: '💀 또 깨어났군 💀', message: '또 왔군...\n계약은 성실하게 이행하는 편이로군. 어디 보자.' },
+    { title: '😒 ...다시', message: '이번 삶은 내가 너무 과했나?\n뭐, 어쨌든. 심문을 시작하지.' },
     { title: '🙄 세 번째', message: '세 번째라... 집념인지, 어리석음인지.\n구분이 안 되는군.' },
     { title: '😑 네 번', message: '네 번째군.\n솔직히 지겹지 않나? 난 지겹다.' },
-    { title: '😤 다섯 번', message: '다섯 번이나... 이제 내 질문을 외울 것 같은데?\n그래도 답은 변덕대로 해석하지.' },
+    { title: '😤 다섯 번', message: '다섯 번이나... 이제 내 질문을 외울 것 같은데?\n그래도 해석은 변덕대로 하지.' },
     { title: '🤦 여섯 번째', message: '여섯 번. 집착이 대단하군.\n..칭찬이 아니야.' },
     { title: '😴 또또', message: '또. 할 일이 없나?\n뭐, 나도 심심했으니까 받아주지.' },
     { title: '🗿 집착', message: '이 정도면 던전이 좋은 건지,\n나를 좋아하는 건지 모르겠군. 불편하다.' },
     { title: '👁️ ...', message: '말이 없어졌군. 나도 없애지.\n질문이나 하지.' },
-    { title: '♾️ 영원한 도전자', message: '죽음이 두렵지 않다는 건 알았어.\n그런데 이기는 것도 안 되잖아?' },
+    { title: '♾️ 영원한 도전자', message: '죽음이 두렵지 않다는 건 알았어.\n그런데 보석은 아직도 못 모으잖아?' },
   ];
 
   const idx = Math.min(totalRuns - 1, variants.length - 1);
@@ -135,7 +135,7 @@ export default function SurveyScreen() {
       setScreen('stat-reveal');
     } catch (e) {
       console.error(e);
-      setErrorMsg('던전의 신이 판결을 내리지 못했다... (API 오류)');
+      setErrorMsg('던전의 악마가 판결을 내리지 못했다... (API 오류)');
       setErrorPhase('interpreting');
       setPhase('error');
     }
@@ -199,7 +199,7 @@ export default function SurveyScreen() {
               }}
             >
               <PixelButton variant="primary" size="lg" onClick={handleStartSurvey}>
-                📜 질문을 받겠다
+                👁️ 계약을 이행한다
               </PixelButton>
               <PixelButton variant="ghost" size="sm" onClick={() => setScreen('title')}>
                 ← 도망치다
@@ -344,7 +344,7 @@ export default function SurveyScreen() {
 
         <div className="text-center">
           <p className="font-pixel text-sm" style={{ color: '#f0c040', textShadow: '2px 2px 0 #7a3c00' }}>
-            ⚡ 던전의 신이 묻는다 ⚡
+            👁️ 던전의 악마가 심문한다 👁️
           </p>
         </div>
 
