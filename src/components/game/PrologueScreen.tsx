@@ -174,8 +174,8 @@ export default function PrologueScreen() {
             let inQuote = false;
             return panel.lines.slice(0, visibleLines).map((line, idx) => {
               if (line.startsWith('"')) inQuote = true;
-              if (inQuote && line.endsWith('"')) inQuote = false;
               const isQuoteLine = line.startsWith('"') || (inQuote && line !== '');
+              if (inQuote && line.endsWith('"')) inQuote = false;
               return (
             <p
               key={`${panelIdx}-${idx}`}
