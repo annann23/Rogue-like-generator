@@ -60,10 +60,13 @@ function checkExitConditions(
 }
 
 function pickRoomType(depth: number): RoomType {
+  // 유령: 4층 이상에서만 3% 확률
+  if (depth > 3 && Math.random() < 0.03) return 'ghost';
+
   const pool: RoomType[] =
     depth <= 3
       ? ['combat', 'combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest', 'rest']
-      : ['combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest', 'ghost'];
+      : ['combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 

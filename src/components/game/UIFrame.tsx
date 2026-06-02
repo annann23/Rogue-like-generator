@@ -319,7 +319,7 @@ export function PixelHUD({ hp, maxHp, gold, atk, def, depth, mana, maxMana, skil
         <span className="font-pixel" style={{ fontSize: '12px', color: '#f0c040' }}>💰 {gold}G</span>
         <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>⚔️ <span style={{ color: '#9878c0', fontSize: '10px' }}>ATK</span> {atk}</span>
         <span className="font-pixel" style={{ fontSize: '12px', color: '#e8d8b8' }}>🛡️ <span style={{ color: '#9878c0', fontSize: '10px' }}>DEF</span> {def}</span>
-        <span className="font-pixel ml-auto" style={{ fontSize: '12px', color: '#9878c0' }}>{depth}/10층</span>
+        <span className="font-pixel ml-auto" style={{ fontSize: '12px', color: '#9878c0' }}>{depth}층</span>
       </div>
       <div className="flex items-center gap-4 flex-wrap">
         {[

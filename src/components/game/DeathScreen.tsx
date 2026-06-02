@@ -83,7 +83,7 @@ export default function DeathScreen() {
           </p>
           <div className="space-y-2">
             <Row label="클래스" value={run.characterClass ?? '-'} />
-            <Row label="도달 층수" value={`${run.depth} / 10층`} />
+            <Row label="도달 층수" value={`${run.depth}층`} />
             {isClear && (
               <Row
                 label="남은 HP"

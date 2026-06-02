@@ -337,7 +337,7 @@ export async function generateRoom(params: {
   const tierDesc = {
     early: '초반(1~3층): 비교적 안전. 적들이 약하고 보상이 풍부하다.',
     mid:   '중반(4~6층): 위험이 커진다. 함정과 강적이 뒤섞인다.',
-    late:  '후반(7~10층): 매우 위험. 강적과 극한의 선택만 남아있다.',
+    late:  '후반(7층 이후): 매우 위험. 강적과 극한의 선택만 남아있다.',
   }[tier];
 
   const roomGuide: Record<string, string> = {
@@ -361,7 +361,7 @@ export async function generateRoom(params: {
 - 이름: ${personaName ?? '알 수 없음'} | 성격: ${personaPersonality ?? '알 수 없음'} | 성향: ${personaAlignment ?? 'neutral'}
 - 설문 효과: ${surveyEffects}
 - 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
-- 현재 층: ${depth}/10 | 난이도: ${tierDesc}
+- 현재 층: ${depth} | 난이도: ${tierDesc}
 - 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
 
 규칙:
@@ -412,7 +412,7 @@ export async function generateRoomWithResults(params: {
   const tierDesc = {
     early: '초반(1~3층): 비교적 안전. 보상이 풍부하다.',
     mid:   '중반(4~6층): 위험이 커진다. 함정과 강적이 뒤섞인다.',
-    late:  '후반(7~10층): 매우 위험. 강적과 극한의 선택만 남아있다.',
+    late:  '후반(7층 이후): 매우 위험. 강적과 극한의 선택만 남아있다.',
   }[tier];
 
   const roomGuide: Record<string, string> = {
@@ -452,7 +452,7 @@ export async function generateRoomWithResults(params: {
 - 클래스: ${characterClass} | HP: ${hp}/${maxHp} | ATK: ${atk} | DEF: ${def} | 골드: ${gold}
 - 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
 - 설문 효과: ${surveyEffects} | 유물: ${relics.length > 0 ? relics.join(', ') : '없음'}
-- 현재 층: ${depth}/10 | 난이도: ${tierDesc}
+- 현재 층: ${depth} | 난이도: ${tierDesc}
 - 방 타입: ${roomType} — ${roomGuide[roomType] ?? ''}
 ${personaSection}
 
@@ -544,7 +544,7 @@ export async function generateRoomResult(params: {
 상황: ${description}
 스탯: HP=${hp}/${maxHp}, ATK=${atk}, DEF=${def}, 골드=${gold}
 스킬: 지능 ${skills.intelligence ?? 0}, 협상 ${skills.negotiation ?? 0}, 자물쇠 ${skills.lockpick ?? 0}, 은신 ${skills.stealth ?? 0}, 완력 ${skills.strength ?? 0}, 마법감지 ${skills.arcane ?? 0}
-층: ${depth}/10 | 방타입: ${roomType}
+층: ${depth} | 방타입: ${roomType}
 
 피해/보상 기준 (반드시 준수): ${guide}
 결과 묘사는 한국어 2~3문장. skillChange는 해당 스킬이 사용된 경우에만.
