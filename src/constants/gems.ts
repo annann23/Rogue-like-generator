@@ -33,7 +33,7 @@ export const GEM_DEFS: GemDef[] = [
     name: '어둠의 보석',
     icon: '🌑',
     element: '어둠',
-    conditionLabel: '협상으로 전투 종료 3회',
+    conditionLabel: '협상 누적 30회 성공',
   },
   {
     id: 'earth',
@@ -66,7 +66,7 @@ export function checkNewGems(params: {
   if (!has('flame') && totalCombatWins >= 10) newGems.push('flame');
   if (!has('water') && totalGhostWins >= 1) newGems.push('water');
   if (!has('light') && maxNPCFamiliarity >= 100) newGems.push('light');
-  if (!has('dark') && totalNegotiations >= 3) newGems.push('dark');
+  if (!has('dark') && totalNegotiations >= 30) newGems.push('dark');
   if (!has('earth') && totalClears >= 1) newGems.push('earth');
 
   const allFive = ['flame', 'water', 'light', 'dark', 'earth'].every(
