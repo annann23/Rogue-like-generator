@@ -690,8 +690,9 @@ export default function GameScreen() {
         </div>
       )}
 
-      {/* 콘텐츠 영역 */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full" style={{ position: 'relative', zIndex: 1 }}>
+      {/* 콘텐츠 영역 — 외부: 스크롤 / 내부: 세로 중앙정렬 */}
+      <div className="flex-1 overflow-y-auto" style={{ position: 'relative', zIndex: 1 }}>
+      <div className={`min-h-full p-4 flex flex-col gap-4 max-w-2xl mx-auto w-full${phase === 'result' ? ' justify-center' : ''}`}>
 
         {/* 시너지 활성화 알림 */}
         {activatedSynergy && (
@@ -1282,7 +1283,8 @@ export default function GameScreen() {
             </div>
           </>
         )}
-      </div>
+      </div>{/* inner min-h-full */}
+      </div>{/* outer overflow-y-auto */}
     </div>
   );
 }
