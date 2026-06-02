@@ -8,9 +8,10 @@ interface PanelProps {
   variant?: 'brown' | 'blue' | 'dark' | 'inset';
   className?: string;
   title?: string;
+  style?: React.CSSProperties;
 }
 
-export function PixelPanel({ children, variant = 'brown', className = '', title }: PanelProps) {
+export function PixelPanel({ children, variant = 'brown', className = '', title, style }: PanelProps) {
   const variantStyles: Record<string, React.CSSProperties> = {
     brown: { background: '#2d1b0e', border: '4px solid #8b5e3c', boxShadow: 'inset 0 0 0 2px #c8874a, 4px 4px 0 #0a0704' },
     blue:  { background: '#0e1f2d', border: '4px solid #3c6e8b', boxShadow: 'inset 0 0 0 2px #4a9bc4, 4px 4px 0 #040a0e' },
@@ -19,7 +20,7 @@ export function PixelPanel({ children, variant = 'brown', className = '', title 
   };
 
   return (
-    <div className={`relative ${className}`} style={{ ...variantStyles[variant], imageRendering: 'pixelated' }}>
+    <div className={`relative ${className}`} style={{ ...variantStyles[variant], imageRendering: 'pixelated', ...style }}>
       <div className="absolute top-0 left-0 pointer-events-none" style={cornerStyle('tl', variant)} />
       <div className="absolute top-0 right-0 pointer-events-none" style={cornerStyle('tr', variant)} />
       <div className="absolute bottom-0 left-0 pointer-events-none" style={cornerStyle('bl', variant)} />

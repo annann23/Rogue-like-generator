@@ -150,7 +150,6 @@ export default function CombatRoom({
   // ─── 이펙트 state ────────────────────────────
   const [screenShake, setScreenShake] = useState(false);
   const [enemyAnim, setEnemyAnim] = useState<string>('idle');
-  const [playerAnim, setPlayerAnim] = useState<string>('none');
   const [floatTexts, setFloatTexts] = useState<FloatText[]>([]);
   const [victoryClass, setVictoryClass] = useState<string>('');
 
@@ -425,10 +424,8 @@ export default function CombatRoom({
         setScreenShake(true);
         setTimeout(() => setScreenShake(false), 350);
         setEnemyAnim('combat');
-        setPlayerAnim('hit-red');
         setTimeout(() => {
           setEnemyAnim('idle');
-          setPlayerAnim('none');
         }, 500);
         spawnFloat('-' + Math.abs(res.hpChange), '#a0a0ff', '12px', false);
       }
