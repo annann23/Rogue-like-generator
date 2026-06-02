@@ -510,7 +510,7 @@ export default function CombatRoom({
           defeatCause: res.deathCause,
         }));
         setVictoryClass('combat-defeat');
-        setTimeout(() => onDefeat(res.deathCause ?? '알 수 없는 이유로 쓰러졌다'), 800);
+        setTimeout(() => onDefeat(res.deathCause ?? '전투 중 쓰러졌다'), 800);
         return;
       }
 
