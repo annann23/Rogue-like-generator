@@ -6,6 +6,7 @@ import { ACHIEVEMENTS, CATEGORY_LABELS, TOTAL_ENEMIES, type AchievementCategory 
 import { ENEMY_TEMPLATES } from '@/constants/enemies';
 import { CURSED_RELICS } from '@/constants/relics';
 import { RELIC_SYNERGIES } from '@/constants/relicSynergies';
+import { GEM_DEFS } from '@/constants/gems';
 import { PixelPanel, PixelButton, PixelDivider } from './UIFrame';
 
 type Tab = 'upgrades' | 'achievements' | 'codex';
@@ -398,6 +399,47 @@ export default function MetaScreen() {
             선조의 기억이 다음 모험자에게 전해진다
           </p>
         </div>
+
+        {/* 저주의 보석 */}
+        <PixelPanel variant="dark" className="p-4">
+          <p className="font-pixel mb-3" style={{ fontSize: '11px', color: '#9878c0' }}>
+            저주를 깨는 보석 — {meta.collectedGems?.length ?? 0} / {GEM_DEFS.length}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {GEM_DEFS.map((gem) => {
+              const collected = (meta.collectedGems ?? []).includes(gem.id);
+              return (
+                <div
+                  key={gem.id}
+                  title={gem.conditionLabel}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '8px 10px',
+                    background: collected ? '#1a0a04' : '#0a060f',
+                    border: `2px solid ${collected ? '#f0c040' : '#2a1a4a'}`,
+                    opacity: collected ? 1 : 0.45,
+                    minWidth: '64px',
+                  }}
+                >
+                  <span style={{ fontSize: '20px', filter: collected ? 'none' : 'grayscale(100%)' }}>
+                    {gem.icon}
+                  </span>
+                  <p className="font-pixel text-center" style={{ fontSize: '9px', color: collected ? '#f0c040' : '#4a3060', lineHeight: '1.6' }}>
+                    {gem.name.replace('의 보석', '')}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          {(meta.collectedGems?.length ?? 0) === GEM_DEFS.length && (
+            <p className="font-pixel mt-3 text-center" style={{ fontSize: '11px', color: '#f0c040' }}>
+              ✨ 저주가 풀렸다. 당신은 자유롭다.
+            </p>
+          )}
+        </PixelPanel>
 
         {/* 포인트 + 기록 */}
         <PixelPanel variant="dark" className="p-4">

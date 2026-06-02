@@ -106,6 +106,7 @@ export interface MetaState {
   totalNegotiations: number;
   totalCombatWins: number;
   prologueShown: boolean;
+  collectedGems: string[];
 }
 
 interface GameStore {
@@ -151,6 +152,7 @@ interface GameStore {
   discoverSynergy: (id: string) => void;
   incrementNegotiations: () => void;
   incrementCombatWins: () => void;
+  collectGem: (gemId: string) => void;
 }
 
 const DEFAULT_RUN: RunState = {
@@ -199,6 +201,7 @@ const DEFAULT_META: MetaState = {
   totalNegotiations: 0,
   totalCombatWins: 0,
   prologueShown: false,
+  collectedGems: [],
 };
 
 export const useGameState = create<GameStore>()(
@@ -577,6 +580,12 @@ export const useGameState = create<GameStore>()(
         set((state) => ({
           meta: { ...state.meta, totalCombatWins: state.meta.totalCombatWins + 1 },
         })),
+
+      collectGem: (gemId) =>
+        set((state) => {
+          if (state.meta.collectedGems.includes(gemId)) return state;
+          return { meta: { ...state.meta, collectedGems: [...state.meta.collectedGems, gemId] } };
+        }),
     }),
     {
       name: 'dungeon-rpg-state',

@@ -19,6 +19,7 @@ import { ACHIEVEMENTS } from '@/constants/achievements';
 import { FIXED_RELICS } from '@/constants/relics';
 import { getActiveSynergies, getNewlyActivatedSynergies } from '@/constants/relicSynergies';
 import type { RelicSynergy } from '@/constants/relicSynergies';
+import { GEM_DEFS, checkNewGems } from '@/constants/gems';
 
 // ─── Types ────────────────────────────────────
 type GamePhase = 'loading' | 'npc' | 'ghost' | 'ghost-combat' | 'combat' | 'shop' | 'exit' | 'choosing' | 'result' | 'dying' | 'error';
@@ -140,6 +141,7 @@ export default function GameScreen() {
     markSynergyApplied,
     markNPCRelicGiven,
     discoverSynergy,
+    collectGem,
   } = useGameState(
     useShallow((s) => ({
       run: s.run,
@@ -175,6 +177,7 @@ export default function GameScreen() {
       markSynergyApplied: s.markSynergyApplied,
       markNPCRelicGiven: s.markNPCRelicGiven,
       discoverSynergy: s.discoverSynergy,
+      collectGem: s.collectGem,
     }))
   );
 
@@ -186,6 +189,28 @@ export default function GameScreen() {
   const [currentRoomType, setCurrentRoomType] = useState<RoomType>('combat');
   const [wallInscriptions, setWallInscriptions] = useState<Ghost[]>([]);
   const [ghostEncounter, setGhostEncounter] = useState<Ghost | null>(null);
+
+  const [newGemIds, setNewGemIds] = useState<string[]>([]);
+
+  function handleGemCheck(overrides: {
+    totalCombatWins?: number;
+    totalGhostWins?: number;
+    totalNegotiations?: number;
+    totalClears?: number;
+    maxNPCFamiliarity?: number;
+  } = {}) {
+    const maxFam = Math.max(0, ...Object.values(npcRelations).map((r) => r.familiarity));
+    const newGems = checkNewGems({
+      collectedGems: meta.collectedGems ?? [],
+      totalCombatWins: overrides.totalCombatWins ?? meta.totalCombatWins,
+      totalGhostWins: overrides.totalGhostWins ?? (meta.totalGhostWins + run.ghostBattleWins),
+      totalNegotiations: overrides.totalNegotiations ?? meta.totalNegotiations,
+      totalClears: overrides.totalClears ?? meta.totalClears,
+      maxNPCFamiliarity: overrides.maxNPCFamiliarity ?? maxFam,
+    });
+    for (const gemId of newGems) collectGem(gemId);
+    if (newGems.length > 0) setNewGemIds((prev) => [...prev, ...newGems]);
+  }
 
   // 런 중 도전과제 체크 (HP 10 이하 생존)
   const closeCallTriggered = useRef(false);
@@ -452,6 +477,8 @@ export default function GameScreen() {
       const rel = npcRelations[npc.id] ?? { familiarity: 0, meetCount: 0 };
       const newFamiliarity = Math.max(0, Math.min(100, rel.familiarity + familiarityDelta));
       updateNPCRelation(npc.id, newFamiliarity, rel.meetCount + 1);
+      const maxFamAfter = Math.max(newFamiliarity, ...Object.values(npcRelations).map((r) => r.familiarity));
+      handleGemCheck({ maxNPCFamiliarity: maxFamAfter });
 
       // NPC 도전과제
       const toUnlock: string[] = [];
@@ -833,6 +860,7 @@ export default function GameScreen() {
               if (Math.random() < 0.05) addMapFragment();
               // 전투 도전과제
               incrementCombatWins();
+              handleGemCheck({ totalCombatWins: meta.totalCombatWins + 1 });
               {
                 const toUnlock: string[] = [];
                 if (meta.totalCombatWins === 0 && !meta.achievements['first_kill']) toUnlock.push('first_kill');
@@ -900,6 +928,7 @@ export default function GameScreen() {
             }}
             onNegotiated={() => {
               incrementNegotiations();
+              handleGemCheck({ totalNegotiations: meta.totalNegotiations + 1 });
               if (meta.totalNegotiations + 1 >= 3 && !meta.achievements['pacifist']) {
                 const ach = ACHIEVEMENTS.find(a => a.id === 'pacifist')!;
                 batchUnlockAchievements(['pacifist'], ach.reward);
@@ -927,7 +956,7 @@ export default function GameScreen() {
               <PixelButton variant="secondary" size="sm" onClick={handleNextRoom}>
                 지나친다
               </PixelButton>
-              <PixelButton variant="primary" size="lg" onClick={() => { clearRun(); setScreen('clear'); }}>
+              <PixelButton variant="primary" size="lg" onClick={() => { handleGemCheck({ totalClears: meta.totalClears + 1 }); clearRun(); setScreen('clear'); }}>
                 🚪 탈출한다
               </PixelButton>
             </div>
@@ -1005,6 +1034,7 @@ export default function GameScreen() {
                 handleSynergyCheck(run.relics, [...run.relics, { ...relic, icon: '👻' }]);
               }
               addGhostBattleWin();
+              handleGemCheck({ totalGhostWins: meta.totalGhostWins + run.ghostBattleWins + 1 });
               if (Math.random() < 0.05) addMapFragment();
               // 유령 도전과제
               {
@@ -1268,6 +1298,55 @@ export default function GameScreen() {
         )}
       </div>{/* inner min-h-full */}
       </div>{/* outer overflow-y-auto */}
+
+      {/* 보석 획득 알림 */}
+      {newGemIds.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '90px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 200,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            alignItems: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          {newGemIds.map((gemId, idx) => {
+            const gem = GEM_DEFS.find((g) => g.id === gemId);
+            if (!gem) return null;
+            return (
+              <div
+                key={idx}
+                className="font-pixel"
+                style={{
+                  fontSize: '13px',
+                  color: '#f0c040',
+                  background: '#1a0f2e',
+                  border: '3px solid #f0c040',
+                  padding: '10px 20px',
+                  boxShadow: '0 0 20px rgba(240,192,64,0.4)',
+                  animation: 'gemNotif 3s ease forwards',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {gem.icon} {gem.name} 획득!
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <style>{`
+        @keyframes gemNotif {
+          0%   { opacity: 0; transform: translateY(10px); }
+          15%  { opacity: 1; transform: translateY(0); }
+          70%  { opacity: 1; }
+          100% { opacity: 0; transform: translateY(-10px); }
+        }
+      `}</style>
     </div>
   );
 }
