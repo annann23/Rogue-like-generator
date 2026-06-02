@@ -299,9 +299,10 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
               color: '#f0c040',
               border: '2px solid #f0c040',
               background: '#1a1000',
+              lineHeight: '2',
             }}
           >
-            ..처음 보는데, 왜 낯설지가 않지..?
+            {npc.reunionLine}
           </div>
         )}
 
