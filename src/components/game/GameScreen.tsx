@@ -14,6 +14,7 @@ import { fetchGhosts, saveGhost, type Ghost } from '@/hooks/useGhosts';
 import CombatRoom from './CombatRoom';
 import ShopRoom from './ShopRoom';
 import InventoryPanel from './InventoryPanel';
+import StatusPanel from './StatusPanel';
 import { ITEMS } from '@/constants/items';
 import { ACHIEVEMENTS } from '@/constants/achievements';
 import { FIXED_RELICS } from '@/constants/relics';
@@ -186,6 +187,7 @@ export default function GameScreen() {
 
   const [phase, setPhase] = useState<GamePhase>('loading');
   const [showInventory, setShowInventory] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
   const [room, setRoom] = useState<RoomWithResults | null>(null);
   const [result, setResult] = useState<RoomResultResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -701,6 +703,16 @@ export default function GameScreen() {
           ✦ {skillLevelUpMsg}
         </div>
       )}
+      {showStatus && (
+        <StatusPanel
+          collectedGems={meta.collectedGems}
+          unlockedAchievements={meta.achievements}
+          totalCombatWins={meta.totalCombatWins}
+          totalNegotiations={meta.totalNegotiations}
+          totalClears={meta.totalClears}
+          onClose={() => setShowStatus(false)}
+        />
+      )}
       {showInventory && (
         <InventoryPanel
           items={run.items}
@@ -791,6 +803,20 @@ export default function GameScreen() {
               }}
             >
               🎒 ({run.items.length})
+            </button>
+            <button
+              onClick={() => setShowStatus(true)}
+              className="font-pixel"
+              style={{
+                fontSize: '11px',
+                color: '#9878c0',
+                background: '#1a0f2e',
+                border: '2px solid #2a1a4a',
+                padding: '3px 8px',
+                cursor: 'pointer',
+              }}
+            >
+              📊
             </button>
           </div>
           {/* 플레이어 스프라이트 */}
