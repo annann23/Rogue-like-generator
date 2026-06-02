@@ -355,8 +355,8 @@ export default function GameScreen() {
       return;
     }
 
-    // 힌트 이벤트: depth 3 이상, event 방, 40% 확률
-    if (roomType === 'event' && depth >= 3 && Math.random() < 0.4) {
+    // 힌트 이벤트: 3회차 이상 + 15층 이상 + event 방 + 7% 확률
+    if (roomType === 'event' && meta.totalRuns >= 3 && depth >= 15 && Math.random() < 0.07) {
       const seenIds = meta.seenHintEvents ?? [];
       const hintEvent = pickHintEvent(seenIds, depth);
       if (hintEvent) {
