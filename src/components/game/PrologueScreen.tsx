@@ -29,8 +29,7 @@ const PANELS: Panel[] = [
       '악마는 조용히 바라보다,',
       '고개를 끄덕였다.',
       '',
-      '"계약의 대가로',
-      '수많은 생을 반복하며 미궁을 돌게 될 것이다.',
+      '"계약의 대가로 수많은 생을 반복하며 미궁을 돌게 될 것이다.',
       '보석을 모두 모으면 신의 위치를 알려주겠다."',
     ],
     color: '#e0a060',
@@ -171,7 +170,13 @@ export default function PrologueScreen() {
 
         {/* 본문 */}
         <div style={{ minHeight: '260px' }}>
-          {panel.lines.slice(0, visibleLines).map((line, idx) => (
+          {(() => {
+            let inQuote = false;
+            return panel.lines.slice(0, visibleLines).map((line, idx) => {
+              if (line.startsWith('"')) inQuote = true;
+              if (inQuote && line.endsWith('"')) inQuote = false;
+              const isQuoteLine = line.startsWith('"') || (inQuote && line !== '');
+              return (
             <p
               key={`${panelIdx}-${idx}`}
               className="font-pixel"
@@ -180,15 +185,17 @@ export default function PrologueScreen() {
                 lineHeight: '3',
                 textAlign: 'center',
                 color: line === '' ? undefined
-                  : line.startsWith('"') ? (panel.color ?? '#e8d8b8')
+                  : isQuoteLine ? (panel.color ?? '#e8d8b8')
                   : '#c8b0e8',
                 minHeight: line === '' ? '20px' : undefined,
-                fontStyle: line.startsWith('"') ? 'italic' : 'normal',
+                fontStyle: isQuoteLine ? 'italic' : 'normal',
               }}
             >
               {line}
             </p>
-          ))}
+              );
+            });
+          })()}
         </div>
 
         {/* 하단 버튼 */}
