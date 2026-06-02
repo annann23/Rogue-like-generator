@@ -274,54 +274,27 @@ function BusinessPage() {
 
         {/* 수익 모델 */}
         <Section title="수익화 전략">
-          {/* AI Dungeon 비교 */}
-          <div
-            style={{
-              background: '#0a0a1a',
-              border: '2px solid #2a1a4a',
-              padding: '14px 16px',
-              marginBottom: '24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-            }}
-          >
-            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', letterSpacing: '2px', marginBottom: '4px' }}>REFERENCE — AI DUNGEON</p>
-            <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', lineHeight: '1.8' }}>
-              가장 유사한 선행 사례인 AI Dungeon은 에너지 시스템을 폐기하고
-              <span style={{ color: '#c8a8e8' }}> "AI 모델 품질"로 무료/유료를 구분</span>하는 구독 방식으로 전환했습니다.
-              무료 유저는 무제한 플레이 가능하지만 기본 모델만 사용,
-              유료 구독($14.99~$99.99/월)은 강력한 모델과 더 넓은 컨텍스트를 제공합니다.
-              이 구조는 유저 이탈 없이 자연스럽게 업그레이드를 유도합니다.
+          {/* 한 줄 요약 */}
+          <div style={{ background: '#0e0820', border: '3px solid #6b4fa0', padding: '18px', marginBottom: '24px', textAlign: 'center' }}>
+            <p className="font-pixel" style={{ fontSize: '14px', color: '#f0c040', lineHeight: '2.2' }}>
+              무료 → 기본 AI로 입문&nbsp;&nbsp;|&nbsp;&nbsp;구독 → <span style={{ color: '#e8d0ff' }}>나만의 세계를 끝없이 이어가기</span>
+            </p>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', marginTop: '6px' }}>
+              AI Dungeon과 동일한 모델 품질 티어 구조 — 에너지 제한 없음, 서사 품질로 차별화
             </p>
           </div>
 
-          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '24px', lineHeight: '1.8' }}>
-            같은 원리를 적용합니다. Claude Haiku(무료)와 Claude Sonnet(유료)의
-            서사 품질 차이가 체감될 정도로 크기 때문에, 에너지 제한 없이도
-            자연스러운 업그레이드 동기가 생깁니다. Haiku는 Sonnet 대비 약 25배 저렴해
-            무료 유저 API 비용도 감당 가능합니다.
-          </p>
-
           {/* 플랜 비교 */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'flex-start' }}>
             {[
               {
                 name: 'WANDERER',
                 price: '무료',
-                priceColor: '#9878c0',
-                borderColor: '#2a1a4a',
+                priceColor: '#c8a8e8',
+                borderColor: '#3a2460',
                 bg: '#0a0612',
-                features: [
-                  { text: '무제한 플레이', ok: true },
-                  { text: 'Claude Haiku (빠르지만 단순한 서사)', ok: true },
-                  { text: '기본 페르소나 3종', ok: true },
-                  { text: '보석 메타 진행', ok: true },
-                  { text: '사망·클리어 시 광고 노출', ok: true },
-                  { text: 'Claude Sonnet (깊은 서사)', ok: false },
-                  { text: '프리미엄 페르소나 전체', ok: false },
-                  { text: '유언 메시지 열람', ok: false },
-                ],
+                points: ['무제한 플레이', 'Claude Haiku (기본 서사)', '페르소나 3종', '사망 시 광고'],
+                locked: ['Claude Sonnet', '전체 페르소나', '유언 열람'],
               },
               {
                 name: 'ADVENTURER',
@@ -330,63 +303,36 @@ function BusinessPage() {
                 priceColor: '#f0c040',
                 borderColor: '#6b4fa0',
                 bg: '#0e0820',
-                features: [
-                  { text: '무제한 플레이', ok: true },
-                  { text: 'Claude Sonnet (풍부한 서사·NPC 기억)', ok: true },
-                  { text: '전체 페르소나 10종+', ok: true },
-                  { text: '보석 메타 진행', ok: true },
-                  { text: '광고 없음', ok: true },
-                  { text: '다른 플레이어 유언 열람', ok: true },
-                  { text: '시즌 한정 보석 스킨', ok: false },
-                  { text: 'Discord 개발팀 채널', ok: false },
-                ],
+                points: ['무제한 플레이', 'Claude Sonnet (깊은 서사)', '전체 페르소나 10종+', '광고 없음', '유언 메시지 열람'],
+                locked: ['시즌 스킨', 'Discord 채널'],
               },
               {
                 name: 'LEGEND',
                 price: '₩15,900 / 월',
                 priceColor: '#e8d0ff',
-                borderColor: '#4a2d7a',
+                borderColor: '#7a5aaa',
                 bg: '#0a0612',
-                features: [
-                  { text: '무제한 플레이', ok: true },
-                  { text: 'Claude Sonnet (풍부한 서사·NPC 기억)', ok: true },
-                  { text: '전체 페르소나 10종+', ok: true },
-                  { text: '보석 메타 진행', ok: true },
-                  { text: '광고 없음', ok: true },
-                  { text: '다른 플레이어 유언 열람', ok: true },
-                  { text: '시즌 한정 보석 스킨', ok: true },
-                  { text: 'Discord 개발팀 채널', ok: true },
-                ],
+                points: ['모든 ADVENTURER 혜택', '시즌 한정 보석 스킨', 'Discord 개발팀 채널'],
+                locked: [],
               },
-            ].map(({ name, price, tag, priceColor, borderColor, bg, features }) => (
-              <div
-                key={name}
-                className="font-pixel"
-                style={{
-                  flex: '1 1 200px',
-                  minWidth: '190px',
-                  background: bg,
-                  border: `2px solid ${borderColor}`,
-                  padding: '18px',
-                  position: 'relative',
-                }}
-              >
+            ].map(({ name, price, tag, priceColor, borderColor, bg, points, locked }) => (
+              <div key={name} className="font-pixel" style={{ flex: '1 1 190px', minWidth: '180px', background: bg, border: `2px solid ${borderColor}`, padding: '18px', position: 'relative' }}>
                 {tag && (
-                  <div style={{
-                    position: 'absolute', top: '-1px', right: '12px',
-                    background: '#f0c040', color: '#080413',
-                    fontSize: '14px', padding: '3px 8px',
-                  }}>
-                    {tag}
-                  </div>
+                  <div style={{ position: 'absolute', top: '-1px', right: '12px', background: '#f0c040', color: '#080413', fontSize: '11px', padding: '3px 8px' }}>{tag}</div>
                 )}
                 <p style={{ fontSize: '12px', color: '#9070c0', letterSpacing: '2px', marginBottom: '6px' }}>{name}</p>
-                <p style={{ fontSize: '18px', color: priceColor, marginBottom: '14px' }}>{price}</p>
+                <p style={{ fontSize: '20px', color: priceColor, marginBottom: '14px' }}>{price}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
-                  {features.map((f) => (
-                    <div key={f.text} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: '12px', color: f.ok ? '#80e080' : '#604880', flexShrink: 0 }}>{f.ok ? '✓' : '✗'}</span>
-                      <span style={{ fontSize: '12px', color: f.ok ? '#e0d0f8' : '#705090', lineHeight: '1.5' }}>{f.text}</span>
+                  {points.map(t => (
+                    <div key={t} style={{ display: 'flex', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#80e080', flexShrink: 0 }}>✓</span>
+                      <span style={{ fontSize: '12px', color: '#e0d0f8', lineHeight: '1.5' }}>{t}</span>
+                    </div>
+                  ))}
+                  {locked.map(t => (
+                    <div key={t} style={{ display: 'flex', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#604880', flexShrink: 0 }}>✗</span>
+                      <span style={{ fontSize: '12px', color: '#705090', lineHeight: '1.5' }}>{t}</span>
                     </div>
                   ))}
                 </div>
@@ -394,110 +340,56 @@ function BusinessPage() {
             ))}
           </div>
 
-          {/* 구독 핵심 메시지 */}
-          <div
-            style={{
-              background: '#0e0820',
-              border: '3px solid #6b4fa0',
-              padding: '16px',
-              marginBottom: '16px',
-              textAlign: 'center',
-            }}
-          >
-            <p className="font-pixel" style={{ fontSize: '14px', color: '#f0c040', lineHeight: '2' }}>
-              무료: 세계에 입문, 하루 몇 번 생성, 기본 AI<br />
-              구독: <span style={{ color: '#e8d0ff' }}>나만의 세계를 끝없이 이어가기</span><br />
-              <span style={{ fontSize: '12px', color: '#b090d8' }}>무제한 생성 · 고급 AI · 동료와 시나리오 저장 · 특수 이벤트 참여</span>
-            </p>
-          </div>
-
-          {/* 비용 방어 */}
-          <div
-            style={{
-              background: '#0a0612',
-              border: '2px solid #2a1a4a',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-            }}
-          >
-            <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8' }}>API 비용 방어 구조</p>
+          {/* 비용 방어 한 줄 */}
+          <div style={{ background: '#0a0612', border: '2px solid #2a1a4a', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <p className="font-pixel" style={{ fontSize: '12px', color: '#9070c0', marginBottom: '4px' }}>API 비용 구조</p>
             {[
-              { icon: '🤖', text: '무료 유저 → Haiku 사용. Sonnet 대비 ~25배 저렴해 대규모 무료 유저도 감당 가능' },
-              { icon: '💰', text: '유료 유저 → ₩7,900/월이 Sonnet 호출 비용을 충당하고 마진 남김' },
-              { icon: '📈', text: '서사 품질 차이가 직접 체감되므로 에너지 제한 없이도 자연스러운 업그레이드 유도' },
-              { icon: '🏢', text: 'B2B 라이선스 — AI 스토리텔링 엔진을 타 서비스에 제공해 고정 수익 추가 가능' },
-            ].map(({ icon, text }) => (
-              <div key={text} className="font-pixel" style={{ display: 'flex', gap: '10px', fontSize: '13px', color: '#b090d8' }}>
-                <span>{icon}</span><span>{text}</span>
-              </div>
+              '🤖  무료: Haiku 사용 → Sonnet 대비 ~25배 저렴, 대규모 무료 유저 감당 가능',
+              '💰  구독: ₩7,900/월이 Sonnet 비용 충당 + 마진',
+              '🏢  장기: AI 스토리텔링 엔진 B2B 라이선스로 고정 수익 추가 가능',
+            ].map(t => (
+              <p key={t} className="font-pixel" style={{ fontSize: '12px', color: '#b090d8', lineHeight: '1.7' }}>{t}</p>
             ))}
           </div>
         </Section>
 
         {/* 현실적 진단 */}
         <Section title="현실적 진단">
-          <p className="font-pixel" style={{ fontSize: '13px', color: '#b090d8', marginBottom: '20px', lineHeight: '1.8' }}>
-            이 게임의 콘셉트는 진짜 차별점이 있습니다. 다만 수익화 구조에 아직 해결되지 않은 모순이 있습니다.
-          </p>
-
-          {/* 구조적 문제 */}
+          {/* 리스크 3줄 요약 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
             {[
-              {
-                label: '⚠️ AI 비용 역설',
-                text: '사용량이 늘수록 비용이 비례해서 증가합니다. 일반 게임과 반대입니다. 무료 유저 1,000명이 하루 5런씩 하면 API 비용만 수십만 원이 나올 수 있고, 웹 광고 CPM(₩500~2,000)으로는 이를 보전하기 어렵습니다.',
-              },
-              {
-                label: '⚠️ 에너지 시스템의 한계',
-                text: '에너지 시스템은 하루에 여러 번 앱을 켜는 모바일 습관을 전제합니다. 웹 게임에서 "2시간 기다려"라는 메시지는 이탈로 이어질 가능성이 높습니다.',
-              },
-              {
-                label: '⚠️ 배포·발견 채널 없음',
-                text: '앱스토어나 Steam 같은 검색·추천 유입이 없습니다. 현재 구조로는 직접 링크를 공유해야만 유저가 유입됩니다.',
-              },
-              {
-                label: '⚠️ 타겟 모호',
-                text: 'AI 생성 로그라이크를 한국어로 즐기는 코어 게이머 — 교집합이 작습니다. 코어 로그라이크 팬은 Balatro 수준의 완성도를 기대하고, 캐주얼 유저는 텍스트 중심에 진입장벽을 느낍니다.',
-              },
-            ].map(({ label, text }) => (
-              <div
-                key={label}
-                className="font-pixel"
-                style={{
-                  background: '#0a0612',
-                  border: '2px solid #3a1a1a',
-                  padding: '14px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                }}
-              >
-                <span style={{ fontSize: '13px', color: '#e89090' }}>{label}</span>
-                <span style={{ fontSize: '12px', color: '#c09090', lineHeight: '1.7' }}>{text}</span>
+              { icon: '⚠️', color: '#e89090', title: 'AI 비용 역설', text: '사용량↑ = 비용↑. 무료 유저가 많아질수록 적자 위험. Haiku 전환으로 25배 절감하지만 구독 전환율이 낮으면 여전히 위험.' },
+              { icon: '⚠️', color: '#e89090', title: '배포 채널 없음', text: '앱스토어·Steam 없이 링크 공유에만 의존. 초기 유저 유입이 가장 큰 병목.' },
+              { icon: '⚠️', color: '#e89090', title: '타겟 좁음', text: 'AI 로그라이크 + 한국어 — 교집합이 아직 작다. 게임 완성도가 높아질수록 타겟이 넓어질 수 있음.' },
+            ].map(({ icon, color, title, text }) => (
+              <div key={title} className="font-pixel" style={{ background: '#0a0612', border: '2px solid #3a1a1a', padding: '14px 16px', display: 'flex', gap: '12px' }}>
+                <span style={{ fontSize: '18px', flexShrink: 0 }}>{icon}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <span style={{ fontSize: '13px', color }}>{title}</span>
+                  <span style={{ fontSize: '12px', color: '#c09090', lineHeight: '1.7' }}>{text}</span>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* 현실적 대안 */}
+          {/* 대안 경로 */}
           <p className="font-pixel" style={{ fontSize: '13px', color: '#c8a8e8', marginBottom: '14px' }}>현실적인 대안 경로</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
             {[
               {
                 icon: '🎮',
                 title: 'itch.io 유료 출시',
-                desc: '플레이어가 자신의 Claude API 키를 입력하거나, 저렴한 모델(Haiku)로 전환하면 API 비용 문제가 해결됩니다. ₩2,900~4,900 일회성 판매. 인디 게임 커뮤니티 자연 유입 가능.',
+                desc: '플레이어 API 키 입력 방식으로 전환하면 비용 문제 해결. ₩2,900~4,900 일회성 판매. 인디 커뮤니티 자연 유입.',
               },
               {
                 icon: '💼',
-                title: '포트폴리오 / B2B Showcase',
-                desc: '"AI 스토리텔링 엔진"을 증명하는 데모로 포지셔닝합니다. 직접 수익보다 투자·채용·기술 라이선스 계약으로 연결하는 경로입니다.',
+                title: 'B2B / 포트폴리오',
+                desc: '"AI 스토리텔링 엔진" 데모로 포지셔닝. 투자·채용·라이선스 계약 연결 경로.',
               },
               {
                 icon: '📱',
-                title: '모바일 앱 전환',
-                desc: '에너지 시스템과 세션 길이는 모바일에 더 적합합니다. React Native 또는 Capacitor로 래핑하면 앱스토어 광고 단가(CPM ₩5,000~20,000)와 IAP 생태계를 활용할 수 있습니다.',
+                title: '모바일 전환',
+                desc: 'Capacitor로 래핑하면 앱스토어 유입 + 광고 CPM 10배 향상 (₩5,000~20,000).',
               },
             ].map(({ icon, title, desc }) => (
               <div
