@@ -23,6 +23,7 @@ export type GameScreen =
   | 'survey'
   | 'stat-reveal'
   | 'character-select'
+  | 'prologue'
   | 'game'
   | 'death'
   | 'clear'
@@ -104,6 +105,7 @@ export interface MetaState {
   totalGhostWins: number;
   totalNegotiations: number;
   totalCombatWins: number;
+  prologueShown: boolean;
 }
 
 interface GameStore {
@@ -196,6 +198,7 @@ const DEFAULT_META: MetaState = {
   totalGhostWins: 0,
   totalNegotiations: 0,
   totalCombatWins: 0,
+  prologueShown: false,
 };
 
 export const useGameState = create<GameStore>()(

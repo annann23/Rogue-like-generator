@@ -7,6 +7,7 @@ import CharacterSelect from '@/components/game/CharacterSelect';
 import GameScreen from '@/components/game/GameScreen';
 import DeathScreen from '@/components/game/DeathScreen';
 import MetaScreen from '@/components/game/MetaScreen';
+import PrologueScreen from '@/components/game/PrologueScreen';
 import BGMController from '@/components/game/BGMController';
 
 export const Route = createFileRoute('/')({
@@ -25,6 +26,7 @@ function GameRouter() {
           case 'survey':        return <SurveyScreen />;
           case 'stat-reveal':   return <StatReveal />;
           case 'character-select': return <CharacterSelect />;
+          case 'prologue':      return <PrologueScreen />;
           case 'game':          return <GameScreen />;
           case 'death':
           case 'clear':         return <DeathScreen />;
