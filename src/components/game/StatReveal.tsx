@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameState, type SurveyResult } from '@/hooks/useGameState';
 import { PixelPanel, PixelButton, PixelDivider, TypewriterText } from './UIFrame';
 import { PERSONA_TRAITS } from '@/constants/storyFlags';
@@ -111,6 +111,7 @@ export default function StatReveal() {
   const [showSummary, setShowSummary] = useState(false);
   const [showPersona, setShowPersona] = useState(false);
   const [canProceed, setCanProceed] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (results.length === 0) { setScreen('character-select'); }
@@ -124,8 +125,10 @@ export default function StatReveal() {
     if (!isLastCard) {
       setCurrentIdx(c => c + 1);
       setAnimKey(k => k + 1);
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       setShowSummary(true);
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         setShowPersona(true);
         setTimeout(() => setCanProceed(true), 1500);
@@ -137,7 +140,7 @@ export default function StatReveal() {
   const changedStats = Object.entries(totalChanges).filter(([, v]) => v !== 0);
 
   return (
-    <div className="flex items-center justify-center w-full h-full dungeon-bg p-4 overflow-y-auto">
+    <div ref={scrollRef} className="flex items-center justify-center w-full h-full dungeon-bg p-4 overflow-y-auto">
       <div className="w-full max-w-lg flex flex-col gap-5 py-4">
 
         <div className="text-center">
