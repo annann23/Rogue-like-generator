@@ -249,6 +249,8 @@ export default function GameScreen() {
   // 현재 진행 중인 depth를 ref로 관리 (Zustand 업데이트 비동기라 별도 추적)
   const currentDepthRef = useRef<number>(run.depth + 1);
   const selectedNpcRef = useRef<NPCTemplate | null>(null);
+  // 사망 여부 ref — 죽은 후 in-flight promise 결과가 state를 덮어쓰지 않도록
+  const isDeadRef = useRef(false);
 
   // depth → PrefetchEntry: 미리 생성해둔 방 프로미스 캐시
   const prefetchCache = useRef<Map<number, PrefetchEntry>>(new Map());
@@ -357,7 +359,7 @@ export default function GameScreen() {
 
     // 힌트 이벤트: 3회차 이상 + 15층 이상 + event 방 + 7% 확률
     if (roomType === 'event' && meta.totalRuns >= 3 && depth >= 15 && Math.random() < 0.07) {
-      const seenIds = meta.seenHintEvents ?? [];
+      const seenIds = useGameState.getState().meta.seenHintEvents ?? [];
       const hintEvent = pickHintEvent(seenIds, depth);
       if (hintEvent) {
         markHintEventSeen(hintEvent.id);
@@ -371,6 +373,7 @@ export default function GameScreen() {
 
     try {
       const roomData = await entry.promise;
+      if (isDeadRef.current) return; // 대기 중 사망 시 무시
       if (!roomData) throw new Error('방 생성 실패');
       setRoom(roomData);
       // 최근 묘사 첫 문장 저장 (최대 4개 순환)
@@ -380,6 +383,7 @@ export default function GameScreen() {
       // 벽 비문용 유령 백그라운드 fetch
       fetchGhosts(depth).then(setWallInscriptions);
     } catch (err) {
+      if (isDeadRef.current) return;
       setErrorMsg(err instanceof Error ? err.message : '알 수 없는 오류');
       setPhase('error');
     }
@@ -462,6 +466,17 @@ export default function GameScreen() {
     if (choice.personaReaction === 'bonus') personaHpBonus = 8;
     if (choice.personaReaction === 'penalty') personaHpBonus = -8;
     if (personaHpBonus !== 0) applyHpChange(personaHpBonus);
+
+    // 패널티로 HP가 0 이하가 됐다면 사망 처리
+    if (personaHpBonus < 0 && run.hp + choice.hpChange + personaHpBonus <= 0) {
+      const cause = '페르소나와 어긋난 선택의 대가';
+      isDeadRef.current = true;
+      killPlayer(cause);
+      setPendingDeathCause(cause);
+      setLastWords('');
+      setPhase('dying');
+      return;
+    }
 
     if (currentRoomType === 'event' && Math.random() < 0.05) {
       addMapFragment();
@@ -913,6 +928,7 @@ export default function GameScreen() {
             }}
             onHpChange={(delta) => applyHpChange(delta)}
             onDefeat={(cause) => {
+              isDeadRef.current = true;
               killPlayer(cause);
               setPendingDeathCause(cause);
               setLastWords('');
@@ -1071,6 +1087,7 @@ export default function GameScreen() {
             }}
             onHpChange={(delta) => applyHpChange(delta)}
             onDefeat={(cause) => {
+              isDeadRef.current = true;
               killPlayer(cause);
               setPendingDeathCause(cause);
               setLastWords('');
@@ -1153,7 +1170,7 @@ export default function GameScreen() {
             <p style={{ fontSize: '10px', color: '#5a4a7a', marginBottom: '6px', letterSpacing: '2px' }}>
               ── 벽에 새겨진 흔적 ──
             </p>
-            {wallInscriptions.map((g) => (
+            {wallInscriptions.slice(0, 1).map((g) => (
               <p
                 key={g.id}
                 style={{
@@ -1179,6 +1196,11 @@ export default function GameScreen() {
             <div className="flex flex-col gap-3">
               {room.choices.map((choice, idx) => {
                 const { locked, lockReason } = isChoiceLocked(choice);
+                const traitInfo = run.persona?.traitType ? PERSONA_TRAITS[run.persona.traitType] : null;
+                const hasPersonaReaction = traitInfo && choice.personaReaction !== 'neutral';
+                const lethalPenalty = hasPersonaReaction
+                  && choice.personaReaction === 'penalty'
+                  && run.hp + choice.hpChange - 8 <= 0;
                 return (
                   <PixelChoiceButton
                     key={idx}
@@ -1189,6 +1211,9 @@ export default function GameScreen() {
                     classOnly={choice.classOnly}
                     playerClass={run.characterClass ?? undefined}
                     onClick={() => handleChoiceClick(choice)}
+                    personaReaction={hasPersonaReaction ? choice.personaReaction : undefined}
+                    personaTraitLabel={traitInfo ? `${traitInfo.icon} ${traitInfo.name}` : undefined}
+                    lethalPenalty={lethalPenalty ?? false}
                   />
                 );
               })}

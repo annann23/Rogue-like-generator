@@ -351,19 +351,26 @@ interface ChoiceButtonProps {
   playerClass?: string;
   onClick?: () => void;
   disabled?: boolean;
+  personaReaction?: 'bonus' | 'penalty' | 'neutral';
+  personaTraitLabel?: string; // e.g. "🗡️ 무모함"
+  lethalPenalty?: boolean;    // 패널티로 사망하는 선택지
 }
 
-export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false }: ChoiceButtonProps) {
+export function PixelChoiceButton({ text, icon, locked = false, lockReason, classOnly, playerClass, onClick, disabled = false, personaReaction, personaTraitLabel, lethalPenalty = false }: ChoiceButtonProps) {
   // 클래스 전용 조건: 숨기지 않고 잠금 표시
   const isClassLocked = classOnly != null && classOnly !== playerClass;
-  const isLocked = locked || isClassLocked;
-  const reason = isClassLocked ? `${classOnly} 전용` : lockReason;
+  const isLocked = locked || isClassLocked || lethalPenalty;
+  const reason = lethalPenalty
+    ? '페르소나 패널티로 사망 — 선택 불가'
+    : isClassLocked ? `${classOnly} 전용` : lockReason;
+
+  const showPersonaBadge = personaReaction && personaReaction !== 'neutral' && personaTraitLabel;
 
   return (
     <div className="w-full">
       <button
         onClick={!isLocked && !disabled ? onClick : undefined}
-        disabled={disabled}
+        disabled={disabled || isLocked}
         className="w-full text-left font-pixel"
         style={{
           fontFamily: "'Press Start 2P', monospace",
@@ -388,10 +395,24 @@ export function PixelChoiceButton({ text, icon, locked = false, lockReason, clas
         <span className="mr-2">{isLocked ? '🔒' : (icon ?? '▶')}</span>
         {text}
       </button>
-      {/* 잠금 이유 — 항상 표시 */}
+      {/* 잠금 이유 */}
       {isLocked && reason && (
         <div className="font-pixel mt-1 px-2 py-1" style={{ fontSize: '11px', color: '#f0c040', background: '#1a0f2e', border: '1px solid #3a2060' }}>
           ⚠ {reason}
+        </div>
+      )}
+      {/* 페르소나 반응 배지 */}
+      {!isLocked && showPersonaBadge && (
+        <div
+          className="font-pixel mt-1 px-2 py-1"
+          style={{
+            fontSize: '10px',
+            background: personaReaction === 'bonus' ? '#0e1f0e' : '#1f0e0e',
+            border: `1px solid ${personaReaction === 'bonus' ? '#207040' : '#702020'}`,
+            color: personaReaction === 'bonus' ? '#60c080' : '#e06060',
+          }}
+        >
+          {personaTraitLabel} {personaReaction === 'bonus' ? '— 성격 적합 +8 HP' : '— 성격 부적합 -8 HP'}
         </div>
       )}
     </div>

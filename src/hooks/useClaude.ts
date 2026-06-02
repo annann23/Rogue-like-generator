@@ -643,16 +643,32 @@ JSON으로만 응답:
 
   const parsed = parseJSON<RoomWithResults>(text);
 
-  // Claude가 반환한 스킬 타입 정규화 (arcane_detection → arcane 등)
-  parsed.choices = parsed.choices.map((c) => ({
-    ...c,
-    requiredSkill: c.requiredSkill
-      ? { ...c.requiredSkill, type: normalizeSkillType(c.requiredSkill.type) }
-      : null,
-    skillChange: c.skillChange
-      ? { ...c.skillChange, type: normalizeSkillType(c.skillChange.type) }
-      : null,
-  }));
+  // Claude가 반환한 스킬 타입 정규화 (arcane_detection → arcane, 문자열/키 변형 대응)
+  parsed.choices = parsed.choices.map((c) => {
+    // requiredSkill이 문자열("strength")로 올 경우 객체로 변환
+    let requiredSkill: ChoiceWithResult['requiredSkill'] = null;
+    if (c.requiredSkill) {
+      if (typeof c.requiredSkill === 'string') {
+        requiredSkill = { type: normalizeSkillType(c.requiredSkill as unknown as string), level: 2 };
+      } else {
+        const raw = c.requiredSkill as Record<string, unknown>;
+        const rawType = (raw.type ?? raw.skill ?? '') as string;
+        const rawLevel = (raw.level ?? raw.amount ?? 2) as number;
+        requiredSkill = { type: normalizeSkillType(rawType), level: rawLevel };
+      }
+    }
+
+    // skillChange가 {skill, change} 형식으로 올 경우 {type, amount}로 정규화
+    let skillChange: ChoiceWithResult['skillChange'] = null;
+    if (c.skillChange) {
+      const raw = c.skillChange as Record<string, unknown>;
+      const rawType = (raw.type ?? raw.skill ?? '') as string;
+      const rawAmount = (raw.amount ?? raw.change ?? 0) as number;
+      skillChange = { type: normalizeSkillType(rawType), amount: rawAmount };
+    }
+
+    return { ...c, requiredSkill, skillChange };
+  });
 
   return parsed;
 }

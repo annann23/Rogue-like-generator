@@ -121,6 +121,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
+  const isLoadingRef = useRef(false); // state보다 빠른 동기 guard (이중 전송 방지)
 
   const currentFamiliarity = relation.familiarity + totalFamiliarityDelta;
   const stage = getFamiliarityStage(currentFamiliarity);
@@ -174,6 +175,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
     currentDelta: number,
     giftOffered: { name: string; tag: string } | undefined,
   ) {
+    isLoadingRef.current = true;
     setIsLoading(true);
 
     const currentFam = relation.familiarity + currentDelta;
@@ -212,13 +214,14 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
         { role: 'npc', text: '...(말문이 막혔다)' },
       ]);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }
 
   async function handleSubmit() {
     const trimmed = inputText.trim();
-    if (!trimmed || isLoading || remainingTurns <= 0) return;
+    if (!trimmed || isLoadingRef.current || remainingTurns <= 0) return;
 
     const playerMessage: Message = { role: 'player', text: trimmed };
     const newMessages = [...messages, playerMessage];
@@ -235,7 +238,7 @@ export default function NPCRoom({ npc, relation, gold, onGoldSpend, onDone, onRe
   }
 
   async function handleGiftSelect(gift: GiftItem) {
-    if (currentGold < gift.goldCost || isLoading) return;
+    if (currentGold < gift.goldCost || isLoadingRef.current) return;
 
     const newGold = currentGold - gift.goldCost;
     setCurrentGold(newGold);
