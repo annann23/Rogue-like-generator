@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameState, type RoomType, type RunState, type MetaState } from '@/hooks/useGameState';
-import { generateRoomWithResults, generateGhostBattle, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
+import { generateRoomWithResultsSafe, generateGhostBattle, moderateLastWords, type RoomWithResults, type ChoiceWithResult, type RoomResultResponse, type GhostBattleResponse } from '@/hooks/useClaude';
 import { PixelHUD, PixelPanel, PixelButton, PixelDivider, PixelChoiceButton, PixelInput, TypewriterText } from '@/components/game/UIFrame';
 import { SKILLS, type SkillType } from '@/constants/skills';
 import { PERSONA_TRAITS } from '@/constants/storyFlags';
@@ -278,7 +278,7 @@ export default function GameScreen() {
             .join(', ')
         : '없음';
 
-    const promise = generateRoomWithResults({
+    const promise = generateRoomWithResultsSafe({
       characterClass: run.characterClass ?? 'warrior',
       hp: run.hp,
       maxHp: run.maxHp,

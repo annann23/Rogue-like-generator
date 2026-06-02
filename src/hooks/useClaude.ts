@@ -34,39 +34,73 @@ async function claudeFetch(
     content: { type: string; text: string }[];
     stop_reason: string;
   };
-  if (data.stop_reason === 'max_tokens') {
-    throw new Error('API 응답이 잘렸습니다 (토큰 한도 초과). 재시도해주세요.');
-  }
   const block = data.content.find((b) => b.type === "text");
-  return block?.text ?? "";
+  const text = block?.text ?? "";
+  // max_tokens로 잘렸어도 텍스트를 그대로 반환 — parseJSON에서 복구 시도
+  if (data.stop_reason === 'max_tokens' && !text) {
+    throw new Error('API 응답이 비어 있습니다 (토큰 한도 초과).');
+  }
+  return text;
 }
 
-// JSON 파싱 헬퍼 — 마크다운 코드 블록 제거 후 파싱
+// ─── 자동 재시도 래퍼 ─────────────────────────
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 2,
+  delayMs = 800,
+): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (i < maxRetries) {
+        await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// ─── JSON 파싱 헬퍼 ───────────────────────────
 function parseJSON<T>(raw: string): T {
-  const cleaned = raw
+  // 1. 마크다운 코드 블록 제거
+  let cleaned = raw
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/```\s*$/i, "")
     .trim();
 
-  // 1차 시도: 그대로 파싱
+  // 2. 응답 앞뒤에 텍스트가 붙어있는 경우 JSON 객체/배열만 추출
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+
+  // 3. 직접 파싱
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    // 2차 시도: JSON 문자열 내부의 literal 제어문자를 이스케이프 후 재파싱
-    // Claude가 JSON string 값 안에 raw 개행(\n)을 넣는 경우를 처리
+    // 4. 제어문자 이스케이프 후 재파싱
     const repaired = repairJSON(cleaned);
     try {
       return JSON.parse(repaired) as T;
-    } catch (e2) {
-      throw new Error(`JSON 파싱 실패: ${(e2 as Error).message} (응답 길이: ${cleaned.length}자)`);
+    } catch {
+      // 5. 토큰 잘림으로 JSON이 불완전한 경우 — 닫는 구조 보충 후 재시도
+      const patched = patchTruncatedJSON(repaired);
+      try {
+        return JSON.parse(patched) as T;
+      } catch (e3) {
+        throw new Error(`JSON 파싱 실패: ${(e3 as Error).message} (응답 ${cleaned.length}자)`);
+      }
     }
   }
 }
 
-// JSON 문자열 값 내부의 literal 제어문자를 이스케이프 시퀀스로 변환
+// JSON 문자열 값 내부의 literal 제어문자를 이스케이프
 function repairJSON(s: string): string {
-  // 문자열 토큰 내부만 건드리고 구조적 공백은 유지
   return s.replace(/"((?:[^"\\]|\\.)*)"/g, (_, inner: string) => {
     const escaped = inner
       .replace(/\n/g, '\\n')
@@ -74,6 +108,35 @@ function repairJSON(s: string): string {
       .replace(/\t/g, '\\t');
     return `"${escaped}"`;
   });
+}
+
+// 잘린 JSON 끝에 필요한 닫는 괄호/따옴표 보충
+function patchTruncatedJSON(s: string): string {
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+
+  for (const ch of s) {
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+
+  // 열린 문자열이 있으면 닫기
+  let result = s;
+  if (inString) result += '"';
+
+  // 스택에 남은 닫는 괄호 역순 추가
+  for (let i = stack.length - 1; i >= 0; i--) {
+    // 중간에 잘린 키/값이 있으면 null로 마무리
+    if (stack[i] === '}') result += '}';
+    else result += ']';
+  }
+
+  return result;
 }
 
 // 모든 한국어 생성 프롬프트에 공통 삽입
@@ -523,10 +586,72 @@ JSON으로만 응답:
 }`,
       },
     ],
-    1500,
+    2000,
   );
 
   return parseJSON<RoomWithResults>(text);
+}
+
+// 재시도 + 폴백을 포함한 public 래퍼
+const FALLBACK_ROOM: RoomWithResults = {
+  description: '안개가 자욱한 통로가 나타났다. 무언가 이상한 기운이 감돈다.',
+  choices: [
+    {
+      text: '조심스럽게 앞으로 나아간다',
+      icon: '👣',
+      classOnly: null,
+      requiredSkill: null,
+      result: '조심스럽게 발걸음을 옮겼다. 특별한 일은 일어나지 않았다.',
+      hpChange: 0,
+      goldChange: 0,
+      skillChange: null,
+      newRelic: null,
+      isDead: false,
+      deathCause: null,
+      storyFlagSet: null,
+      personaReaction: 'neutral',
+    },
+    {
+      text: '잠시 숨을 고르며 대기한다',
+      icon: '🧘',
+      classOnly: null,
+      requiredSkill: null,
+      result: '잠시 휴식을 취했다. 피로가 조금 풀렸다.',
+      hpChange: 10,
+      goldChange: 0,
+      skillChange: null,
+      newRelic: null,
+      isDead: false,
+      deathCause: null,
+      storyFlagSet: null,
+      personaReaction: 'neutral',
+    },
+    {
+      text: '주변을 살피며 단서를 찾는다',
+      icon: '🔍',
+      classOnly: null,
+      requiredSkill: null,
+      result: '주변을 살폈지만 별다른 것을 찾지 못했다.',
+      hpChange: 0,
+      goldChange: 5,
+      skillChange: null,
+      newRelic: null,
+      isDead: false,
+      deathCause: null,
+      storyFlagSet: null,
+      personaReaction: 'neutral',
+    },
+  ],
+};
+
+export async function generateRoomWithResultsSafe(
+  params: Parameters<typeof generateRoomWithResults>[0],
+): Promise<RoomWithResults> {
+  try {
+    return await withRetry(() => generateRoomWithResults(params), 2, 800);
+  } catch {
+    return FALLBACK_ROOM;
+  }
 }
 
 export async function generateRoomResult(params: {
