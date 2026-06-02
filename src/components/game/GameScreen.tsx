@@ -62,8 +62,8 @@ function checkExitConditions(
 function pickRoomType(depth: number): RoomType {
   const pool: RoomType[] =
     depth <= 3
-      ? ['combat', 'combat', 'combat', 'event', 'npc', 'shop', 'rest', 'ghost']
-      : ['combat', 'combat', 'event', 'npc', 'shop', 'rest', 'ghost', 'ghost'];
+      ? ['combat', 'combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest', 'rest']
+      : ['combat', 'combat', 'event', 'event', 'npc', 'shop', 'rest', 'ghost'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
