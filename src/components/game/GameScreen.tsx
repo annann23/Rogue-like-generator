@@ -469,10 +469,11 @@ export default function GameScreen() {
 
     if (traitInfo && choice.personaReaction !== 'neutral') {
       if (choice.personaReaction === 'bonus' && trainedSkill && currentRoomType === 'event') {
-        // 레벨업 여부를 호출 전에 미리 감지
-        const currentCount = run.skillUseCounts[trainedSkill as SkillType] ?? 0;
-        const willLevelUp = (currentCount + 1) % 3 === 0;
-        incrementSkillUse(trainedSkill as SkillType);
+        // incrementSkillUse는 lines 408/415에서 이미 호출됨 — 여기서 중복 호출 없음
+        // getState()로 방금 반영된 최신 카운트를 읽음 (stale closure 방지)
+        const freshState = useGameState.getState().run;
+        const freshCount = freshState.skillUseCounts[trainedSkill as SkillType] ?? 0;
+        const justLeveledUp = freshCount > 0 && freshCount % 3 === 0;
 
         const skillKo: Record<string, string> = {
           intelligence: '지능', negotiation: '협상', lockpick: '자물쇠',
@@ -480,14 +481,14 @@ export default function GameScreen() {
         };
         const skillLabel = skillKo[trainedSkill] ?? trainedSkill;
 
-        if (willLevelUp) {
-          const newLevel = Math.min(5, (run.skills[trainedSkill as SkillType] ?? 0) + 1);
+        if (justLeveledUp) {
+          const newLevel = freshState.skills[trainedSkill as SkillType] ?? 1;
           setSkillLevelUpMsg(`${skillLabel} Lv.${newLevel} 달성!`);
           setTimeout(() => setSkillLevelUpMsg(null), 3000);
-          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 +1 → Lv.${newLevel} 달성!`;
+          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 → Lv.${newLevel} 달성!`;
         } else {
-          const nextCount = (currentCount + 1) % 3;
-          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 +1 (${nextCount === 0 ? 3 : nextCount}/3)`;
+          const displayCount = freshCount % 3;
+          personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격에 맞는 선택 — ${skillLabel} 숙련도 +1 (${displayCount}/3)`;
         }
       } else if (choice.personaReaction === 'penalty') {
         personaBadgeText = `\n\n${traitInfo.icon} [${traitInfo.name}] 성격과 어긋난 선택`;
