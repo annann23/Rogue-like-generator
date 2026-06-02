@@ -329,8 +329,8 @@ export function PixelHUD({ hp, maxHp, gold, atk, def, depth, mana, maxMana, skil
         ].map(({ key, icon }) => {
           const lv = skills[key] ?? 0;
           return (
-            <span key={key} className="font-pixel" style={{ fontSize: '11px', color: lv > 0 ? '#e8d8b8' : '#4a3070' }}>
-              {icon} <span style={{ fontSize: '9px', color: lv > 0 ? '#9878c0' : '#3a2060' }}>Lv.</span>{lv}<span style={{ fontSize: '9px', color: '#3a2060' }}>/5</span>
+            <span key={key} className="font-pixel" style={{ fontSize: '11px', color: '#e8d8b8' }}>
+              {icon} <span style={{ fontSize: '9px', color: '#9878c0' }}>Lv.</span>{lv}
             </span>
           );
         })}
