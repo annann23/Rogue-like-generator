@@ -179,7 +179,7 @@ export default function CharacterSelect() {
 
   const isLocked = (cls: ClassStats) => {
     const cost = CLASS_UNLOCK_COSTS[cls.id];
-    return cost !== null && !meta.unlockedClasses.includes(cls.id);
+    return cost !== null && !(meta.unlockedClasses ?? ['warrior']).includes(cls.id);
   };
 
   const handleConfirm = () => {

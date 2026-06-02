@@ -581,6 +581,14 @@ export const useGameState = create<GameStore>()(
         meta: state.meta,
         npcRelations: state.npcRelations,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<GameStore>;
+        return {
+          ...currentState,
+          meta: { ...DEFAULT_META, ...(persisted.meta ?? {}) },
+          npcRelations: persisted.npcRelations ?? {},
+        };
+      },
     },
   ),
 );
