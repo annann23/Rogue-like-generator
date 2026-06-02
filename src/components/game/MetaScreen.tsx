@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGameState } from '@/hooks/useGameState';
-import { META_UPGRADES } from '@/constants/metaUpgrades';
+import { META_UPGRADES, nextUpgradeCost } from '@/constants/metaUpgrades';
 import { CHARACTER_CLASSES, CLASS_UNLOCK_COSTS } from '@/constants/classes';
 import { ACHIEVEMENTS, CATEGORY_LABELS, TOTAL_ENEMIES, type AchievementCategory } from '@/constants/achievements';
 import { ENEMY_TEMPLATES } from '@/constants/enemies';
@@ -48,7 +48,8 @@ function UpgradesTab() {
         {META_UPGRADES.map((upg) => {
           const currentLevel = meta.upgrades[upg.id] ?? 0;
           const isMaxed = currentLevel >= upg.maxLevel;
-          const canAfford = meta.legacyPoints >= upg.costPerLevel;
+          const cost = nextUpgradeCost(upg, currentLevel);
+          const canAfford = meta.legacyPoints >= cost;
 
           return (
             <PixelPanel key={upg.id} variant={isMaxed ? 'brown' : 'dark'} className="p-4">
@@ -75,9 +76,9 @@ function UpgradesTab() {
                   ) : (
                     <>
                       <span className="font-pixel" style={{ fontSize: '9px', color: canAfford ? '#f0c040' : '#6b4fa0' }}>
-                        {upg.costPerLevel} pt
+                        {cost} pt
                       </span>
-                      <PixelButton variant={canAfford ? 'primary' : 'ghost'} size="sm" disabled={!canAfford} onClick={() => purchaseUpgrade(upg.id, upg.costPerLevel)}>
+                      <PixelButton variant={canAfford ? 'primary' : 'ghost'} size="sm" disabled={!canAfford} onClick={() => purchaseUpgrade(upg.id, cost)}>
                         구매
                       </PixelButton>
                     </>

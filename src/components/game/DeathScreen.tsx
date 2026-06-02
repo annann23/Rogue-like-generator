@@ -10,7 +10,7 @@ import { ACHIEVEMENTS } from '@/constants/achievements';
 export default function DeathScreen() {
   const { screen, run, meta, npcRelations, setScreen, batchUnlockAchievements } = useGameState();
   const isClear = screen === 'clear';
-  const earnedPoints = isClear ? 30 : run.depth * 2;
+  const earnedPoints = isClear ? 5 : Math.max(1, Math.floor(run.depth / 3));
   const [newlyUnlocked, setNewlyUnlocked] = useState<typeof ACHIEVEMENTS>([]);
   const checked = useRef(false);
 
