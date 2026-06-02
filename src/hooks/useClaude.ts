@@ -2,13 +2,15 @@ import { env } from "@/env";
 import { pickSurveyQuestions } from "@/constants/surveyQuestions";
 import { PERSONA_TRAITS, FLAG_CONTEXT, type PersonaTraitType } from "@/constants/storyFlags";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL_SONNET = "claude-sonnet-4-6";
+const MODEL_HAIKU  = "claude-haiku-4-5-20251001";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
 // ─── fetch 래퍼 ──────────────────────────────
 async function claudeFetch(
   messages: { role: string; content: string }[],
   maxTokens = 1024,
+  model = MODEL_SONNET,
 ): Promise<string> {
   const res = await fetch(API_URL, {
     method: "POST",
@@ -19,7 +21,7 @@ async function claudeFetch(
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
       messages,
     }),
@@ -628,7 +630,8 @@ JSON으로만 응답:
 }`,
       },
     ],
-    2000,
+    1200,
+    MODEL_HAIKU,
   );
 
   const parsed = parseJSON<RoomWithResults>(text);
@@ -950,6 +953,7 @@ JSON으로만 응답:
       },
     ],
     512,
+    MODEL_HAIKU,
   );
 
   return parseJSON<GhostBattleResponse>(text);
@@ -974,6 +978,7 @@ JSON으로만 응답:
       },
     ],
     64,
+    MODEL_HAIKU,
   );
 
   try {
