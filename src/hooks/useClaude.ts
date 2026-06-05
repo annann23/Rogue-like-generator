@@ -145,10 +145,18 @@ JSON으로만 응답:
 export async function interpretSurveyAnswers(
   answers: { question: string; answer: string }[],
   randomSeed: string,
+  finalWords?: string,
 ): Promise<SurveyInterpretResponse> {
   const answersText = answers
     .map((a, i) => `${i + 1}. ${a.question} → "${a.answer}"`)
     .join('\n');
+
+  const finalWordsSection = finalWords
+    ? `\n마지막으로 한 말: "${finalWords}"
+→ 이 말에 대한 반응은 오직 신의 현재 기분(기분 코드)에만 달려 있음
+→ 아첨이든 욕이든 기분이 좋으면 스탯을 올려줄 수도, 기분이 나쁘면 깎을 수도 있음
+→ finalSummary에서 이 마지막 말에 대한 신의 반응을 짧게 언급할 것 (결과는 밝히지 말고 의미심장하게)`
+    : '';
 
   const text = await claudeFetch([
     {
@@ -156,8 +164,10 @@ export async function interpretSurveyAnswers(
       content: `당신은 심술궂고 변덕스러운 던전의 신입니다.
 
 절대 규칙:
-1. randomSeed: ${randomSeed} 를 반드시 해석에 반영할 것
-   → 같은 답변도 seed가 다르면 반드시 다른 결과
+1. 오늘의 신의 기분 코드: ${randomSeed} — 이 값을 해석 방향과 강도에 내부적으로 반영할 것
+   → 같은 답변도 기분 코드가 다르면 반드시 다른 결과가 나올 것
+   → 단, "seed", "시드", "기분 코드", "랜덤" 같은 단어는 절대 텍스트에 노출하지 말 것
+   → 신이 그냥 변덕스럽게 판결하는 것처럼 자연스럽게 표현할 것
 2. 좋은 효과 / 나쁜 효과 / 둘 다 / 반대 효과 골고루 섞기
 3. 순수하게 좋은 결과는 전체의 30% 이하로 제한
 4. 숫자: 숫자 자체 / 자릿수 / 홀짝 / 소수 여부 등 다양하게 해석
@@ -166,7 +176,7 @@ export async function interpretSurveyAnswers(
 7. stat 이름은 반드시 영어 소문자: hp, atk, def, gold, intelligence, negotiation, lockpick, stealth, strength, arcane 중 하나
 
 답변 목록:
-${answersText}
+${answersText}${finalWordsSection}
 
 JSON으로만 응답:
 {
